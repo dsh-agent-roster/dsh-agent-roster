@@ -10,6 +10,9 @@ on:
     paths:
       - "index/registry.json"
       - "examples/**"
+      - "orgs/**"
+      - "schema/**"
+      - "test/**"
       - "bin/**"
       - "lib/**"
       - "package.json"
@@ -19,6 +22,11 @@ on:
     paths:
       - "index/registry.json"
       - "examples/**"
+      - "orgs/**"
+      - "schema/**"
+      - "test/**"
+      - "bin/**"
+      - "lib/**"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/registry.yml"
@@ -49,6 +57,9 @@ jobs:
           git diff --exit-code index/registry.json || {
             echo "::notice::registry.json 已被重算，请把改动一起提交";
           }
+
+      - name: 校验组织示例库（组织文件与磁盘交叉核对）
+        run: node bin/cli.mjs validate --dir orgs/agent-roster-collective
 
       - name: 单测
         run: node --test

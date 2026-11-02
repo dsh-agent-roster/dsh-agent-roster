@@ -2,7 +2,7 @@
   "$schema": "../schema/registry.v1.schema.json",
   "kind": "dsh-agent-roster-registry/v1",
   "version": 1,
-  "generatedAt": "2026-10-30T00:00:00.000Z",
+  "generatedAt": "2026-11-02T17:00:43.713Z",
   "generator": "STofone/dsh-agent-roster (hand-maintained; verified by .github/workflows/registry.yml)",
   "source": "https://github.com/STofone/dsh-agent-roster",
   "collections": [
@@ -27,6 +27,50 @@
         "STofone"
       ],
       "homepage": "https://github.com/STofone/dsh-agent-roster#examples"
+    },
+    {
+      "id": "agent-roster-collective",
+      "title": "自撰团队档案合集（21 套 · 63 名成员）",
+      "description": "覆盖评审、事故响应、数据、文档、发布、研究等常见协作分工的 21 套档案，全部由本项目自撰（未复制任何上游文本），可直接复制改成自己的。",
+      "repo": "github:STofone/dsh-agent-roster",
+      "ref": "main",
+      "path": "orgs/agent-roster-collective",
+      "rosters": [
+        "api-design",
+        "content-ops",
+        "contract-review",
+        "data-quality",
+        "db-migration",
+        "docs-writer",
+        "finance-recon",
+        "frontend-ui",
+        "i18n-l10n",
+        "incident-response",
+        "literature-review",
+        "market-research",
+        "ml-eval",
+        "performance",
+        "product-discovery",
+        "qa-regression",
+        "recruiting",
+        "release-manager",
+        "security-audit",
+        "sre-oncall",
+        "support-triage"
+      ],
+      "tags": [
+        "collection",
+        "examples",
+        "operations",
+        "data",
+        "docs",
+        "research"
+      ],
+      "license": "MIT",
+      "maintainers": [
+        "STofone"
+      ],
+      "homepage": "https://github.com/STofone/dsh-agent-roster/tree/main/orgs/agent-roster-collective"
     },
     {
       "id": "agent-teams",
