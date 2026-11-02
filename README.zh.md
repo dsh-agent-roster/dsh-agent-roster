@@ -287,7 +287,7 @@ node bin/cli.mjs validate --dir orgs/agent-roster-collective
 别人订阅后就能在面板里看到并一键拉到自己机器上。
 
 - **订阅方式**：设置里 `indexes` 填 `https://…/registry.json`，或 `npm:pkg`（从 npm 包的 `registry.json` 读）。
-  留空 = 只用官方源 `STofone/dsh-agent-roster` 的 `index/registry.json`；显式写 `false` 才彻底不连远端。
+  留空 = 只用官方源 `dsh-agent-roster/dsh-agent-roster` 的 `index/registry.json`；显式写 `false` 才彻底不连远端。
 - **多久更新一次**：TTL **一小时**——等于未认证 GitHub 的 60 次/小时配额。`?refresh=1`（或工具的 `refresh`）
   可绕过缓存，但 60 秒内最多一次，避免把配额烧光。拉取失败时沿用上次缓存并在页面上写明「缓存（拉取失败）」。
 - **拉取到本机**：写入是幂等的，四种结果都会报给你——

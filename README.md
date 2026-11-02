@@ -300,7 +300,7 @@ Rosters can be shared: keep one or more of them in a GitHub repository, register
 repository's `index/registry.json`, and anyone who subscribes can see them in the panel and pull them locally.
 
 - **Subscribing**: set `indexes` to an `https://…/registry.json` URL or `npm:pkg` (reads `registry.json` from the
-  package). Empty means the official source, `STofone/dsh-agent-roster`'s `index/registry.json`; an explicit `false`
+  package). Empty means the official source, `dsh-agent-roster/dsh-agent-roster`'s `index/registry.json`; an explicit `false`
   is the only way to disable remote sources entirely.
 - **How often it refreshes**: TTL **one hour** — that is the unauthenticated GitHub budget of 60 requests/hour.
   `?refresh=1` (or the tools' `refresh`) bypasses the cache, throttled to one try per 60 seconds so the quota is not

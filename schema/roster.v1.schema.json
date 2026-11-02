@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/STofone/dsh-agent-roster/blob/main/schema/roster.v1.schema.json",
+  "$id": "https://github.com/dsh-agent-roster/dsh-agent-roster/blob/main/schema/roster.v1.schema.json",
   "title": "DSH agent roster document",
   "description": "一份成员档案：描述一个多 Agent 团队里每个成员是谁、用什么模型、受哪些工具约束，以及队长应该是什么样。校验的权威实现是插件里的 lib/validate.js；本文件供编辑器与外部工具做提示，两者由 test/schema.test.js 对齐。",
   "type": "object",

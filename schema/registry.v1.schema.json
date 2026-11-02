@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/STofone/dsh-agent-roster/blob/main/schema/registry.v1.schema.json",
+  "$id": "https://github.com/dsh-agent-roster/dsh-agent-roster/blob/main/schema/registry.v1.schema.json",
   "title": "DSH agent roster registry document",
   "description": "公共档案索引：登记若干 collection（仓库 + 目录 + 确有哪几份档案），供订阅与一键安装。权威校验实现是 lib/remote.js#validateRegistry；本文件供编辑器与外部工具提示，两者由 test/registry-schema.test.js 对齐。注意：运行时对未知字段只告警不判错，这里写成 additionalProperties:false 是为了让编辑器早点指出拼写错误。",
   "type": "object",

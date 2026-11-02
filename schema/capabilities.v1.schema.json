@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/STofone/dsh-agent-roster/blob/main/schema/capabilities.v1.schema.json",
+  "$id": "https://github.com/dsh-agent-roster/dsh-agent-roster/blob/main/schema/capabilities.v1.schema.json",
   "title": "DSH agent roster capability requirements",
   "description": "一份档案的能力要求（与 roster.{yaml,json} 同目录的 capabilities.{yaml,json}）：只声明「建这支队伍需要什么」，不承载能力本体。校验的权威实现是插件里的 lib/capabilities.js；本文件供编辑器与外部工具做提示，两者由 test/capabilities.test.js 对齐。",
   "type": "object",

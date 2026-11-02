@@ -4,6 +4,20 @@
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-11-03
+
+### Moved to the `dsh-agent-roster` organization
+
+- **The repository now lives at `dsh-agent-roster/dsh-agent-roster`** (GitHub keeps redirects from
+  the old owner, so existing clones and links keep working). Nothing about the format, the tools or
+  the published package name changes.
+- **The default registry source follows the move**: `lib/remote.js` asks
+  `https://raw.githubusercontent.com/dsh-agent-roster/dsh-agent-roster/main/index/registry.json`,
+  so a fresh install that has not configured `indexes` does not depend on a redirect.
+- **Package metadata and schema `$id`s point at the new home** (`package.json` homepage /
+  repository / issues, and the four `schema/*.v1.schema.json` files), so editors and npm resolve
+  the canonical location instead of a redirect.
+
 ## [0.8.0] - 2026-11-02
 
 ### Library organization (new root file)
@@ -296,7 +310,8 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/STofone/dsh-agent-roster/compare/v0.8.0...main
-[0.8.0]: https://github.com/STofone/dsh-agent-roster/releases/tag/v0.8.0
-[0.7.0]: https://github.com/STofone/dsh-agent-roster/releases/tag/v0.7.0
-[0.2.0]: https://github.com/STofone/dsh-agent-roster/releases/tag/v0.2.0
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.8.1...main
+[0.8.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.8.1
+[0.8.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.8.0
+[0.7.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.7.0
+[0.2.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.2.0

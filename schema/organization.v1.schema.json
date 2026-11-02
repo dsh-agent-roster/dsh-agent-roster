@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/STofone/dsh-agent-roster/blob/main/schema/organization.v1.schema.json",
+  "$id": "https://github.com/dsh-agent-roster/dsh-agent-roster/blob/main/schema/organization.v1.schema.json",
   "title": "DSH agent roster organization document",
   "description": "一座档案库的目录页：声明库里有哪几份档案、各自什么状态。校验的权威实现是 lib/organization.js；本文件供编辑器与外部工具提示，两者由 test/organization.test.js 对齐。",
   "type": "object",
