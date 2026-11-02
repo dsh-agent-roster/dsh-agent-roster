@@ -12,10 +12,16 @@ on:
       - "examples/**"
       - "bin/**"
       - "lib/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/registry.yml"
   pull_request:
     paths:
       - "index/registry.json"
       - "examples/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/registry.yml"
   workflow_dispatch:
 
 jobs:
@@ -26,7 +32,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm ci --omit=dev || npm install --omit=dev
+      # 装 devDependencies：lib/tools.js 与三个测试套件都要 import
+      # `@deepseek-ai/dsh-tools`，它只是 optional peer，--omit=dev 会让「单测」这一步
+      # 直接 ERR_MODULE_NOT_FOUND（2026-10-30 起本 workflow 一直红着，就是这条）。
+      - run: npm ci || npm install
 
       - name: 校验索引格式
         run: node bin/cli.mjs registry validate --file index/registry.json
