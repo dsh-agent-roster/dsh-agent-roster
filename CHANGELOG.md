@@ -27,11 +27,34 @@
   by name (`aliases` are a hint, never auto-merged), effective values compared with their
   origin, persona compared by length and hash only.
 
+### Capability requirements (new sibling file)
+
+- **`capabilities.yaml`** — an optional file next to `roster.yaml` that declares what the
+  deployment must provide: `requires.skills`, `requires.toolPolicies`, `onMissing`
+  (`refuse` | `degraded`), `asOf` (date only) and `notes`. Unknown keys and unknown requirement
+  categories are errors: model routing, plugin versions, credential pointers and business
+  preconditions have no evidence source, so declaring them would only manufacture a new kind of
+  false green.
+- **Three states, not two.** `checkCapabilities` answers `present` / `missing` / `unknown`;
+  only `missing` (the evidence source explicitly says no) trips the gate. `unknown` is neither a
+  pass nor a failure and is always printed.
+- **`roster_create` refuses instead of warning.** With a `missing` requirement under
+  `onMissing: refuse` it emits no `agent_teams_add_member` argument at all and prints where each
+  requirement has to be installed. `onMissing: degraded` hands over the arguments and records
+  the debt.
+- **`roster_verify`** gains `requires=<missing>missing/<declared>` and `capabilityBlocked` in its
+  status line, a capability section in the body, `ok` includes `capabilityBlocked === 0`, and a
+  structured `capabilities` field.
+- **`roster_show`** prints the declaration block.
+- New `schema/capabilities.v1.schema.json`, pinned to `lib/capabilities.js` by
+  `test/capabilities.test.js` (17 new tests).
+
 ### Docs
 
-- README (both languages): six tools, the new verification buckets, `roster_diff`, and a
+- README (both languages): six tools, the new verification buckets, `roster_diff`, a
   "one roster per directory, two generations per machine" section answering how to keep both
-  generations side by side.
+  generations side by side, and a "capability requirements" section covering the three-state
+  check and the gate.
 
 ## [0.6.2] - 2026-10-30
 

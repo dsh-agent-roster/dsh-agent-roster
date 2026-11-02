@@ -117,6 +117,8 @@ npx dsh-agent-roster list
 
 成员键：`name`、`role`、`systemPrompt`（必填），以及 `provider`、`model`、`reasoningEffort`、`toolPolicy`、`fallback`、`toolScope`、`maxTokens`、`title`、`tags`、`notes`、`description`、`aliases`、`skills`、`examples`。
 
+档案目录里还可以有一个**可选的兄弟文件** `capabilities.yaml`，声明"建这支队伍前部署侧必须提供什么"——见「能力要求」一节。
+
 `systemPrompt` 上限 8000 字符。成员省略路由字段时从 `defaults` 继承，继承结果记入 `inherited` 列表，能看清"这个值哪来的"。
 
 机器可读的 JSON Schema 在 [`schema/roster.v1.schema.json`](./schema/roster.v1.schema.json)，供编辑器补全与外部工具校验；权威校验始终是 `lib/validate.js`，两者由 `test/schema.test.js` 对齐。
@@ -150,20 +152,49 @@ npx dsh-agent-roster list
 
 真正生效要改 profile 的 `cordis.patch.yml` 与 agent preset。面板里编辑队长段只是在记录意图——插件不会、也不能替你改会话。
 
+## 能力要求（`capabilities.yaml`）
+
+档案说的是**成员是谁**，说不了**这台机器到底能不能把他们跑起来**——技能目录与工具策略定义都在部署侧，不在档案里。档案目录里一个可选的兄弟文件只声明这件事，别的一律不写：
+
+```yaml
+kind: dsh-agent-roster-capabilities/v1
+roster: money-lab            # 必须等于目录名
+onMissing: refuse            # refuse（默认）| degraded
+asOf: 2026-11-02             # 只写日期
+requires:
+  skills: [frontend-skill, {name: dsh-chat-import, reason: 会话导出需要}]
+  toolPolicies: [member-safe]
+notes: 建队前先确认成员会话可用。
+```
+
+每一条要求只会落进**三种**状态之一，没有第四种：
+
+| 状态 | 含义 | 效果 |
+|---|---|---|
+| `present` | 证据源说有 | 无需处理 |
+| `missing` | 证据源明确说没有 | **唯一**会触发闸门的状态 |
+| `unknown` | 根本没有证据源 | 既不算过也不算错，但一定要写下来——沉默不等于批准 |
+
+证据源只有两个，因为宿主只答得出这两件事：`skills` 来自技能目录，`toolPolicies` 来自本插件的 `knownToolPolicies` 配置。其余一切——模型路由可用性、插件版本、凭据指针、业务前置条件——一律拒收（`unknown-field`）：没人核得了的要求，只是换一种方式发绿。
+
+行为：`onMissing: refuse`（默认）下，只要有一项 `missing`，`roster_create` **不产出任何** `agent_teams_add_member` 参数，并逐项告诉你该装到哪；`roster_verify` 状态行报 `requires=<缺>missing/<声明>` 与 `capabilityBlocked`，被能力拦下的档案会让 `ok` 为 false。`onMissing: degraded` 照样给参数，但这笔账每次核对都会记着。`roster_show` 直接打印这份声明。
+
+兄弟文件有自己的 JSON Schema：[`schema/capabilities.v1.schema.json`](./schema/capabilities.v1.schema.json)，由 `test/capabilities.test.js` 钉住与 `lib/capabilities.js` 一致。
+
 ## 工具
 
 | 工具 | 作用 |
 |---|---|
 | `roster_list` | 列出档案库里的档案与每份的校验结果 |
 | `roster_show` | 完整查看一份档案（或其中一名成员），含字段归宿 |
-| `roster_create` | 把成员翻译成 `agent_teams_add_member` 参数 / `plan.members` |
-| `roster_verify` | 与 `dsh-agent-teams` 的 `team.json` 比对；分「一致 / 未核实 / 降级 / 未部署」四桶，并报物化后的工具过滤器摘要、策略漂移与团队溯源 |
+| `roster_create` | 把成员翻译成 `agent_teams_add_member` 参数 / `plan.members`；声明的能力缺失时拒绝出参数 |
+| `roster_verify` | 与 `dsh-agent-teams` 的 `team.json` 比对；分「一致 / 未核实 / 降级 / 未部署」四桶，并报物化后的工具过滤器摘要、策略漂移、团队溯源与能力要求 |
 | `roster_diff` | 比较两代档案：成员按 name 对齐、比有效值、人设只比长度与哈希 |
 | `roster_index` | 列出公共档案源（registry）的索引状态与 collection；给定 collection 时只读地拉下来看 |
 
 六个工具都不写团队状态。`roster_create` 只产出参数，真正的建员仍由模型调用 `agent_teams_add_member`。
 
-三个带路径的工具（`roster_list` / `roster_show` / `roster_create`）都接受 `path` 参数：给了就只看那个目录，不会悄悄回落到配置目录。
+带路径的工具（`roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff`）都接受 `path` 参数：给了就只看那个目录，不会悄悄回落到配置目录。
 
 ### 一目录一档案，一台机器可有两代
 
@@ -300,7 +331,7 @@ test/             单测
 
 本机已验证：
 
-- `npm test` —— 209/209 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐）。
+- `npm test` —— 219/219 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐）。
 - `npm run smoke` —— 用真实 DSH bundle 的 `defineTool` 注册六个工具，逐个调用：输出全部通过无损校验、`path` 覆盖生效、释放干净；同一条命令随后用桩模块表加载 `client.js`，断言三处槽位注册、样式只注入一次、effect 可回收。
 - CLI：`validate --dir examples` 对两座示例库退出码 0。
 - 用插件管理器真的装进了本机 profile（`plugin_manager install_bundle` 指向本仓库 → `link:` 依赖 + bundle 条目），重启后按链接读取本仓库文件。

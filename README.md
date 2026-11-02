@@ -125,6 +125,8 @@ Member keys: `name`, `role`, `systemPrompt` (all required), plus `provider`, `mo
 
 A machine-readable JSON Schema lives in [`schema/roster.v1.schema.json`](./schema/roster.v1.schema.json) for editor completion and external tools. `lib/validate.js` stays authoritative; `test/schema.test.js` keeps the two aligned.
 
+An **optional sibling file** `capabilities.yaml` in the same directory declares what the deployment must provide before this roster can be built — see [Capability requirements](#capability-requirements-capabilitiesyaml).
+
 ### Where each field actually lands
 
 The bridge never pretends a field took effect. Every member field is classified:
@@ -154,14 +156,43 @@ The `captain` block records the captain, which is **not a member**. In `dsh-agen
 
 Making it real means editing the profile's `cordis.patch.yml` and the agent preset. Editing the captain block in the panel records intent; the plugin neither can nor will change your session.
 
+## Capability requirements (`capabilities.yaml`)
+
+A roster says *who the members are*. It cannot say *whether this machine can actually run them* — the skill catalogue and the tool-policy definitions live in the deployment, not in the archive. An optional sibling file in the roster directory declares exactly that, and nothing else:
+
+```yaml
+kind: dsh-agent-roster-capabilities/v1
+roster: money-lab            # must equal the directory name
+onMissing: refuse            # refuse (default) | degraded
+asOf: 2026-11-02             # date only
+requires:
+  skills: [frontend-skill, {name: dsh-chat-import, reason: 会话导出需要}]
+  toolPolicies: [member-safe]
+notes: 建队前先确认成员会话可用。
+```
+
+Every requirement lands in one of **three** states — never two:
+
+| State | Meaning | Effect |
+|---|---|---|
+| `present` | the evidence source has it | nothing to do |
+| `missing` | the evidence source says it is not there | the **only** state that trips the gate |
+| `unknown` | there is no evidence source at all | neither pass nor failure — written down so silence is never read as approval |
+
+There are exactly two evidence sources, because they are the only two the host can answer: `skills` from the skill catalogue, `toolPolicies` from this plugin's `knownToolPolicies` configuration. Everything else — model-routing availability, plugin versions, credential pointers, business preconditions — is rejected (`unknown-field`): a requirement nobody can check is just another way to look green.
+
+Behaviour: under `onMissing: refuse` (default) `roster_create` emits **no** `agent_teams_add_member` argument while anything is `missing`, and prints where to install each one. `roster_verify` reports `requires=<missing>missing/<declared>` plus `capabilityBlocked` in its status line, and `ok` is false when a declared requirement blocks a build. `onMissing: degraded` still hands you the arguments, with the debt recorded on every verification. `roster_show` prints the declaration block itself.
+
+The sibling file has its own JSON Schema: [`schema/capabilities.v1.schema.json`](./schema/capabilities.v1.schema.json), kept aligned with `lib/capabilities.js` by `test/capabilities.test.js`.
+
 ## Tools
 
 | Tool | Purpose |
 |---|---|
 | `roster_list` | list rosters in a library with per-roster validation results |
 | `roster_show` | show one roster (or one member) in full, including bridge field classes |
-| `roster_create` | translate members into `agent_teams_add_member` arguments / `plan.members` |
-| `roster_verify` | compare a roster against `dsh-agent-teams`' `team.json`; reports faithful / unverified / drift / missing, plus materialised tool-filter digests, policy drift and provenance |
+| `roster_create` | translate members into `agent_teams_add_member` arguments / `plan.members`; refuses when a declared capability is missing |
+| `roster_verify` | compare a roster against `dsh-agent-teams`' `team.json`; reports faithful / unverified / drift / missing, plus materialised tool-filter digests, policy drift, provenance and capability requirements |
 | `roster_diff` | diff two rosters (generation N vs N+1): members matched by name, effective values compared, persona compared by length + hash |
 | `roster_index` | list registry sources and their collections; given a collection, fetch it read-only for inspection |
 
@@ -317,7 +348,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 209/209 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, remote registry and one-click install).
+- `npm test` — 219/219 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.
