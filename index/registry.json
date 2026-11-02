@@ -76,7 +76,7 @@
       "id": "agent-teams",
       "title": "Agent Teams（wshobson/agents 迁移）",
       "description": "把 wshobson/agents 的 agent-teams 插件（4.2 万星，MIT）迁成档案：队长、实现者、审查者、调试者，保留上游工具边界。",
-      "repo": "github:STofone/dsh-roster-agent-teams",
+      "repo": "github:dsh-agent-roster/agent-teams",
       "ref": "main",
       "path": "rosters",
       "rosters": [
@@ -92,13 +92,13 @@
       "maintainers": [
         "STofone"
       ],
-      "homepage": "https://github.com/STofone/dsh-roster-agent-teams"
+      "homepage": "https://github.com/dsh-agent-roster/agent-teams"
     },
     {
       "id": "metagpt-company",
       "title": "MetaGPT 软件公司（迁移）",
       "description": "MetaGPT（5 万星+，MIT）的软件公司角色：产品经理、架构师、项目经理、工程师，字段取自上游 Role 的 profile/goal/constraints。",
-      "repo": "github:STofone/dsh-roster-metagpt-company",
+      "repo": "github:dsh-agent-roster/metagpt-company",
       "ref": "main",
       "path": "rosters",
       "rosters": [
@@ -113,13 +113,13 @@
       "maintainers": [
         "STofone"
       ],
-      "homepage": "https://github.com/STofone/dsh-roster-metagpt-company"
+      "homepage": "https://github.com/dsh-agent-roster/metagpt-company"
     },
     {
       "id": "openmanus",
       "title": "OpenManus 三件套（迁移）",
       "description": "OpenManus（5.8 万星，MIT）的三个代理提示词：规划、编码、浏览器，systemPrompt 保留上游原文。",
-      "repo": "github:STofone/dsh-roster-openmanus",
+      "repo": "github:dsh-agent-roster/openmanus",
       "ref": "main",
       "path": "rosters",
       "rosters": [
@@ -135,7 +135,7 @@
       "maintainers": [
         "STofone"
       ],
-      "homepage": "https://github.com/STofone/dsh-roster-openmanus"
+      "homepage": "https://github.com/dsh-agent-roster/openmanus"
     }
   ]
 }

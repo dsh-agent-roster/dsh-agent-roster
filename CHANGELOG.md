@@ -4,6 +4,20 @@
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-11-03
+
+### The whole family lives under one organization
+
+- **The three example repositories moved too, and were renamed to their collection ids**:
+  `dsh-agent-roster/agent-teams`, `dsh-agent-roster/metagpt-company`,
+  `dsh-agent-roster/openmanus`. Their old `STofone/dsh-roster-*` names redirect, and each repo got
+  its own `registry.json` and README links rewritten, so nothing in them points at the old owner.
+- **`index/registry.json` follows**: every collection's `repo` (and `homepage`) now names the org,
+  including the two collections that live in this repository.
+- **All four repositories carry the `dsh-agent-roster` topic** (plus `dsh-plugin`,
+  `agent-roster`, `deepseek-harness`), which is what makes the collections findable by topic
+  rather than only by this hand-maintained index.
+
 ## [0.8.1] - 2026-11-03
 
 ### Moved to the `dsh-agent-roster` organization
@@ -310,7 +324,8 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.8.1...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.8.2...main
+[0.8.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.8.2
 [0.8.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.8.1
 [0.8.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.8.0
 [0.7.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.7.0
