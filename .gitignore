@@ -150,3 +150,6 @@ vite.config.ts.timestamp-*
 
 # scratch scripts and screenshots (tmp/)
 tmp/
+
+# local handover notes: working-tree prose, never published
+HANDOFF.md
