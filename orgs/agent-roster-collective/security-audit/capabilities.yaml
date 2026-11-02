@@ -1,0 +1,12 @@
+# 安全审计组的能力要求（示例库里的第二个示例，展示「档案 + 能力要求」两件套）。
+#
+# 它只声明这个团队运行时需要什么，不复制任何配置本体：
+# 策略定义仍在部署侧；这里核对的是"这个部署到底有没有这个 id"。
+kind: dsh-agent-roster-capabilities/v1
+roster: security-audit
+onMissing: degraded
+asOf: 2026-11-02
+requires:
+  toolPolicies:
+    - member-safe
+notes: 审计需要只读的工具边界（member-safe）。部署侧没有这个策略时仍可建队，但每次核对都会记为 degraded——不会假装通过。

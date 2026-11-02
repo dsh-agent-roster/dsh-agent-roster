@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/STofone/dsh-agent-roster/blob/main/schema/registry.v1.schema.json",
+  "title": "DSH agent roster registry document",
+  "description": "公共档案索引：登记若干 collection（仓库 + 目录 + 确有哪几份档案），供订阅与一键安装。权威校验实现是 lib/remote.js#validateRegistry；本文件供编辑器与外部工具提示，两者由 test/registry-schema.test.js 对齐。注意：运行时对未知字段只告警不判错，这里写成 additionalProperties:false 是为了让编辑器早点指出拼写错误。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "collections"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "编辑器用的 schema 地址，插件不读它。"
+    },
+    "kind": { "const": "dsh-agent-roster-registry/v1" },
+    "version": { "type": "integer", "minimum": 1 },
+    "generatedAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$",
+      "description": "上一次校验通过的时间，由 CI 或维护者盖章。"
+    },
+    "generator": { "type": "string", "maxLength": 200 },
+    "source": { "type": "string", "maxLength": 200 },
+    "collections": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "repo"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "title": { "type": "string", "maxLength": 120 },
+          "description": { "type": "string", "maxLength": 500 },
+          "repo": {
+            "type": "string",
+            "pattern": "^(?:github:)?[A-Za-z0-9][A-Za-z0-9_.-]{0,38}/[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$",
+            "description": "仓库坐标，形如 github:owner/repo。"
+          },
+          "ref": {
+            "type": "string",
+            "pattern": "^(?:[A-Za-z0-9][A-Za-z0-9._-]{0,127}|[0-9a-f]{40})$",
+            "default": "main",
+            "description": "分支、标签或 40 位 commit。"
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^(?:/)?(?:[A-Za-z0-9._-]+/)*[A-Za-z0-9._-]*$",
+            "default": "rosters",
+            "description": "仓库内存放档案的目录。"
+          },
+          "rosters": {
+            "type": "array",
+            "maxItems": 200,
+            "description": "目录里确实存在的档案 id。索引不撒谎：不存在的 id 会被 registry sync 剔除。",
+            "items": { "$ref": "#/$defs/id" }
+          },
+          "tags": {
+            "type": "array",
+            "maxItems": 16,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,31}$"
+            }
+          },
+          "license": { "type": "string", "maxLength": 120 },
+          "maintainers": {
+            "type": "array",
+            "maxItems": 16,
+            "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+          },
+          "homepage": { "type": "string", "maxLength": 200, "pattern": "^https?://\\S+$" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,63}$",
+      "description": "kebab-case 标识，与档案目录名同规则。"
+    }
+  }
+}

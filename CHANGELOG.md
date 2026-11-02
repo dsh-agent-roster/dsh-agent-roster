@@ -18,6 +18,22 @@
   `schema/organization.v1.schema.json` covers the file for editor-side validation.
 - **`orgs/agent-roster-collective/`** ships as a worked example: 21 self-authored rosters
   (63 members) covering review, incident response, data, docs, release, research and more.
+- **`security-audit/capabilities.yaml`** in that example shows the two-file library: a roster plus
+  its declared requirements, with `onMissing: degraded` so a deployment without the policy still
+  builds the team but reports the gap instead of pretending it passed.
+
+### Registry schema (new file)
+
+- **`schema/registry.v1.schema.json`** — the shipped `index/registry.json` pointed at a schema that
+  did not exist, so editors had nothing to lint against. The file now exists, mirrors
+  `lib/remote.js#validateRegistry`, and `test/registry-schema.test.js` keeps the two aligned
+  (field sets, id/repo/ref/path patterns, collection and roster limits).
+
+### Removed
+
+- **`INDEX_KIND`** (`dsh-agent-roster-index/v1`). Nothing ever produced that document: a registry
+  collection already carries its `rosters` list, and `registry sync` recomputes it from the
+  repository. Keeping a second manifest format would have been a second source of truth.
 
 ## [0.7.0] - 2026-11-02
 

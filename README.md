@@ -308,6 +308,8 @@ repository's `index/registry.json`, and anyone who subscribes can see them in th
 - **Pulling**: writes are idempotent and report one of `created`, `updated` (explicit overwrite), `unchanged`
   (same content, nothing written) or `conflict` (the local copy differs and is **not** overwritten by default).
   Conflicts are yours to resolve: merge in the editor, or pull again with `overwrite` in the request body.
+- **The index has a schema**: [`schema/registry.v1.schema.json`](./schema/registry.v1.schema.json) mirrors the
+  runtime validator, so an editor flags a typo before CI does.
 - **Publishing your own**: add an entry to `collections` in `index/registry.json` (`id`, `repo: github:owner/repo`,
   `ref`, `path`, `rosters[]`) and open a PR. `.github/workflows/registry.yml` checks the index against the real files.
 
@@ -373,10 +375,11 @@ lib/              format, parse, validate, registry, bridge, verify, render, lib
                   config-view, json, http, write, service, teams-state, tools
 client.js         client plugin: sidebar entry, main panel (rosters/teams/health), settings section
 locale/           panel + listing dictionaries (en/zh)
-schema/           roster.v1.schema.json (editor completion; kept aligned by tests)
+schema/           roster / capabilities / organization / registry v1 schemas (editor completion; kept aligned by tests)
 bin/cli.mjs       validate/list/version for CI
 scripts/          host-smoke.mjs, client-smoke.mjs, check-locale.mjs (dev only, not shipped)
 examples/         two example libraries
+orgs/             a worked example library with its own organization.yaml (21 rosters)
 test/             unit tests
 ```
 
@@ -384,7 +387,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 235/235 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, remote registry and one-click install).
+- `npm test` — 239/239 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.

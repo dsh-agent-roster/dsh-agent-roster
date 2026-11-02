@@ -293,6 +293,8 @@ node bin/cli.mjs validate --dir orgs/agent-roster-collective
 - **拉取到本机**：写入是幂等的，四种结果都会报给你——
   `created`（新写入）、`updated`（显式覆盖）、`unchanged`（内容一致，不写盘）、`conflict`（本地不一样，**默认不覆盖**）。
   冲突要你自己决定：要么在编辑器里合并，要么再点一次「拉取到本机」并在请求里带 `overwrite`。
+- **索引本身也有 schema**：[`schema/registry.v1.schema.json`](./schema/registry.v1.schema.json) 与运行时校验器对齐，
+  拼错字段在编辑器里就会提示，不必等 CI。
 - **登记自己的档案**：在 `index/registry.json` 的 `collections` 里加一条（`id`、`repo: github:owner/repo`、
   `ref`、`path`、`rosters[]`），提交 PR 即可；`.github/workflows/registry.yml` 会校验索引与仓库真实文件是否对得上。
 
@@ -356,10 +358,11 @@ lib/              format / parse / validate / registry / bridge / verify / rende
                   config-view / json / http / write / service / teams-state / tools
 client.js         客户端半边：左侧栏图标 + 主面板（档案/团队/体检）+ 设置页小节
 locale/           面板与列表词典（en/zh）
-schema/           roster.v1.schema.json（编辑器补全用，与校验器由测试对齐）
+schema/           roster / capabilities / organization / registry v1 schema（编辑器补全用，与校验器由测试对齐）
 bin/cli.mjs       validate / list / version，给 CI 用
 scripts/          host-smoke.mjs、client-smoke.mjs、check-locale.mjs（开发用，不随包发布）
 examples/         两座示例档案库
+orgs/             带 organization.yaml 的示例库（21 套档案）
 test/             单测
 ```
 
@@ -367,7 +370,7 @@ test/             单测
 
 本机已验证：
 
-- `npm test` —— 235/235 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐）。
+- `npm test` —— 239/239 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐）。
 - `npm run smoke` —— 用真实 DSH bundle 的 `defineTool` 注册六个工具，逐个调用：输出全部通过无损校验、`path` 覆盖生效、释放干净；同一条命令随后用桩模块表加载 `client.js`，断言三处槽位注册、样式只注入一次、effect 可回收。
 - CLI：`validate --dir examples` 对两座示例库退出码 0。
 - 用插件管理器真的装进了本机 profile（`plugin_manager install_bundle` 指向本仓库 → `link:` 依赖 + bundle 条目），重启后按链接读取本仓库文件。
