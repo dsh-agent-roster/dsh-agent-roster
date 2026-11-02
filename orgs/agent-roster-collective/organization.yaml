@@ -1,0 +1,118 @@
+# 组织档案：一座档案库的目录页。
+#
+# 它只做声明与核对：声明库里有哪几份档案、各自什么状态；
+# 不创建团队、不改档案、不进 agent_teams_add_member 参数。
+# 声明了却找不到目录 = error；目录在却没登记 = warn；已归档仍在 = info。
+kind: dsh-agent-roster-organization/v1
+organization: agent-roster-collective
+title: 团队档案合集
+description: 二十份可直接建队的档案：从代码审查到事故响应，覆盖常见的协作分工。
+license: MIT
+maintainers:
+  - STofone
+rosters:
+  - id: api-design
+    title: API 设计评审组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：接口负责人、结构与演进评审、失败语义评审
+  - id: incident-response
+    title: 事故响应组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：事故指挥、定位、记录
+  - id: data-quality
+    title: 数据质量组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：数据负责人、画像、判据编写
+  - id: db-migration
+    title: 数据库迁移组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：迁移负责人、迁移实现、数据验证
+  - id: i18n-l10n
+    title: 本地化组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：本地化负责人、翻译、双语审校
+  - id: security-audit
+    title: 安全审计组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：审计负责人、代码审计、威胁建模
+  - id: performance
+    title: 性能优化组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：性能负责人、热点定位、压测与回归
+  - id: frontend-ui
+    title: 前端实现组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：前端负责人、实现、可访问性审查
+  - id: docs-writer
+    title: 文档组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：文档负责人、正文撰写、示例验证
+  - id: release-manager
+    title: 发布管理组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：发布负责人、变更说明、回滚预案
+  - id: support-triage
+    title: 客服分诊组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：分诊负责人、来信分诊、回复撰写
+  - id: recruiting
+    title: 招聘筛选组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：招聘负责人、简历筛选、面试安排
+  - id: market-research
+    title: 市场研究组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：研究负责人、资料检索、综合研判
+  - id: finance-recon
+    title: 财务对账组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：对账负责人、逐笔匹配、差异归因
+  - id: contract-review
+    title: 合同审阅组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：审阅负责人、条款识别、风险提示
+  - id: content-ops
+    title: 内容运营组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：内容负责人、成稿编辑、分发与回读
+  - id: qa-regression
+    title: 回归测试组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：测试负责人、用例编写、不稳定排查
+  - id: ml-eval
+    title: 模型评测组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：评测负责人、数据集构建、指标与统计
+  - id: sre-oncall
+    title: SRE 值守组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：值守负责人、手册编写、容量与成本
+  - id: literature-review
+    title: 文献综述组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：综述负责人、信息提取、质量评价
+  - id: product-discovery
+    title: 产品发现组
+    status: active
+    origin: 本项目自撰（结构参考公开的多 Agent 团队实践）
+    note: 3 名成员：发现负责人、用户访谈、反方

@@ -187,6 +187,40 @@ Behaviour: under `onMissing: refuse` (default) `roster_create` emits **no** `age
 
 The sibling file has its own JSON Schema: [`schema/capabilities.v1.schema.json`](./schema/capabilities.v1.schema.json), kept aligned with `lib/capabilities.js` by `test/capabilities.test.js`.
 
+## Library organization (`organization.yaml`)
+
+A roster answers *who the members are*; it cannot answer **which rosters belong together, which one is production and which is retired**. When a library holds twenty archives from different sources, the directory listing stops being an index. An optional file at the **library root** declares that, and nothing else:
+
+```yaml
+kind: dsh-agent-roster-organization/v1
+organization: agent-roster-collective   # must equal the directory name
+title: 团队档案合集
+maintainers: [STofone]
+rosters:
+  - {id: api-design, title: API 设计评审组, status: active, origin: 本项目自撰}
+  - {id: legacy-team, status: archived}
+```
+
+Placement matters: the file sits **next to** the roster directories, not inside one. It is a table of contents for the library, so it is the only file allowed at the root — scatter a `foo.yaml` there and the scanner still warns `unexpected-file`.
+
+The declaration is mechanically checked against disk, and the three outcomes are deliberately different severities:
+
+| Situation | Code | Severity | Why |
+|---|---|---|---|
+| declared, directory missing | `organization-roster-missing` | **error** | the organization page is lying — worse than no page |
+| directory present, not declared | `organization-roster-undeclared` | warn | someone added a roster around the index; it still loads |
+| declared `archived`, directory still there | `organization-roster-archived` | info | archiving is a statement, not a delete |
+
+`organization` must equal the directory name, exactly like `roster` does: position is identity, and two ids for one library would make every diagnostic ambiguous. Unknown keys are rejected — a field nobody can check is another way to look green.
+
+This file creates nothing. It does not write `team.json`, does not create members, and never reaches `agent_teams_add_member`. Its JSON Schema is [`schema/organization.v1.schema.json`](./schema/organization.v1.schema.json), kept aligned with `lib/organization.js` by `test/organization.test.js`.
+
+**A worked example ships in this repository:** [`orgs/agent-roster-collective/`](./orgs/agent-roster-collective/) holds 21 rosters (63 members) covering API review, incident response, data quality, database migration, localization, security audit, performance, frontend, docs, release, support triage, recruiting, market research, finance reconciliation, contract review, content ops, regression testing, model evaluation, SRE on-call, literature review and product discovery. Every roster is a three-person team with a captain, and each was written for this repository (no upstream text is copied). Validate it with:
+
+```bash
+node bin/cli.mjs validate --dir orgs/agent-roster-collective
+```
+
 ## Tools
 
 | Tool | Purpose |

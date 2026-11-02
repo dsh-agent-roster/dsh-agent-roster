@@ -183,6 +183,40 @@ notes: 建队前先确认成员会话可用。
 
 兄弟文件有自己的 JSON Schema：[`schema/capabilities.v1.schema.json`](./schema/capabilities.v1.schema.json)，由 `test/capabilities.test.js` 钉住与 `lib/capabilities.js` 一致。
 
+## 档案库组织（`organization.yaml`）
+
+档案回答的是**成员是谁**，回答不了**哪几份档案属于同一套、哪份是生产、哪份已退役**。一座库放二十份来自不同来源的档案时，目录列表就不再是索引。库**根目录**上一个可选文件只声明这件事：
+
+```yaml
+kind: dsh-agent-roster-organization/v1
+organization: agent-roster-collective   # 必须等于目录名
+title: 团队档案合集
+maintainers: [STofone]
+rosters:
+  - {id: api-design, title: API 设计评审组, status: active, origin: 本项目自撰}
+  - {id: legacy-team, status: archived}
+```
+
+位置是有讲究的：它和档案目录**并列**，不在任何一份档案里面。它是这座库的目录页，所以也是库根唯一被允许的文件——在根上散落一个 `foo.yaml` 依然会报 `unexpected-file`。
+
+声明会和磁盘对账，三种结果刻意用不同严重度：
+
+| 情况 | 代码 | 严重度 | 理由 |
+|---|---|---|---|
+| 声明了，目录不在 | `organization-roster-missing` | **error** | 组织页在撒谎，比没有组织页更糟 |
+| 目录在，没登记 | `organization-roster-undeclared` | warn | 有人绕过索引加了档案，但它仍会被加载 |
+| 声明 `archived`，目录还在 | `organization-roster-archived` | info | 归档是声明，不是删除 |
+
+`organization` 必须等于目录名，和 `roster` 同一条规则：位置即身份，一座库两个 id 会让所有诊断都变得没法定位。未知键一律拒收——没人核得了的字段，只是换一种方式发绿。
+
+这份文件什么都不创建：不写 `team.json`、不建成员，也永远不会进入 `agent_teams_add_member` 参数。它的 JSON Schema 在 [`schema/organization.v1.schema.json`](./schema/organization.v1.schema.json)，由 `test/organization.test.js` 钉住与 `lib/organization.js` 一致。
+
+**仓内带了一个可跑的示例**：[`orgs/agent-roster-collective/`](./orgs/agent-roster-collective/) 里有 21 份档案（63 名成员），覆盖接口评审、事故响应、数据质量、数据库迁移、本地化、安全审计、性能、前端、文档、发布、客服分诊、招聘、市场研究、财务对账、合同审阅、内容运营、回归测试、模型评测、SRE 值守、文献综述与产品发现。每份都是"队长 + 两名专家"的三人组，全部为本项目自撰（未复制任何上游文本）。校验方式：
+
+```bash
+node bin/cli.mjs validate --dir orgs/agent-roster-collective
+```
+
 ## 工具
 
 | 工具 | 作用 |

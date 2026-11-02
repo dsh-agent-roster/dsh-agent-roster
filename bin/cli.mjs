@@ -147,6 +147,8 @@ async function main(argv) {
             rootDir: report.rootDir,
             missing: report.scan.missing,
             stats: report.scan.stats,
+            organization: report.scan.organization,
+            organizationCheck: report.scan.organizationCheck,
             rosters: report.scan.rosters.map((roster) => ({ id: roster.id, file: roster.file })),
             diagnostics: report.scan.diagnostics,
           })),
@@ -162,6 +164,14 @@ async function main(argv) {
         process.stdout.write(`${renderRosterList(report.scan)}\n`);
       } else {
         const { stats } = report.scan;
+        const organization = report.scan.organization ?? null;
+        if (organization !== null) {
+          const check = report.scan.organizationCheck;
+          process.stdout.write(
+            `  组织 ${organization.id}  ${organization.title}（登记 ${check.declared} · 在库 ${check.present} · ` +
+              `缺 ${check.missing.length} · 未登记 ${check.undeclared.length}）\n`,
+          );
+        }
         process.stdout.write(
           `  档案 ${stats.total}（通过 ${stats.ok}，失败 ${stats.failed}），成员 ${stats.members}，` +
             `诊断 ${stats.errors} error / ${stats.warnings} warn / ${stats.infos} info\n`,

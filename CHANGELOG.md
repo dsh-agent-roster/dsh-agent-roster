@@ -4,6 +4,21 @@
 
 ## [Unreleased]
 
+### Library organization (new root file)
+
+- **`organization.yaml`** — an optional file at the library root, beside the roster directories.
+  It declares which rosters belong to the library, their status (`active` | `archived`) and where
+  they came from. It is the only file allowed to sit at the root, and it still cannot create
+  anything: no teams, no members, no `agent_teams_add_member` arguments.
+- **Three-way cross-check against the disk**, surfaced as diagnostics the panel already renders:
+  declared but missing → **error**, present but undeclared → **warn**, declared `archived` but
+  still in the library → **info**. Archiving is a declaration, not a deletion.
+- **`roster_list` and `dsh-agent-roster validate` show it** (`organization=<id>`, the counts, and
+  per-file `organization` / `organizationCheck` in `--json`);
+  `schema/organization.v1.schema.json` covers the file for editor-side validation.
+- **`orgs/agent-roster-collective/`** ships as a worked example: 21 self-authored rosters
+  (63 members) covering review, incident response, data, docs, release, research and more.
+
 ## [0.7.0] - 2026-11-02
 
 ### Honest verification (issue #2)
