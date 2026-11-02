@@ -17,6 +17,7 @@ import {
   LIMITS,
   ON_MISSING,
   SKILL_PATTERN,
+  capabilityDiagnostics,
   checkCapabilities,
   validateCapabilities,
 } from "../lib/capabilities.js";
@@ -302,4 +303,49 @@ test("扫描：没有能力文件是正常状态，不产生任何诊断", () =>
   } finally {
     library.cleanup();
   }
+});
+
+test("面板诊断：缺策略时按 onMissing 给严重度（refuse=error / degraded=warn）", () => {
+  const capabilities = {
+    requires: { skills: [], toolPolicies: [{ name: "member-safe", reason: null }] },
+    onMissing: "refuse",
+  };
+  const [refused] = capabilityDiagnostics({ "core-review": capabilities }, { "core-review": "core-review/capabilities.yaml" }, ["readonly"]);
+  assert.equal(refused.code, "capability-policy-missing");
+  assert.equal(refused.severity, "error");
+  assert.equal(refused.file, "core-review/capabilities.yaml");
+  assert.match(refused.reason, /member-safe/);
+  assert.match(refused.reason, /建队会被拒绝/);
+
+  const [degraded] = capabilityDiagnostics(
+    { "core-review": { ...capabilities, onMissing: "degraded" } },
+    {},
+    ["readonly"],
+  );
+  assert.equal(degraded.severity, "warn");
+  assert.match(degraded.reason, /建队照常/);
+
+  // 策略齐备 ⇒ 不出诊断。
+  assert.deepEqual(capabilityDiagnostics({ "core-review": capabilities }, {}, ["readonly", "member-safe"]), []);
+});
+
+test("面板诊断：技能要求只标「不判定」，不冒充通过也不算缺", () => {
+  const [item] = capabilityDiagnostics(
+    { "core-review": { requires: { skills: [{ name: "frontend-skill", reason: null }], toolPolicies: [] } } },
+    {},
+    [],
+  );
+  assert.equal(item.code, "capability-skills-unverified");
+  assert.equal(item.severity, "info");
+  assert.match(item.reason, /roster_verify/);
+});
+
+test("面板诊断：证据源缺席时汇总成一条，而不是逐档案刷噪音", () => {
+  const capabilities = { requires: { skills: [], toolPolicies: [{ name: "member-safe", reason: null }] } };
+  const items = capabilityDiagnostics({ a: capabilities, b: capabilities }, {}, null);
+  assert.equal(items.length, 1);
+  assert.equal(items[0].code, "capability-cross-check-skipped");
+  assert.equal(items[0].severity, "info");
+  assert.match(items[0].reason, /a/);
+  assert.match(items[0].reason, /b/);
 });

@@ -183,6 +183,8 @@ There are exactly two evidence sources, because they are the only two the host c
 
 Behaviour: under `onMissing: refuse` (default) `roster_create` emits **no** `agent_teams_add_member` argument while anything is `missing`, and prints where to install each one. `roster_verify` reports `requires=<missing>missing/<declared>` plus `capabilityBlocked` in its status line, and `ok` is false when a declared requirement blocks a build. `onMissing: degraded` still hands you the arguments, with the debt recorded on every verification. `roster_show` prints the declaration block itself.
 
+**The panel shows it too.** Each roster card lists these requirements as diagnostics: a missing `toolPolicies` requirement is an `error` under `refuse` (so the sidebar badge goes red) and a `warn` under `degraded`. Skill requirements are deliberately reported as `capability-skills-unverified` / `info` — the panel snapshot is synchronous and cannot enumerate the skill catalogue, so it says *not checked here* instead of guessing; run `roster_verify` for the real answer. When `knownToolPolicies` is unset, a single `capability-cross-check-skipped` entry names the affected rosters rather than repeating once per roster.
+
 The sibling file has its own JSON Schema: [`schema/capabilities.v1.schema.json`](./schema/capabilities.v1.schema.json), kept aligned with `lib/capabilities.js` by `test/capabilities.test.js`.
 
 ## Tools
@@ -348,7 +350,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 219/219 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, remote registry and one-click install).
+- `npm test` — 223/223 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.

@@ -283,3 +283,35 @@ it("buildCaptainSection：读部署抛错时降级成 captain-unreadable 诊断"
   assert.equal(section.deployed.diagnostics[0].code, "captain-unreadable");
   assert.equal(section.reports[0].ok, false);
 });
+
+it("buildPanelSnapshot：能力要求缺策略时角标变红，技能要求如实标成不判定", () => {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "dsh-agent-roster-cap-"));
+  try {
+    fs.mkdirSync(path.join(workspace, "rosters", "demo"), { recursive: true });
+    fs.writeFileSync(path.join(workspace, "rosters", "demo", "roster.yaml"), ROSTER);
+    fs.writeFileSync(
+      path.join(workspace, "rosters", "demo", "capabilities.yaml"),
+      `kind: dsh-agent-roster-capabilities/v1
+roster: demo
+onMissing: refuse
+requires:
+  skills: [frontend-skill]
+  toolPolicies: [member-safe]
+`,
+    );
+
+    const snapshot = buildPanelSnapshot(fakeCtx(workspace), CONFIG, META);
+    const [roster] = snapshot.workspaces[0].rosters;
+
+    const missing = roster.diagnostics.find((item) => item.code === "capability-policy-missing");
+    assert.equal(missing?.severity, "error");
+    assert.equal(missing?.file, "demo/capabilities.yaml");
+    assert.equal(snapshot.summary.errors >= 1, true);
+
+    const skills = roster.diagnostics.find((item) => item.code === "capability-skills-unverified");
+    assert.equal(skills?.severity, "info");
+    assert.equal(skills?.file, "demo/capabilities.yaml");
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
