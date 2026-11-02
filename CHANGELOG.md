@@ -2,6 +2,37 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### Honest verification (issue #2)
+
+- **`omitted` is split in two.** "The roster did not declare this field" and "the roster declared
+  a value, the runtime never persisted it" used to collapse into one status that the summary
+  counted as "not degraded". They are now `omitted` (nothing to check, expected) and
+  `not-persisted` (sent, no receipt, counted as degraded). `systemPrompt` lands in the second
+  bucket because `team.json` members have no `executionPrompt` key at all — the persona was
+  never actually verified before.
+- **One predicate instead of three.** `isBindingFaithful` now delegates to
+  `summarizeBinding(...).faithful`, so the note and the implementation cannot drift apart again.
+- **Four mutually exclusive buckets** in `roster_verify`: `faithful` / `unverified` / `drift` /
+  `missing`. `ok` requires `drift === 0 && missing === 0`, and `unverified` is printed on the
+  status line and the summary instead of hiding inside "degraded".
+- **Materialised tool filters are visible.** Each member shows `deny`/`allow` counts and a
+  digest of the normalised list; the same `toolPolicy` materialising into two different deny
+  lists inside one team is reported as policy drift.
+- **Provenance.** `roster_create` emits `roster:<id>@<version>#<sha8>` for the created team's
+  description; `roster_verify` parses it back and reports `absent` / `id-only` / `match` /
+  `differ` / `unknown-roster`. The plugin still never writes team state.
+- **New tool `roster_diff`** — roster-to-roster diff for generation hand-over: members matched
+  by name (`aliases` are a hint, never auto-merged), effective values compared with their
+  origin, persona compared by length and hash only.
+
+### Docs
+
+- README (both languages): six tools, the new verification buckets, `roster_diff`, and a
+  "one roster per directory, two generations per machine" section answering how to keep both
+  generations side by side.
+
 ## [0.6.2] - 2026-10-30
 
 ### Packaging

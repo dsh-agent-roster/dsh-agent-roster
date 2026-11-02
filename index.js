@@ -48,7 +48,7 @@ export const Config = z.object({
     .description(
       "档案库目录。留空 = 全局默认目录 $DSH_HOME/agent-roster（默认 ~/.dsh/agent-roster，" +
         "docker 下就是被挂载的数据卷），与工作区无关。填绝对路径或 ~ 开头路径同样是全局的；" +
-        "只有填相对路径（如 examples）才按工作区解析。第一项是四个工具默认读取的档案库。",
+        "只有填相对路径（如 examples）才按工作区解析。第一项是各工具默认读取的档案库。",
     )
     .volatile(),
   knownToolPolicies: z
@@ -102,7 +102,7 @@ export function apply(ctx, config) {
   const settings = configView(config);
 
   registerRosterTools(ctx, settings, { version: pkg.version });
-  ctx.logger?.info?.(`dsh-agent-roster ${pkg.version}: registered 5 tools`);
+  ctx.logger?.info?.(`dsh-agent-roster ${pkg.version}: registered 6 tools`);
 
   // 面板路由：读快照 / 读单份档案原文 / 保存 / 删除 / 导入。
   // 没有 webServer 也不影响工具可用性。

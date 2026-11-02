@@ -26,7 +26,7 @@ From the plugin manager, point it at this repository (absolute path) or at the p
 @stofone/dsh-agent-roster
 ```
 
-The bundle ships `cordis.patch.yml`, so installing it inserts the plugin into the profile automatically. After install you should see five tools (`roster_list`, `roster_show`, `roster_create`, `roster_verify`, `roster_index`) and an **Agent Roster** entry in the left sidebar (a full main panel, not a Settings section).
+The bundle ships `cordis.patch.yml`, so installing it inserts the plugin into the profile automatically. After install you should see six tools (`roster_list`, `roster_show`, `roster_create`, `roster_verify`, `roster_diff`, `roster_index`) and an **Agent Roster** entry in the left sidebar (a full main panel, not a Settings section).
 
 ## Quick start
 
@@ -161,12 +161,30 @@ Making it real means editing the profile's `cordis.patch.yml` and the agent pres
 | `roster_list` | list rosters in a library with per-roster validation results |
 | `roster_show` | show one roster (or one member) in full, including bridge field classes |
 | `roster_create` | translate members into `agent_teams_add_member` arguments / `plan.members` |
-| `roster_verify` | compare a roster against `dsh-agent-teams`' `team.json`; degrades to "cannot verify" when state is absent |
+| `roster_verify` | compare a roster against `dsh-agent-teams`' `team.json`; reports faithful / unverified / drift / missing, plus materialised tool-filter digests, policy drift and provenance |
+| `roster_diff` | diff two rosters (generation N vs N+1): members matched by name, effective values compared, persona compared by length + hash |
 | `roster_index` | list registry sources and their collections; given a collection, fetch it read-only for inspection |
 
-All five are read-only with respect to team state. `roster_create` only produces arguments — the model still has to call `agent_teams_add_member` itself.
+All six are read-only with respect to team state. `roster_create` only produces arguments — the model still has to call `agent_teams_add_member` itself.
 
 `roster_list`, `roster_show`, `roster_create` and `roster_verify` all accept a `path` argument: when given, it is the library root, with no silent fallback to the configured directory.
+
+### One roster per directory, two generations per machine
+
+`roster` must equal the directory name, and a library holds one document per directory. Two
+generations of the same roster therefore live in **two libraries** — that is intended, not a
+gap: it keeps "position is identity" intact (a later `load` can never pick the wrong generation
+by accident) and makes the switch an explicit `path` argument instead of a silent side effect.
+
+```text
+~/.dsh/agent-roster/money-lab/roster.yaml          # one generation
+/workspace/money/.dsh/rosters/money-lab/roster.yaml # the next generation
+```
+
+`roster_diff({ from, to })` answers "what changed between the generations"; `roster_create`
+prints a provenance line (`roster:money-lab@9.0.0#ab12cd34`) to put into the created team's
+description, and `roster_verify` compares that line against the current file — so a roster
+edited after the team was created shows up as `differ` instead of silently passing.
 
 ### Captain verification
 
@@ -299,12 +317,12 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 191/191 passing (format, parse, validate, registry, paths, bridge, verify, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, remote registry and one-click install).
-- `npm run smoke` — `apply()` registers all five tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
+- `npm test` — 209/209 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, remote registry and one-click install).
+- `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.
 - The read-only route answered from the running host: `GET /plugins/dsh-agent-roster/library` → 200 with the plugin version and resolved rosters.
-- A second agent session saw all five tools in its tool list and called them.
+- A second agent session saw all six tools in its tool list and called them.
 - The sidebar panel was confirmed visible with real roster data.
 
 Not verified in this pass: the 0.2.0 management UI (tabs, editors, Teams view, language switch, `document` / `rosters` routes) inside a live page — those need a host restart to load the new modules, and are verified after it.

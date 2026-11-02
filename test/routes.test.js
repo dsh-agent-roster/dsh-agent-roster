@@ -300,12 +300,12 @@ test("collection：没有远端源时明确 404 并列出已知项", async () =>
   assert.deepEqual(result.body.known, []);
 });
 
-test("工具：apply() 之后五个工具都在注册表里", () => {
+test("工具：apply() 之后六个工具都在注册表里", () => {
   const host = makeHost();
   apply(host.ctx, CONFIG);
   assert.deepEqual(
     [...host.tools.keys()].sort(),
-    ["roster_create", "roster_index", "roster_list", "roster_show", "roster_verify"],
+    ["roster_create", "roster_diff", "roster_index", "roster_list", "roster_show", "roster_verify"],
   );
 });
 

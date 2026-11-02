@@ -147,12 +147,58 @@ test("核对：模型被运行时换成别的值 → overridden，不算忠实",
   assert.equal(summarizeBinding(binding).degraded, 1);
 });
 
-test("核对：运行时没记录 toolPolicy → omitted", () => {
+test("核对：档案声明了值、运行时却没记录 → not-persisted，算降级", () => {
   const { roster, member } = rosterWith("reviewer");
   const { binding } = buildMemberBinding(roster, member);
   reconcileBinding(binding, { name: "reviewer", role: "代码评审", executionPrompt: member.systemPrompt, provider: "deepseek", model: "deepseek-v4.1-flash", reasoningEffort: "high" });
   const toolPolicy = binding.fields.find((field) => field.field === "toolPolicy");
+  assert.equal(toolPolicy.status, "not-persisted");
+  assert.equal(summarizeBinding(binding).counts["not-persisted"], 1);
+  assert.equal(isBindingFaithful(binding), false);
+});
+
+test("核对：档案未声明、运行时也没有 → omitted，不算降级", () => {
+  const { roster, member } = rosterWith("release-manager");
+  const { binding } = buildMemberBinding(roster, member);
+  reconcileBinding(binding, {
+    name: "release-manager",
+    role: "发布把关",
+    executionPrompt: member.systemPrompt,
+    provider: "deepseek",
+    model: "deepseek-v4.1-pro",
+    reasoningEffort: "low",
+  });
+  const toolPolicy = binding.fields.find((field) => field.field === "toolPolicy");
   assert.equal(toolPolicy.status, "omitted");
+  const summary = summarizeBinding(binding);
+  assert.equal(summary.counts.omitted, 1);
+  assert.equal(summary.degraded, 0);
+  assert.equal(isBindingFaithful(binding), true);
+});
+
+test("核对：真实 team.json（不含 executionPrompt）→ 人设无法核对，不再假绿", () => {
+  const { roster, member } = rosterWith("reviewer");
+  const { binding } = buildMemberBinding(roster, member);
+  // 这是上游 team.json 成员记录的真实形状：九个键，没有 executionPrompt。
+  reconcileBinding(binding, {
+    id: "member-1",
+    name: "reviewer",
+    role: "代码评审",
+    provider: "deepseek",
+    model: "deepseek-v4.1-flash",
+    reasoningEffort: "high",
+    toolPolicy: "readonly",
+    toolFilter: { deny: ["write"] },
+    joinedAt: "2026-11-02T00:00:00.000Z",
+    status: "active",
+  });
+  const systemPrompt = binding.fields.find((field) => field.field === "systemPrompt");
+  assert.equal(systemPrompt.status, "not-persisted");
+  const summary = summarizeBinding(binding);
+  assert.equal(summary.counts.applied, 6);
+  assert.equal(summary.degraded, 1);
+  assert.equal(summary.faithful, false);
+  assert.equal(isBindingFaithful(binding), false);
 });
 
 test("核对：团队里没有这个成员 → unconfirmed，绝不假装通过", () => {

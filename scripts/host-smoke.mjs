@@ -1,5 +1,5 @@
 /**
- * 宿主半边冒烟：用真实的 `defineTool`（来自本机 DSH bundle）注册四个工具，
+ * 宿主半边冒烟：用真实的 `defineTool`（来自本机 DSH bundle）注册六个工具，
  * 逐个调用，断言输出**可无损往返 JSON**，并且 `path` 参数真的生效。
  *
  * 这不是单测——单测跑的是纯函数；这里跑的是"注册进宿主之后到底能不能用"，
@@ -70,7 +70,7 @@ const config = {
 
 registerRosterTools(ctx, config, { version: "0.1.0" });
 
-assert.equal(registered.size, 5, `应注册 5 个工具，实际 ${[...registered.keys()].join(",")}`);
+assert.equal(registered.size, 6, `应注册 5 个工具，实际 ${[...registered.keys()].join(",")}`);
 
 /** 模拟工具执行上下文：会话工作区指向本仓库。 */
 const exec = { agent: { session: { header: { cwd: root } } }, signal: new AbortController().signal };
@@ -119,4 +119,4 @@ assert.equal(verified.summary.missing, verified.summary.members, "全部成员�
 for (const cleanup of cleanups) cleanup();
 assert.equal(registered.size, 0, "dispose 后不应残留工具");
 
-console.log("host smoke: 5 tools registered, lossless outputs, path override honored, dispose ok");
+console.log("host smoke: 6 tools registered, lossless outputs, path override honored, dispose ok");

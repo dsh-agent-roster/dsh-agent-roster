@@ -24,7 +24,7 @@
 @stofone/dsh-agent-roster
 ```
 
-包内带 `cordis.patch.yml`，安装即把插件插进 profile。装好后应看到五个工具（`roster_list`、`roster_show`、`roster_create`、`roster_verify`、`roster_index`）以及左侧栏里的 **Agent Roster** 面板（独立主面板，不再放设置页）。
+包内带 `cordis.patch.yml`，安装即把插件插进 profile。装好后应看到六个工具（`roster_list`、`roster_show`、`roster_create`、`roster_verify`、`roster_diff`、`roster_index`）以及左侧栏里的 **Agent Roster** 面板（独立主面板，不再放设置页）。
 
 ## 快速开始
 
@@ -157,12 +157,28 @@ npx dsh-agent-roster list
 | `roster_list` | 列出档案库里的档案与每份的校验结果 |
 | `roster_show` | 完整查看一份档案（或其中一名成员），含字段归宿 |
 | `roster_create` | 把成员翻译成 `agent_teams_add_member` 参数 / `plan.members` |
-| `roster_verify` | 与 `dsh-agent-teams` 的 `team.json` 比对；状态缺失时降级为「无法核对」 |
+| `roster_verify` | 与 `dsh-agent-teams` 的 `team.json` 比对；分「一致 / 未核实 / 降级 / 未部署」四桶，并报物化后的工具过滤器摘要、策略漂移与团队溯源 |
+| `roster_diff` | 比较两代档案：成员按 name 对齐、比有效值、人设只比长度与哈希 |
 | `roster_index` | 列出公共档案源（registry）的索引状态与 collection；给定 collection 时只读地拉下来看 |
 
-五个工具都不写团队状态。`roster_create` 只产出参数，真正的建员仍由模型调用 `agent_teams_add_member`。
+六个工具都不写团队状态。`roster_create` 只产出参数，真正的建员仍由模型调用 `agent_teams_add_member`。
 
 三个带路径的工具（`roster_list` / `roster_show` / `roster_create`）都接受 `path` 参数：给了就只看那个目录，不会悄悄回落到配置目录。
+
+### 一目录一档案，一台机器可有两代
+
+`roster` 必须等于目录名，一座库里每个目录只有一份档案。所以同一份档案的两代就放在**两座库**里——
+这是预期用法，不是缺口：它保住了「位置即身份」（后续加载永远不会误取另一代），
+也让换代成为一个显式的 `path` 参数，而不是悄悄发生的副作用。
+
+```text
+~/.dsh/agent-roster/money-lab/roster.yaml           # 这一代
+/workspace/money/.dsh/rosters/money-lab/roster.yaml # 下一代
+```
+
+`roster_diff({ from, to })` 回答「两代之间改了什么」；`roster_create` 会打印一行溯源串
+（`roster:money-lab@9.0.0#ab12cd34`），建团队时放进 description；`roster_verify` 再拿这一行
+与当前档案内容比对——档案在建团队之后被改过，就会报 `differ`，而不是静默通过。
 
 ### 队长核对
 
@@ -284,12 +300,12 @@ test/             单测
 
 本机已验证：
 
-- `npm test` —— 191/191 通过（格式、解析、校验、扫描、路径、桥接、核对、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐）。
-- `npm run smoke` —— 用真实 DSH bundle 的 `defineTool` 注册五个工具，逐个调用：输出全部通过无损校验、`path` 覆盖生效、释放干净；同一条命令随后用桩模块表加载 `client.js`，断言三处槽位注册、样式只注入一次、effect 可回收。
+- `npm test` —— 209/209 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐）。
+- `npm run smoke` —— 用真实 DSH bundle 的 `defineTool` 注册六个工具，逐个调用：输出全部通过无损校验、`path` 覆盖生效、释放干净；同一条命令随后用桩模块表加载 `client.js`，断言三处槽位注册、样式只注入一次、effect 可回收。
 - CLI：`validate --dir examples` 对两座示例库退出码 0。
 - 用插件管理器真的装进了本机 profile（`plugin_manager install_bundle` 指向本仓库 → `link:` 依赖 + bundle 条目），重启后按链接读取本仓库文件。
 - 运行中的宿主已能应答只读路由：`GET /plugins/dsh-agent-roster/library` 返回 200，带插件版本与解析出的档案目录。
-- 另一个 agent 会话在工具清单里看到了五个工具，并实际调用了它们。
+- 另一个 agent 会话在工具清单里看到了六个工具，并实际调用了它们。
 - 左侧栏面板已在活页面里确认可见，并展示了真实档案。
 
 这一轮没验证到的：0.2.0 的管理界面（页签、编辑器、团队页、语言切换、`document` / `rosters` 路由）在活页面里的表现——这些改动要重启宿主才会被加载，重启后再验。
