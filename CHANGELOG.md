@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-02
+
 ### Library organization (new root file)
 
 - **`organization.yaml`** — an optional file at the library root, beside the roster directories.
@@ -294,6 +296,7 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/STofone/dsh-agent-roster/compare/v0.7.0...main
+[Unreleased]: https://github.com/STofone/dsh-agent-roster/compare/v0.8.0...main
+[0.8.0]: https://github.com/STofone/dsh-agent-roster/releases/tag/v0.8.0
 [0.7.0]: https://github.com/STofone/dsh-agent-roster/releases/tag/v0.7.0
 [0.2.0]: https://github.com/STofone/dsh-agent-roster/releases/tag/v0.2.0
