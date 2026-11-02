@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-02
+
 ### Honest verification (issue #2)
 
 - **`omitted` is split in two.** "The roster did not declare this field" and "the roster declared
@@ -47,7 +49,13 @@
   structured `capabilities` field.
 - **`roster_show`** prints the declaration block.
 - New `schema/capabilities.v1.schema.json`, pinned to `lib/capabilities.js` by
-  `test/capabilities.test.js` (17 new tests).
+  `test/capabilities.test.js`.
+
+- **The panel sees it.** Capability requirements surface as roster diagnostics: a missing
+  `toolPolicies` requirement is `error` under `refuse` (the sidebar badge turns red) and `warn`
+  under `degraded`; skill requirements are `capability-skills-unverified` / `info` because the
+  panel snapshot is synchronous and cannot enumerate the catalogue; an unset `knownToolPolicies`
+  yields one `capability-cross-check-skipped` entry naming the affected rosters.
 
 ### Docs
 
@@ -255,5 +263,6 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/STofone/dsh-agent-roster/compare/v0.2.0...main
+[Unreleased]: https://github.com/STofone/dsh-agent-roster/compare/v0.7.0...main
+[0.7.0]: https://github.com/STofone/dsh-agent-roster/releases/tag/v0.7.0
 [0.2.0]: https://github.com/STofone/dsh-agent-roster/releases/tag/v0.2.0
