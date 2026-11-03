@@ -468,6 +468,20 @@ window.__ModuleLoader__.load({
     /* ------------------------------------------------------------------ */
 
     function MemberBlock({ member }) {
+      // 四列由 .rstr-members 的 subgrid 统一给宽度：姓名 / 说明 / 策略 / 模型。
+      // 说明与策略即使为空也占位，否则后面的列会整体左移，表格就对不齐了。
+      const notes = [];
+      if (Array.isArray(member.aliases) && member.aliases.length > 0) {
+        notes.push(`${t("member.aliases")}: ${member.aliases.join(", ")}`);
+      }
+      if (Array.isArray(member.skills) && member.skills.length > 0) {
+        notes.push(`${t("member.skills")}: ${member.skills.join(", ")}（${t("member.skillsHint")}）`);
+      }
+      if (Array.isArray(member.inherited) && member.inherited.length > 0) {
+        notes.push(`inherited: ${member.inherited.join(", ")}`);
+      }
+      if (member.notes) notes.push(member.notes);
+
       return h(
         "div",
         { className: "rstr-member" },
@@ -477,33 +491,24 @@ window.__ModuleLoader__.load({
           h("strong", { className: "rstr-member-name" }, member.name),
           member.role ? h(Chip, null, member.role) : null,
         ),
-        member.description ? h("p", { className: "rstr-member-desc" }, member.description) : null,
-        Array.isArray(member.aliases) && member.aliases.length > 0
-          ? h("p", { className: "rstr-muted rstr-small" }, `${t("member.aliases")}: ${member.aliases.join(", ")}`)
-          : null,
+        h("p", { className: "rstr-member-desc" }, member.description ?? ""),
+        h(
+          "span",
+          { className: "rstr-member-policy" },
+          member.toolPolicy ? h(Chip, { tone: "policy" }, member.toolPolicy) : null,
+        ),
         h(
           "div",
           { className: "rstr-member-meta" },
-          member.toolPolicy ? h(Chip, { tone: "policy" }, member.toolPolicy) : null,
-          member.model ? h("span", null, `${t("member.model")}: ${member.model}`) : null,
-          member.reasoningEffort ? h("span", null, `${t("member.effort")}: ${member.reasoningEffort}`) : null,
+          member.model ? h("span", null, member.model) : null,
+          member.reasoningEffort ? h("span", null, member.reasoningEffort) : null,
           member.fallback ? h("span", null, `${t("member.fallback")}: ${member.fallback}`) : null,
           member.toolScope?.allow?.length
             ? h("span", null, `${t("member.tools")}: ${member.toolScope.allow.join(", ")}`)
             : null,
           h("span", { className: "rstr-muted" }, t("team.promptChars", { count: member.systemPromptChars })),
         ),
-        Array.isArray(member.skills) && member.skills.length > 0
-          ? h(
-              "p",
-              { className: "rstr-muted rstr-small" },
-              `${t("member.skills")}: ${member.skills.join(", ")}（${t("member.skillsHint")}）`,
-            )
-          : null,
-        Array.isArray(member.inherited) && member.inherited.length > 0
-          ? h("p", { className: "rstr-muted rstr-small" }, `inherited: ${member.inherited.join(", ")}`)
-          : null,
-        member.notes ? h("p", { className: "rstr-muted rstr-small" }, member.notes) : null,
+        notes.map((text, index) => h("p", { key: `note-${index}`, className: "rstr-member-note" }, text)),
       );
     }
 
@@ -2360,21 +2365,41 @@ window.__ModuleLoader__.load({
 
 /* ---- 成员块 ----------------------------------------------------------- */
 
-.rstr-members { display: flex; flex-direction: column; gap: 0; border-top: 1px dashed var(--dsw-alias-border-l1); }
+/* 成员是一张表：四列由容器统一给宽度（subgrid），否则每一行各算各的网格，
+   姓名 / 说明 / 策略 / 模型四列对不齐，读起来就是散的。 */
+.rstr-members {
+  display: grid;
+  grid-template-columns: minmax(120px, 172px) minmax(0, 1fr) 104px 244px;
+  column-gap: 14px;
+  border-top: 1px dashed var(--dsw-alias-border-l1);
+}
 .rstr-member {
   display: grid;
-  grid-template-columns: minmax(120px, 170px) minmax(0, 1fr) auto;
-  gap: 6px 16px;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  column-gap: 14px;
+  row-gap: 2px;
   align-items: baseline;
-  padding: 9px 4px;
+  padding: 10px 4px;
   border-bottom: 1px solid var(--dsw-alias-border-l1);
   min-width: 0;
 }
 .rstr-member:last-child { border-bottom: none; }
 .rstr-member-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0; }
-.rstr-member-name { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-primary); }
+.rstr-member-name { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-primary); overflow: hidden; text-overflow: ellipsis; }
 .rstr-member-desc { margin: 0; font-size: 12px; color: var(--dsw-alias-label-secondary); min-width: 0; }
-.rstr-member-meta { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: 11px; color: var(--dsw-alias-label-secondary); justify-self: end; font-variant-numeric: tabular-nums; }
+.rstr-member-policy { justify-self: start; min-width: 0; }
+.rstr-member-meta { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--dsw-alias-label-secondary); justify-self: end; font-variant-numeric: tabular-nums; }
+.rstr-member-note { grid-column: 1 / -1; margin: 0; font-size: 11px; color: var(--dsw-alias-label-secondary); }
+@media (max-width: 900px) {
+  /* 窄面板：姓名一行、策略贴右；说明与模型各占一整行。 */
+  .rstr-members { grid-template-columns: minmax(0, 1fr) auto; }
+  .rstr-member-head { grid-column: 1; grid-row: 1; }
+  .rstr-member-policy { grid-column: 2; grid-row: 1; justify-self: end; }
+  .rstr-member-desc { grid-column: 1 / -1; grid-row: 2; margin-top: 2px; }
+  .rstr-member-meta { grid-column: 1 / -1; grid-row: 3; justify-self: start; }
+  .rstr-member-note { grid-row: auto; }
+}
 
 /* ---- 队长块 ----------------------------------------------------------- */
 

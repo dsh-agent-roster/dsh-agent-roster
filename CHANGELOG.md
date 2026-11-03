@@ -4,6 +4,18 @@
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-11-03
+
+### The member list is a table
+
+- **Four columns now line up across rows.** Each member row used to compute its own grid, so the
+  name / description / tool policy / model columns drifted from row to row and the list read as
+  separate blocks. `.rstr-members` owns the column widths and every row uses `subgrid`.
+- **One line per member at narrow widths**: name and role on the left, the policy pinned right,
+  description and model beneath — four lines instead of five, and nothing overlaps.
+- Member notes (aliases, declared skills, inherited fields) span the full row instead of pushing
+  the columns around.
+
 ## [0.9.1] - 2026-11-03
 
 ### Expansion stops clipping itself
@@ -376,7 +388,8 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.9.1...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.9.2...main
+[0.9.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.9.2
 [0.9.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.9.1
 [0.9.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.9.0
 [0.8.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.8.3
