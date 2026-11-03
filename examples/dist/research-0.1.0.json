@@ -4,8 +4,8 @@
     "roster": "research",
     "version": "0.1.0",
     "title": "外部调研小组",
-    "repo": null,
-    "ref": null,
+    "repo": "dsh-agent-roster/dsh-agent-roster",
+    "ref": "main",
     "lock": null,
     "file": "roster.yaml"
   },

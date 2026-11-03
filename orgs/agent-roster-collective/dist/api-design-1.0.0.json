@@ -4,8 +4,8 @@
     "roster": "api-design",
     "version": "1.0.0",
     "title": "API 设计评审组",
-    "repo": null,
-    "ref": null,
+    "repo": "dsh-agent-roster/dsh-agent-roster",
+    "ref": "main",
     "lock": null,
     "file": "roster.yaml"
   },

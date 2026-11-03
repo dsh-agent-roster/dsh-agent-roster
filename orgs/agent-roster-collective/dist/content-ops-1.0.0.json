@@ -4,8 +4,8 @@
     "roster": "content-ops",
     "version": "1.0.0",
     "title": "内容运营组",
-    "repo": null,
-    "ref": null,
+    "repo": "dsh-agent-roster/dsh-agent-roster",
+    "ref": "main",
     "lock": null,
     "file": "roster.yaml"
   },

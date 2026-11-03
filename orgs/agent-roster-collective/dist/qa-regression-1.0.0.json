@@ -4,8 +4,8 @@
     "roster": "qa-regression",
     "version": "1.0.0",
     "title": "回归测试组",
-    "repo": null,
-    "ref": null,
+    "repo": "dsh-agent-roster/dsh-agent-roster",
+    "ref": "main",
     "lock": null,
     "file": "roster.yaml"
   },

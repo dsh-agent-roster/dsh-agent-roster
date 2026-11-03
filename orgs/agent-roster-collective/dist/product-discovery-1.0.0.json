@@ -4,8 +4,8 @@
     "roster": "product-discovery",
     "version": "1.0.0",
     "title": "产品发现组",
-    "repo": null,
-    "ref": null,
+    "repo": "dsh-agent-roster/dsh-agent-roster",
+    "ref": "main",
     "lock": null,
     "file": "roster.yaml"
   },

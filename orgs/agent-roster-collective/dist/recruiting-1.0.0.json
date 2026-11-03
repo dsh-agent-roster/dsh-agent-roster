@@ -4,8 +4,8 @@
     "roster": "recruiting",
     "version": "1.0.0",
     "title": "招聘筛选组",
-    "repo": null,
-    "ref": null,
+    "repo": "dsh-agent-roster/dsh-agent-roster",
+    "ref": "main",
     "lock": null,
     "file": "roster.yaml"
   },

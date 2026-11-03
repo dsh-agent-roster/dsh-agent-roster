@@ -4,8 +4,8 @@
     "roster": "ml-eval",
     "version": "1.0.0",
     "title": "模型评测组",
-    "repo": null,
-    "ref": null,
+    "repo": "dsh-agent-roster/dsh-agent-roster",
+    "ref": "main",
     "lock": null,
     "file": "roster.yaml"
   },

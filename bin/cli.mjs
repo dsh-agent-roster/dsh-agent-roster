@@ -508,7 +508,7 @@ function runMigrate(options) {
   const reports = [];
   for (const dir of dirs) {
     const rootDir = resolveDirSpec(dir, process.cwd());
-    const report = migrateLibrary(rootDir, { write: options.write, knownToolPolicies });
+    const report = migrateLibrary(rootDir, { write: options.write, knownToolPolicies, source: { repo: ownRepo(), ref: "main" } });
     reports.push({ dir, rootDir, report });
     if (report.diagnostics.some((item) => item.severity === "error")) rc = 1;
     if (options.json) continue;

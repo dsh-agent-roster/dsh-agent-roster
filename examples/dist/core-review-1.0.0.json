@@ -4,8 +4,8 @@
     "roster": "core-review",
     "version": "1.0.0",
     "title": "代码审查小组",
-    "repo": null,
-    "ref": null,
+    "repo": "dsh-agent-roster/dsh-agent-roster",
+    "ref": "main",
     "lock": null,
     "file": "roster.yaml"
   },

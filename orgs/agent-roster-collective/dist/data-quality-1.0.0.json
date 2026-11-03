@@ -4,8 +4,8 @@
     "roster": "data-quality",
     "version": "1.0.0",
     "title": "数据质量组",
-    "repo": null,
-    "ref": null,
+    "repo": "dsh-agent-roster/dsh-agent-roster",
+    "ref": "main",
     "lock": null,
     "file": "roster.yaml"
   },
