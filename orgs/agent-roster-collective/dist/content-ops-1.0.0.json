@@ -4,6 +4,15 @@
     "roster": "content-ops",
     "version": "1.0.0",
     "title": "内容运营组",
+    "description": "一次发布：选题、成稿、分发，三件事各有验收。",
+    "tags": [
+      "content",
+      "publishing"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

@@ -4,6 +4,15 @@
     "roster": "docs-writer",
     "version": "1.0.0",
     "title": "文档组",
+    "description": "让文档里的每条命令都真的能跑，每个读数都带时间。",
+    "tags": [
+      "docs",
+      "writing"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

@@ -4,6 +4,15 @@
     "roster": "market-research",
     "version": "1.0.0",
     "title": "市场研究组",
+    "description": "把“听说”变成“有出处的数”，并说清它什么时候会失效。",
+    "tags": [
+      "research",
+      "market"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

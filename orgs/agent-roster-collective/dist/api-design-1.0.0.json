@@ -4,6 +4,16 @@
     "roster": "api-design",
     "version": "1.0.0",
     "title": "API 设计评审组",
+    "description": "在写第一行实现之前，把接口的形状、演进与失败语义定下来。",
+    "tags": [
+      "api",
+      "design",
+      "review"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

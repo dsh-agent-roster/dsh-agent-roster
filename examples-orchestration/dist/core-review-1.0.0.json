@@ -4,6 +4,15 @@
     "roster": "core-review",
     "version": "1.0.0",
     "title": "核心评审组",
+    "description": "一个小团队：队长拆任务，评审把关，修复收尾。用来演示 v2 的引用式成员与声明式编排。",
+    "tags": [
+      "review",
+      "example"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "stofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

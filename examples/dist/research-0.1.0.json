@@ -4,6 +4,13 @@
     "roster": "research",
     "version": "0.1.0",
     "title": "外部调研小组",
+    "description": "一手资料收集 + 交叉复核；复核者的结论必须能被另一条独立来源支撑。",
+    "tags": [
+      "research",
+      "example"
+    ],
+    "license": null,
+    "maintainers": [],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

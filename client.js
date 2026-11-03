@@ -35,6 +35,7 @@ window.__ModuleLoader__.load({
     const COLLECTION_ROUTE = "/plugins/dsh-agent-roster/collection";
     const APPLY_ROUTE = "/plugins/dsh-agent-roster/apply";
     const SEARCH_ROUTE = "/plugins/dsh-agent-roster/search";
+    const CATALOG_ROUTE = "/plugins/dsh-agent-roster/catalog";
 
     const EFFORTS = ["low", "medium", "high", "default"];
     const LANGUAGES = ["auto", "zh", "en"];
@@ -1273,10 +1274,289 @@ window.__ModuleLoader__.load({
     // 面板本身拿不到 ctx：这里由 apply() 把宿主服务放进来，供设置弹窗使用。
     const HOST = { form: null, openPanel: null };
 
+
+    /**
+     * 档案库：像插件市场那样，把「能用的档案」全部摊在一张表里。
+     *
+     * 本机的与订阅来源的放在一起，因为人找的是能力，不是"这东西归谁管"。两种看法：
+     * 按来源聚合（知道自己订了什么）、平铺（只想横向比较）。两种都只是**视图**，
+     * 不改变数据，也不写回任何文件。
+     *
+     * 查询走后端排序（`/search`）：前端再写一套打分，两处迟早给出不同顺序。
+     * 标签筛选是「且」，与档案页签的标签池同一语义。
+     */
+    function CatalogTab({ onOpen, onPull }) {
+      useTranslation();
+      const [mode, setMode] = useState("source");
+      const [query, setQuery] = useState("");
+      const [selected, setSelected] = useState(() => new Set());
+      const [catalog, setCatalog] = useState({ status: "loading", entries: [], counts: null });
+      const [hits, setHits] = useState(null);
+      const [pulling, setPulling] = useState("");
+      const [nonce, setNonce] = useState(0);
+
+      useEffect(() => {
+        let alive = true;
+        setCatalog((current) => ({ ...current, status: "loading" }));
+        readJson(CATALOG_ROUTE)
+          .then((result) => {
+            if (!alive) return;
+            setCatalog({
+              status: result.ok ? "ready" : "error",
+              entries: result.body?.entries ?? [],
+              counts: result.body?.counts ?? null,
+            });
+          })
+          .catch(() => {
+            if (alive) setCatalog({ status: "error", entries: [], counts: null });
+          });
+        return () => {
+          alive = false;
+        };
+      }, [nonce]);
+
+      useEffect(() => {
+        const needle = query.trim();
+        if (needle.length < 2) {
+          setHits(null);
+          return;
+        }
+        const controller = new AbortController();
+        // 停止输入之后才问：每敲一个字打一次，等于自己给自己造并发。
+        const timer = setTimeout(() => {
+          setHits((current) => ({ status: "loading", matches: current?.matches ?? [] }));
+          readJson(`${SEARCH_ROUTE}?q=${encodeURIComponent(needle)}`, { signal: controller.signal })
+            .then((result) => {
+              if (controller.signal.aborted) return;
+              setHits({ status: result.ok ? "ready" : "error", matches: result.body?.matches ?? [] });
+            })
+            .catch(() => {
+              if (!controller.signal.aborted) setHits({ status: "error", matches: [] });
+            });
+        }, 240);
+        return () => {
+          clearTimeout(timer);
+          controller.abort();
+        };
+      }, [query]);
+
+      const pool = useMemo(() => {
+        const counts = new Map();
+        for (const entry of catalog.entries) {
+          for (const tag of entry.tags ?? []) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+        }
+        return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+      }, [catalog.entries]);
+
+      const entries = hits !== null && hits.status === "ready" ? hits.matches : catalog.entries;
+      const filtered = useMemo(() => {
+        return entries.filter((entry) => {
+          for (const tag of selected) if (!(entry.tags ?? []).includes(tag)) return false;
+          return true;
+        });
+      }, [entries, selected]);
+
+      const groups = useMemo(() => {
+        if (mode === "flat") return [{ key: "flat", title: "", scope: "mixed", entries: filtered }];
+        const map = new Map();
+        for (const entry of filtered) {
+          const key = entry.scope === "local" ? "__local" : `c:${entry.collectionId ?? ""}`;
+          if (!map.has(key)) {
+            map.set(key, {
+              key,
+              scope: entry.scope,
+              title: entry.scope === "local" ? t("catalog.local") : entry.collectionTitle ?? entry.collectionId ?? "",
+              entries: [],
+            });
+          }
+          map.get(key).entries.push(entry);
+        }
+        return [...map.values()];
+      }, [filtered, mode]);
+
+      function toggleTag(tag) {
+        setSelected((current) => {
+          const next = new Set(current);
+          if (next.has(tag)) next.delete(tag);
+          else next.add(tag);
+          return next;
+        });
+      }
+
+      function why(entry) {
+        if (Array.isArray(entry.hits) && entry.hits.length > 0) {
+          return entry.hits.map((hit) => `${hit.label}：${hit.text}`).join(" · ");
+        }
+        if (Array.isArray(entry.memberRoles) && entry.memberRoles.length > 0) return entry.memberRoles.join(" · ");
+        return entry.description ?? "";
+      }
+
+      function row(entry) {
+        const busy = entry.scope === "remote" && pulling !== "";
+        return h(
+          "article",
+          { key: `${entry.scope}:${entry.collectionId ?? ""}:${entry.rosterId}`, className: "rstr-row" },
+          h(
+            "div",
+            { className: "rstr-row-body" },
+            h("code", { className: "rstr-row-id", title: entry.rosterId }, entry.rosterId),
+            h(
+              "div",
+              { className: "rstr-row-text" },
+              h("h3", { className: "rstr-row-title" }, entry.title === "" ? entry.rosterId : entry.title),
+              h("p", { className: "rstr-row-desc" }, why(entry)),
+            ),
+            h(
+              "div",
+              { className: "rstr-row-stats" },
+              h("span", { className: "rstr-stat" }, t("catalog.members", { count: String(entry.members ?? 0) })),
+              h(
+                "span",
+                { className: "rstr-stat" },
+                entry.scope === "local"
+                  ? t("catalog.local")
+                  : t("catalog.remoteFrom", { collection: entry.collectionTitle ?? entry.collectionId ?? "" }),
+              ),
+            ),
+            h(
+              "div",
+              { className: "rstr-row-actions" },
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: "rstr-btn rstr-btn-sm",
+                  disabled: busy,
+                  onClick: async () => {
+                    if (entry.scope === "local") {
+                      onOpen(entry.rosterId);
+                      return;
+                    }
+                    setPulling(entry.collectionId ?? "");
+                    try {
+                      await onPull(entry.collectionId);
+                      setNonce((value) => value + 1);
+                    } finally {
+                      setPulling("");
+                    }
+                  },
+                },
+                entry.scope === "local" ? t("catalog.open") : t("catalog.pull"),
+              ),
+            ),
+          ),
+        );
+      }
+
+      return h(
+        "div",
+        { className: "rstr-catalog" },
+        h(
+          "div",
+          { className: "rstr-toolbar" },
+          h("input", {
+            className: "rstr-input rstr-search",
+            value: query,
+            placeholder: t("catalog.placeholder"),
+            "aria-label": t("catalog.placeholder"),
+            onChange: (event) => setQuery(event.target.value),
+            onKeyDown: (event) => {
+              if (event.key !== "Escape") return;
+              setQuery("");
+              event.stopPropagation();
+            },
+          }),
+          h(
+            "div",
+            { className: "rstr-toolbar-actions" },
+            h(
+              "div",
+              { className: "rstr-segmented", role: "group", "aria-label": t("catalog.mode") },
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: `rstr-seg${mode === "source" ? " rstr-seg-on" : ""}`,
+                  "aria-pressed": mode === "source",
+                  onClick: () => setMode("source"),
+                },
+                t("catalog.modeSource"),
+              ),
+              h(
+                "button",
+                {
+                  type: "button",
+                  className: `rstr-seg${mode === "flat" ? " rstr-seg-on" : ""}`,
+                  "aria-pressed": mode === "flat",
+                  onClick: () => setMode("flat"),
+                },
+                t("catalog.modeFlat"),
+              ),
+            ),
+            h(
+              "button",
+              { type: "button", className: "rstr-btn rstr-btn-sm", onClick: () => setNonce((value) => value + 1) },
+              t("catalog.refresh"),
+            ),
+          ),
+        ),
+        pool.length === 0
+          ? null
+          : h(
+              "div",
+              { className: "rstr-catalog-tags" },
+              pool.map(([tag, count]) =>
+                h(
+                  "button",
+                  {
+                    key: tag,
+                    type: "button",
+                    className: `rstr-tag${selected.has(tag) ? " rstr-tag-on" : ""}`,
+                    "aria-pressed": selected.has(tag),
+                    onClick: () => toggleTag(tag),
+                  },
+                  h("span", { className: "rstr-tag-name" }, tag),
+                  h("span", { className: "rstr-tag-count" }, String(count)),
+                ),
+              ),
+            ),
+        h(
+          "p",
+          { className: "rstr-results-head" },
+          hits !== null && hits.status === "loading" && query.trim() !== ""
+            ? t("catalog.searching")
+            : t("catalog.counts", {
+                shown: String(filtered.length),
+                total: String(entries.length),
+                local: String(catalog.counts?.local ?? 0),
+                remote: String(catalog.counts?.remote ?? 0),
+              }),
+        ),
+        catalog.status === "error" ? h("p", { className: "rstr-muted" }, t("catalog.failed")) : null,
+        filtered.length === 0
+          ? h("p", { className: "rstr-muted" }, t("catalog.empty"))
+          : groups.map((group) =>
+              h(
+                "div",
+                { key: group.key, className: "rstr-group" },
+                mode === "flat" || group.title === ""
+                  ? null
+                  : h(
+                      "div",
+                      { className: "rstr-group-head" },
+                      h("span", { className: "rstr-group-title" }, group.title),
+                      h("span", { className: "rstr-group-count" }, String(group.entries.length)),
+                    ),
+                group.entries.map(row),
+              ),
+            ),
+      );
+    }
+
     function Panel() {
       useTranslation();
       const library = useLibrary();
-      const [tab, setTab] = useState("rosters");
+      const [tab, setTab] = useState("catalog");
       const [query, setQuery] = useState("");
       const [selectedTags, setSelectedTags] = useState(() => new Set());
       const [settingsOpen, setSettingsOpen] = useState(false);
@@ -1284,39 +1564,6 @@ window.__ModuleLoader__.load({
       const [importing, setImporting] = useState(false);
       const [removing, setRemoving] = useState(null);
       const [toast, setToast] = useState(null);
-      // 「找一份档案」是首屏动作，不是某个页签里的筛选器：它同时问本机与所有订阅来源。
-      const [lookup, setLookup] = useState("");
-      const [lookupState, setLookupState] = useState({ status: "idle", body: null });
-      const [pullingCollection, setPullingCollection] = useState("");
-
-      useEffect(() => {
-        const needle = lookup.trim();
-        if (needle.length < 2) {
-          setLookupState({ status: "idle", body: null });
-          return;
-        }
-        const controller = new AbortController();
-        // 停止输入之后才发请求：每敲一个字都打一次，等于自己给自己造并发。
-        const timer = setTimeout(() => {
-          setLookupState((current) => ({ status: "loading", body: current.body }));
-          readJson(`${SEARCH_ROUTE}?q=${encodeURIComponent(needle)}`, { signal: controller.signal })
-            .then((result) => {
-              if (controller.signal.aborted) return;
-              setLookupState(
-                result.ok && result.body !== null
-                  ? { status: "ready", body: result.body }
-                  : { status: "error", body: null },
-              );
-            })
-            .catch(() => {
-              if (!controller.signal.aborted) setLookupState({ status: "error", body: null });
-            });
-        }, 220);
-        return () => {
-          clearTimeout(timer);
-          controller.abort();
-        };
-      }, [lookup]);
 
       useEffect(() => {
         if (toast === null) return;
@@ -1354,38 +1601,6 @@ window.__ModuleLoader__.load({
             .some((value) => value.toLowerCase().includes(needle));
         });
       }, [rosters, query, selectedTags]);
-
-      async function openMatch(match) {
-        if (match.scope === "local") {
-          setLookup("");
-          setTab("rosters");
-          setQuery(match.rosterId);
-          return;
-        }
-        setPullingCollection(match.collectionId ?? "");
-        try {
-          const result = await readJson(INSTALL_ROUTE, {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ collection: match.collectionId }),
-          });
-          if (!result.ok || result.body === null) {
-            setToast(`${t("misc.failed")} (${String(result.status)})`);
-            return;
-          }
-          const summary = t("source.pulled", {
-            written: result.body.written ?? 0,
-            unchanged: result.body.unchanged ?? 0,
-            conflicts: result.body.conflicts ?? 0,
-          });
-          setToast(summary);
-          library.reload();
-        } catch {
-          setToast(t("misc.failed"));
-        } finally {
-          setPullingCollection("");
-        }
-      }
 
       function toggleTag(tag) {
         setSelectedTags((current) => {
@@ -1498,6 +1713,7 @@ window.__ModuleLoader__.load({
         "div",
         { className: "rstr-tabs", role: "tablist" },
         [
+          ["catalog", t("panel.tabsCatalog"), null],
           ["rosters", t("panel.tabsRosters"), rosters.length],
           ["teams", t("panel.tabsTeams"), teams.length],
           ["sources", t("panel.tabsSources"), snapshot?.remote?.collections?.length ?? 0],
@@ -1515,88 +1731,43 @@ window.__ModuleLoader__.load({
               onClick: () => setTab(value),
             },
             label,
-            h("span", { className: "rstr-tab-count" }, String(count)),
+            count === null ? null : h("span", { className: "rstr-tab-count" }, String(count)),
           ),
         ),
       );
 
-      // 搜索态压过页签：输入了问题就只看答案，不再让人先去挑一个合集。
-      let lookupView = null;
-      const needle = lookup.trim();
-      if (needle !== "") {
-        const body = lookupState.body;
-        const matches = body?.matches ?? [];
-        lookupView = h(
-          "div",
-          { className: "rstr-results" },
-          h(
-            "p",
-            { className: "rstr-results-head" },
-            lookupState.status === "loading" && body === null
-              ? t("lookup.searching")
-              : t("lookup.counts", {
-                  total: String(matches.length),
-                  local: String(body?.counts?.local ?? 0),
-                  remote: String(body?.counts?.remote ?? 0),
-                }),
-          ),
-          lookupState.status === "error"
-            ? h("p", { className: "rstr-muted" }, t("lookup.failed"))
-            : null,
-          lookupState.status === "ready" && matches.length === 0
-            ? h("p", { className: "rstr-muted" }, t("lookup.empty", { q: needle }))
-            : null,
-          matches.map((match) =>
-            h(
-              "article",
-              { key: `${match.scope}:${match.collectionId ?? ""}:${match.rosterId}`, className: "rstr-row" },
-              h(
-                "div",
-                { className: "rstr-row-body" },
-                h("code", { className: "rstr-row-id", title: match.rosterId }, match.rosterId),
-                h(
-                  "div",
-                  { className: "rstr-row-text" },
-                  h("h3", { className: "rstr-row-title" }, match.title === "" ? match.rosterId : match.title),
-                  h(
-                    "p",
-                    { className: "rstr-row-desc" },
-                    match.hits.map((hit) => `${hit.label}：${hit.text}`).join(" · "),
-                  ),
-                ),
-                h(
-                  "div",
-                  { className: "rstr-row-stats" },
-                  h("span", { className: "rstr-stat" }, t("lookup.members", { count: String(match.members) })),
-                  h(
-                    "span",
-                    { className: "rstr-stat" },
-                    match.scope === "local"
-                      ? t("lookup.local")
-                      : t("lookup.remoteFrom", { collection: match.collectionTitle ?? match.collectionId ?? "" }),
-                  ),
-                ),
-                h(
-                  "div",
-                  { className: "rstr-row-actions" },
-                  h(
-                    "button",
-                    {
-                      type: "button",
-                      className: "rstr-btn rstr-btn-sm",
-                      disabled: match.scope === "remote" && pullingCollection !== "",
-                      onClick: () => openMatch(match),
-                    },
-                    match.scope === "local" ? t("lookup.open") : t("lookup.pull"),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      }
-
       let content = null;
+
+      if (tab === "catalog") {
+        content = h(CatalogTab, {
+          onOpen: (rosterId) => {
+            setTab("rosters");
+            setQuery(rosterId);
+          },
+          onPull: async (collectionId) => {
+            try {
+              const result = await readJson(INSTALL_ROUTE, {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ collection: collectionId }),
+              });
+              if (!result.ok || result.body === null) {
+                setToast(`${t("misc.failed")} (${String(result.status)})`);
+                return;
+              }
+              const summary = t("source.pulled", {
+                written: result.body.written ?? 0,
+                unchanged: result.body.unchanged ?? 0,
+                conflicts: result.body.conflicts ?? 0,
+              });
+              setToast(summary);
+              library.reload();
+            } catch {
+              setToast(t("misc.failed"));
+            }
+          },
+        });
+      }
 
       if (tab === "rosters") {
         if (rosters.length === 0) {
@@ -1741,31 +1912,8 @@ window.__ModuleLoader__.load({
         { className: "rstr-page" },
         header,
         banner,
-        h(
-          "div",
-          { className: "rstr-lookup" },
-          h("input", {
-            className: "rstr-input rstr-lookup-input",
-            value: lookup,
-            placeholder: t("lookup.placeholder"),
-            "aria-label": t("lookup.placeholder"),
-            onChange: (event) => setLookup(event.target.value),
-            onKeyDown: (event) => {
-              if (event.key !== "Escape") return;
-              setLookup("");
-              event.stopPropagation();
-            },
-          }),
-          lookup === ""
-            ? h("span", { className: "rstr-lookup-hint" }, t("lookup.hint"))
-            : h(
-                "button",
-                { type: "button", className: "rstr-btn rstr-btn-sm rstr-btn-ghost", onClick: () => setLookup("") },
-                t("lookup.clear"),
-              ),
-        ),
-        lookupView === null ? tabs : null,
-        lookupView === null ? content : lookupView,
+        tabs,
+        content,
         h(
           "footer",
           { className: "rstr-foot" },
@@ -2512,14 +2660,35 @@ window.__ModuleLoader__.load({
 
 /* ---- 账本（行） ------------------------------------------------------- */
 
-.rstr-lookup { display: flex; align-items: center; gap: 10px; padding: 0 28px 12px; min-width: 0; }
+.rstr-catalog { display: flex; flex-direction: column; gap: 10px; padding: 16px 28px 28px; min-width: 0; }
 
-.rstr-lookup-input { flex: 1 1 auto; max-width: 560px; }
+/* 标签池横着排：档案库是"逛"的地方，不该为了几个标签先把屏幕切成两栏。 */
+.rstr-catalog-tags { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+/* 标签池在侧栏里是"一列可选的筛选项"，但放进档案库的顶部它就是一枚筛选标签：
+   宽度、边框、圆角都得按标签给，不能沿用侧栏那套整行铺满的形态。 */
+.rstr-catalog-tags .rstr-tag {
+  width: auto;
+  flex: 0 0 auto;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 999px;
+  background: var(--dsw-alias-bg-layer-1);
+}
+.rstr-catalog-tags .rstr-tag-on {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, var(--dsw-alias-border-l2));
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent);
+  color: var(--dsw-alias-label-primary);
+}
+.rstr-catalog .rstr-search { max-width: 560px; }
 
-.rstr-lookup-hint { font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.rstr-group { display: flex; flex-direction: column; min-width: 0; }
 
-/* 清除按钮不参与压缩：窄面板里被挤成竖排的两个字最难认。 */
-.rstr-lookup > .rstr-btn { flex: 0 0 auto; white-space: nowrap; }
+.rstr-group-head { display: flex; align-items: baseline; gap: 8px; padding: 10px 0 4px; border-bottom: 1px solid var(--dsw-alias-border-l2); }
+
+.rstr-group-title { font-size: 12px; font-weight: 600; letter-spacing: 0.02em; color: var(--dsw-alias-label-secondary); }
+
+.rstr-group-count { font-size: 11px; color: var(--dsw-alias-label-tertiary); font-variant-numeric: tabular-nums; }
 
 .rstr-results { display: flex; flex-direction: column; min-width: 0; padding: 0 28px 28px; border-top: 1px solid var(--dsw-alias-border-l2); }
 
@@ -2840,7 +3009,7 @@ window.__ModuleLoader__.load({
 /* ---- 窄面板 ----------------------------------------------------------- */
 
 @media (max-width: 860px) {
-  .rstr-head, .rstr-tabs, .rstr-rosters-main, .rstr-health, .rstr-foot { padding-left: 18px; padding-right: 18px; }
+  .rstr-head, .rstr-tabs, .rstr-rosters-main, .rstr-health, .rstr-catalog, .rstr-foot { padding-left: 18px; padding-right: 18px; }
   .rstr-banner { margin-left: 18px; margin-right: 18px; }
   .rstr-rosters { grid-template-columns: minmax(0, 1fr); }
   .rstr-tagpool {

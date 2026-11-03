@@ -4,6 +4,16 @@
     "roster": "data-quality",
     "version": "1.0.0",
     "title": "数据质量组",
+    "description": "为一份数据表定“什么算合格”，并把不合格变成可复现的判据。",
+    "tags": [
+      "data",
+      "quality",
+      "checks"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

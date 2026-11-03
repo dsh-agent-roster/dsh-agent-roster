@@ -235,20 +235,27 @@ test("长内容只由面板根滚动：账本与两级展开区都不许自建�
   assert.match(sourceRow, /minmax\(0,\s*1fr\)/, "标题列必须可压缩");
 });
 
-test("查找档案：搜索框在首屏，结果压过页签，命中要说清出处", () => {
+test("档案库：独立的页签，支持搜索、标签筛选、按来源聚合与平铺", () => {
   const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
-  // 搜索必须是首屏动作：输入框挂在页头之下、页签之上，而不是某个页签里的筛选器。
-  assert.match(source, /className: "rstr-lookup"/);
+  // 它是第一个页签，也是默认页签：找档案是进入面板的第一件事。
+  assert.match(source, /\["catalog", t\("panel\.tabsCatalog"\), null\]/);
+  assert.match(source, /const \[tab, setTab\] = useState\("catalog"\)/);
+  assert.match(source, /function CatalogTab\(/);
+  assert.match(source, /className: "rstr-catalog"/);
+  // 两条路由各司其职：catalog 摊开全部，search 负责排序。
+  assert.match(source, /CATALOG_ROUTE = "\/plugins\/dsh-agent-roster\/catalog"/);
   assert.match(source, /SEARCH_ROUTE = "\/plugins\/dsh-agent-roster\/search"/);
-  assert.match(source, /lookupView === null \? tabs : null/);
-  assert.match(source, /lookupView === null \? content : lookupView/);
-  // 每一行都要显示"为什么命中"，否则用户没法判断该不该点开。
-  assert.match(source, /match\.hits\.map\(\(hit\) => `\$\{hit\.label\}：\$\{hit\.text\}`\)\.join\(" · "\)/);
-  // 输入停止后才发请求（防抖），并且旧请求要能取消。
+  // 聚合 / 平铺 是视图开关，不是两套数据。
+  assert.match(source, /t\("catalog\.modeSource"\)/);
+  assert.match(source, /t\("catalog\.modeFlat"\)/);
+  assert.match(source, /if \(mode === "flat"\) return \[\{ key: "flat"/);
+  // 标签是"且"：勾两个就要求两个都在。
+  assert.match(source, /for \(const tag of selected\) if \(!\(entry\.tags \?\? \[\]\)\.includes\(tag\)\) return false/);
+  // 输入停止后才问后端；旧请求要取消。
   assert.match(source, /setTimeout\(\(\) => \{[\s\S]{0,400}?SEARCH_ROUTE/, "搜索应当在防抖之后发出");
   assert.match(source, /controller\.abort\(\)/, "新的输入要取消上一次请求");
   const css = source.match(/const CSS = `([\s\S]*?)`;/)[1];
-  for (const rule of [".rstr-lookup {", ".rstr-lookup-input {", ".rstr-results {"]) {
+  for (const rule of [".rstr-catalog {", ".rstr-catalog-tags {", ".rstr-group-head {"]) {
     assert.ok(css.includes(rule), `缺少规则 ${rule}`);
   }
 });

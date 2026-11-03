@@ -4,6 +4,15 @@
     "roster": "ml-eval",
     "version": "1.0.0",
     "title": "模型评测组",
+    "description": "跑分之前先问：这套题能不能区分好坏。",
+    "tags": [
+      "ml",
+      "evaluation"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

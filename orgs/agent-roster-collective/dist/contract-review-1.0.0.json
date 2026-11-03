@@ -4,6 +4,15 @@
     "roster": "contract-review",
     "version": "1.0.0",
     "title": "合同审阅组",
+    "description": "找到会让你赔钱、被锁定或无法退出的条款。",
+    "tags": [
+      "legal",
+      "contract"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

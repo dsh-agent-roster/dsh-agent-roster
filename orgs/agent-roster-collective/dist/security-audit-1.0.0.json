@@ -4,6 +4,16 @@
     "roster": "security-audit",
     "version": "1.0.0",
     "title": "安全审计组",
+    "description": "在代码里找“能被利用”的东西，而不是“看着不安全”的东西。",
+    "tags": [
+      "security",
+      "audit",
+      "review"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

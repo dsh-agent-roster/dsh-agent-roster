@@ -4,6 +4,40 @@
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-03
+
+### A tab that behaves like a marketplace, not a filter on a list
+
+0.12.0 put a search field above the tabs. That was still the wrong shape: search belonged to a page about
+collections, and browsing still meant "pick a source, then read". The panel now opens on its own **Library**
+tab — search, tags, and one list that spans this machine and every subscribed source.
+
+- `GET /plugins/dsh-agent-roster/catalog` returns every roster in view in one response: this machine plus
+  each subscribed collection, with tags, member counts, member roles and where each one lives.
+- The tag strip is a real filter: counts are computed from everything in view, multiple tags are AND, and
+  the selection never writes back to a file. The segmented control switches between **by source** (this
+  machine, then one group per collection) and **flat** (one list, source named per row).
+- Search keeps its own route and its own ranking (`lib/search.js`): two characters, 240 ms debounce, and the
+  in-flight request is aborted when you keep typing, so typing never queues requests.
+- Compiled artifacts now carry what it takes to be *found*: `source.title`, `description`, `tags`, `license`
+  and `maintainers`. A subscribed roster is one file (`dist/<id>-<ver>.json`) resolved through `files` in the
+  index — previously the artifact knew its id and version and nothing else, so remote results could only be
+  searched by id.
+- The panel's tag chips were inheriting the sidebar's full-width row form; they are now chips (own width,
+  pill border, count attached), and the narrow layout gets the same 18px gutter as the rest of the page.
+
+### Changed
+
+- The header lookup field is gone; its behaviour lives inside the Library tab. `lookup.*` strings were
+  replaced by `catalog.*` (both locales).
+- `flattenCompiledToRoster` and `rosterViewOf` now fall back to artifact metadata, so a remote roster keeps
+  its title and tags after being flattened into a v1 document.
+
+### Fixed
+
+- `GET /catalog` and search share one `gatherEntries()` path; before, each route assembled local + remote
+  entries itself, which is how a cache or concurrency fix lands in one and not the other.
+
 ## [0.12.0] - 2026-11-03
 
 ### The panel answers "which one", not "show me everything"
@@ -581,6 +615,7 @@ point is now one search field above the tabs.
   且所有返回值先过 `lib/json.js#lossless`。
 
 [Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.12.0...main
+[0.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.7...v0.11.0

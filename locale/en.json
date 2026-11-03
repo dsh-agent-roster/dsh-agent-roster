@@ -64,7 +64,8 @@
     "metaRosters": "rosters",
     "metaMembers": "members",
     "metaTeams": "teams",
-    "metaOrganization": "Organization {name}"
+    "metaOrganization": "Organization {name}",
+    "tabsCatalog": "Library"
   },
   "roster": {
     "members": "{count} members",
@@ -302,18 +303,20 @@
   "source.filter": "Filter this collection",
   "source.filterPlaceholder": "Filter by id, title or member",
   "source.filterCount": "{shown} of {total}",
-  "lookup": {
+  "catalog": {
     "placeholder": "What should it do? e.g. data quality, release, review",
-    "hint": "Searches this machine and every subscribed source",
-    "clear": "Clear",
     "searching": "Searching…",
-    "counts": "{total} matched · candidates: {local} local · {remote} remote",
-    "empty": "Nothing matched “{q}”. Try another wording, or check Sources for a subscription that has it.",
-    "failed": "Search failed: the host did not answer.",
+    "counts": "{shown} / {total} · {local} local · {remote} remote",
+    "empty": "Nothing matches. Try another wording, or check Sources for a subscription.",
+    "failed": "The library did not load: the host did not answer.",
     "members": "{count} members",
     "local": "local",
     "remoteFrom": "from {collection}",
     "open": "Open",
-    "pull": "Pull"
+    "pull": "Pull",
+    "mode": "Layout",
+    "modeSource": "By source",
+    "modeFlat": "Flat",
+    "refresh": "Refresh"
   }
 }

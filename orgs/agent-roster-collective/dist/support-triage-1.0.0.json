@@ -4,6 +4,15 @@
     "roster": "support-triage",
     "version": "1.0.0",
     "title": "客服分诊组",
+    "description": "把每条来信分到“能自助、要人接、是缺陷”三条路之一。",
+    "tags": [
+      "support",
+      "triage"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

@@ -4,6 +4,16 @@
     "roster": "sre-oncall",
     "version": "1.0.0",
     "title": "SRE 值守组",
+    "description": "值守不是盯屏：定告警阈值、写手册、算容量。",
+    "tags": [
+      "sre",
+      "oncall",
+      "capacity"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

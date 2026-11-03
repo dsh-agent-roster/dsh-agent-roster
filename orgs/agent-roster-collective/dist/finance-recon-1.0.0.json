@@ -4,6 +4,15 @@
     "roster": "finance-recon",
     "version": "1.0.0",
     "title": "财务对账组",
+    "description": "让两套账的差异落到具体行，而不是“大概对得上”。",
+    "tags": [
+      "finance",
+      "reconciliation"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

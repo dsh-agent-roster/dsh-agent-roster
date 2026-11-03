@@ -4,6 +4,15 @@
     "roster": "product-discovery",
     "version": "1.0.0",
     "title": "产品发现组",
+    "description": "在写需求之前，先证明这个需求真的存在。",
+    "tags": [
+      "product",
+      "discovery"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

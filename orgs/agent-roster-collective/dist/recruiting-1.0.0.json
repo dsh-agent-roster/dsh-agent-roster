@@ -4,6 +4,15 @@
     "roster": "recruiting",
     "version": "1.0.0",
     "title": "招聘筛选组",
+    "description": "按岗位要求筛人，只报证据，不做印象判断。",
+    "tags": [
+      "hiring",
+      "screening"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

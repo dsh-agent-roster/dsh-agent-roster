@@ -4,6 +4,16 @@
     "roster": "db-migration",
     "version": "1.0.0",
     "title": "数据库迁移组",
+    "description": "把一次 schema 变更做到可回滚：先证明能回，再动手。",
+    "tags": [
+      "database",
+      "migration",
+      "reliability"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

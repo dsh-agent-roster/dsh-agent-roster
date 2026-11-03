@@ -4,6 +4,15 @@
     "roster": "performance",
     "version": "1.0.0",
     "title": "性能优化组",
+    "description": "先量再改：没有基线就没有优化。",
+    "tags": [
+      "performance",
+      "profiling"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

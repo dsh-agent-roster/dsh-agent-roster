@@ -15,7 +15,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import nodePath from "node:path";
 
-import { compileRoster, compileRosterAt, compileToMembers, scanRoles } from "../lib/compile2.js";
+import { compileRoster, compileRosterAt, compileToMembers, flattenCompiledToRoster, scanRoles } from "../lib/compile2.js";
 import { splitFrontmatter, assemblePrompt } from "../lib/frontmatter.js";
 import { loadRoleAt } from "../lib/role.js";
 import { validateRoster2 } from "../lib/roster2.js";
@@ -372,4 +372,35 @@ test("编译产物可摊平成桥接层认识的成员形状", () => {
     skills: [],
     examples: [],
   });
+});
+
+test("编译产物自带发现元数据：远端只拿到一个文件时也能被搜到", () => {
+  const root = scratch();
+  write(root, "roles/reviewer/AGENT.md", roleDoc());
+  write(
+    root,
+    "rosters/core-review/roster.yaml",
+    rosterDoc({
+      extra: "description: 一名队长加两名审查者。\nlicense: MIT\nmaintainers:\n  - STofone\ntags:\n  - review\n  - quality",
+    }),
+  );
+
+  const result = compileRosterAt(nodePath.join(root, "rosters/core-review"), {
+    rolesDir: nodePath.join(root, "roles"),
+    knownToolPolicies: null,
+  });
+  assert.equal(result.ok, true, JSON.stringify(result.diagnostics, null, 2));
+  const source = result.compiled.source;
+  assert.equal(source.title, "代码审查小组");
+  assert.equal(source.description, "一名队长加两名审查者。");
+  assert.deepEqual(source.tags, ["review", "quality"]);
+  assert.equal(source.license, "MIT");
+  assert.deepEqual(source.maintainers, ["STofone"]);
+
+  // 远端订阅只拿到产物：摊回 v1 文档时元数据不能掉，否则"从远处找一份档案"只剩 id。
+  const flat = flattenCompiledToRoster(result.compiled);
+  assert.equal(flat.title, "代码审查小组");
+  assert.deepEqual(flat.tags, ["review", "quality"]);
+  assert.equal(flat.license, "MIT");
+  assert.deepEqual(flat.maintainers, ["STofone"]);
 });

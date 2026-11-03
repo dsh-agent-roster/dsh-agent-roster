@@ -64,7 +64,8 @@
     "metaRosters": "份档案",
     "metaMembers": "名成员",
     "metaTeams": "支团队",
-    "metaOrganization": "组织 {name}"
+    "metaOrganization": "组织 {name}",
+    "tabsCatalog": "档案库"
   },
   "roster": {
     "members": "{count} 名成员",
@@ -302,18 +303,20 @@
   "source.filter": "在这份集合里查找",
   "source.filterPlaceholder": "按 id、标题或成员名过滤",
   "source.filterCount": "{shown} / {total}",
-  "lookup": {
+  "catalog": {
     "placeholder": "要找什么能力？例：数据质量、发版、代码评审",
-    "hint": "同时搜本机与已订阅的来源",
-    "clear": "清除",
     "searching": "正在搜索…",
-    "counts": "命中 {total} 份 · 候选：本机 {local} · 远端 {remote}",
-    "empty": "没有找到「{q}」。换个说法，或到「档案源」看看是否订阅了它。",
-    "failed": "搜索失败：宿主没有响应。",
+    "counts": "{shown} / {total} 份 · 本机 {local} · 远端 {remote}",
+    "empty": "没有符合条件的档案。换个词，或去「档案源」看看订阅。",
+    "failed": "档案库加载失败：宿主没有响应。",
     "members": "{count} 名成员",
     "local": "本机",
     "remoteFrom": "来自 {collection}",
     "open": "打开",
-    "pull": "拉取"
+    "pull": "拉取",
+    "mode": "显示方式",
+    "modeSource": "按来源",
+    "modeFlat": "平铺",
+    "refresh": "刷新"
   }
 }

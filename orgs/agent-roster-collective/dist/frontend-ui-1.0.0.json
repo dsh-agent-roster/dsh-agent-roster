@@ -4,6 +4,16 @@
     "roster": "frontend-ui",
     "version": "1.0.0",
     "title": "前端实现组",
+    "description": "把设计做成能用、能读、能被键盘与读屏器操作的东西。",
+    "tags": [
+      "frontend",
+      "ui",
+      "a11y"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

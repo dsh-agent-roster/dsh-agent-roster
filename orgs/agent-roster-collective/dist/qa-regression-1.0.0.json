@@ -4,6 +4,16 @@
     "roster": "qa-regression",
     "version": "1.0.0",
     "title": "回归测试组",
+    "description": "每次改动都问：哪些旧行为可能被碰坏。",
+    "tags": [
+      "qa",
+      "regression",
+      "testing"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,

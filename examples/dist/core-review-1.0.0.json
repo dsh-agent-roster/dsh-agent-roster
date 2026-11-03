@@ -4,6 +4,15 @@
     "roster": "core-review",
     "version": "1.0.0",
     "title": "代码审查小组",
+    "description": "一名队长加两名审查者：一人盯正确性，一人盯可维护性与边界条件。",
+    "tags": [
+      "review",
+      "example"
+    ],
+    "license": "MIT",
+    "maintainers": [
+      "STofone"
+    ],
     "repo": "dsh-agent-roster/dsh-agent-roster",
     "ref": "main",
     "lock": null,
