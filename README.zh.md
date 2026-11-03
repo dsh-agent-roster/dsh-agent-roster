@@ -82,7 +82,7 @@ captain:                     # 可选：记录队长（＝创建团队的那个�
 
 JSON 也可以（`roster.json`）。同一目录下按 `roster.yaml` → `roster.yml` → `roster.json` 顺序探测，**只认一份**；出现第二份会报诊断，绝不静默挑一份。
 
-本包自带两份示例档案库（[`examples/`](./examples)）。`rosterDirs` 默认留空，也就是上面那座全局库；
+本包自带两份示例档案库：[`examples/`](./examples)（v2，由本仓历史档案迁移而来）与 [`examples-orchestration/`](./examples-orchestration)（v2，手写，用来演示门与施工图）。`rosterDirs` 默认留空，也就是上面那座全局库；
 新装时它是空的，所以面板一开始显示「0 份档案」——在面板里新建一份即可（目录会自动创建）。想先看示例库：
 
 ```bash
@@ -227,7 +227,7 @@ rosters/<id>/roster.yaml      组装：成员是引用，队长独立成段
 dist/<id>-<ver>.json          编译产物：自包含、可哈希，消费者只看它
 ```
 
-判别键决定版本——`dsh-agent-roster/role@1`、`dsh-agent-roster/roster@2`、`dsh-agent-roster/compiled@1`。同一目录不允许两种格式共存：v1 冻结，`roster migrate`（尚未实现）负责原地重写。
+判别键决定版本——`dsh-agent-roster/role@1`、`dsh-agent-roster/roster@2`、`dsh-agent-roster/compiled@1`。同一目录不允许两种格式共存：v1 冻结，`migrate` 负责原地重写。
 
 拼装写进格式，而不是藏在代码里：
 
@@ -259,6 +259,28 @@ node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review --j
 ```
 
 `orchestration` 是格式的一部分，但编译时标 `status: "declaration"`：阶段与门会被校验（门的 `after` 必须指向真实阶段，`by` 必须指向真实成员），但没有任何东西执行它。能声明不等于已被证明会运行，所以产物在 `declarations[]` 里逐条说明谁属于哪一类。完整契约——字段归宿、拼装语义、身份与唯一性、迁移规则——见 [`docs/roster-v2.md`](./docs/roster-v2.md)；schema 见 [`schema/role.v1.schema.json`](./schema/role.v1.schema.json)、[`schema/roster.v2.schema.json`](./schema/roster.v2.schema.json)、[`schema/compiled.v1.schema.json`](./schema/compiled.v1.schema.json)。
+
+### 从 v1 到 v2，一条命令
+
+```bash
+node bin/cli.mjs migrate --dir examples            # 只出计划：要写哪些文件、能不能编译
+node bin/cli.mjs migrate --dir examples --write    # 原地重写：roles/ + rosters/ + dist/，删掉旧目录
+```
+
+迁移逐字保留人设：成员的 `systemPrompt` 原文成为 `roles/<档案>-<成员>/AGENT.md` 的正文，成员本身变成引用。队长不再是一个散字段，而是自己的角色文件——与成员同名时得到 `-captain` 后缀，因为那是两份人设，悄悄合并会丢掉一份。
+
+角色名带档案 id 前缀，是因为 v2 要求同库角色名唯一：一座库里 21 套组装都叫自己的队长 `lead`，不可能有 21 个同名文件。
+
+### 把失败的一轮喂回施工图
+
+`compile --run <文件>` 读执行回执（`run@1`），把上一轮的失败并进重试卡的 description：
+
+```bash
+node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
+  --run examples-orchestration/dist/core-review-1.0.0.run.json
+```
+
+回执由执行施工图的队长会话写，不由插件写：任务 id 属于团队，插件从不写团队状态。插件负责的是合并——只活在红卡上的失败，下一次编译就消失了，门也就变成了装饰。
 
 ## 工具
 
@@ -405,11 +427,13 @@ lib/              format / parse / validate / registry / bridge / verify / rende
                   config-view / json / http / write / service / teams-state / tools
 client.js         客户端半边：左侧栏图标 + 主面板（档案/团队/体检）+ 设置页小节
 locale/           面板与列表词典（en/zh）
-schema/           roster / capabilities / organization / registry v1 schema（编辑器补全用，与校验器由测试对齐）
-bin/cli.mjs       validate / list / version，给 CI 用
+schema/           roster v1 / role v1 / roster v2 / compiled v1 / capabilities / organization / registry
+                  schema（编辑器补全用，与校验器由测试对齐）
+bin/cli.mjs       validate / list / compile / migrate / registry，给 CI 用
 scripts/          host-smoke.mjs、client-smoke.mjs、check-locale.mjs（开发用，不随包发布）
-examples/         两座示例档案库
-orgs/             带 organization.yaml 的示例库（21 套档案）
+examples/         由历史 v1 档案迁移来的 v2 库（roles/ + rosters/ + dist/）
+examples-orchestration/  手写的 v2 库：编排、门与施工图
+orgs/             带 organization.yaml 的示例库（21 套 v2 档案）
 test/             单测
 ```
 

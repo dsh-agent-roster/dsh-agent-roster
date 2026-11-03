@@ -450,7 +450,8 @@ lib/              format, parse, validate, registry, bridge, verify, render, lib
                   config-view, json, http, write, service, teams-state, tools
 client.js         client plugin: sidebar entry, main panel (rosters/teams/health), settings section
 locale/           panel + listing dictionaries (en/zh)
-schema/           roster / capabilities / organization / registry v1 schemas (editor completion; kept aligned by tests)
+schema/           roster v1 / role v1 / roster v2 / compiled v1 / capabilities / organization / registry
+                  schemas (editor completion; kept aligned by tests)
 bin/cli.mjs       validate/list/compile/migrate/registry for CI
 scripts/          host-smoke.mjs, client-smoke.mjs, check-locale.mjs (dev only, not shipped)
 examples/         a v2 library migrated from the v1 archives
