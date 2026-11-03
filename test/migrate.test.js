@@ -160,7 +160,7 @@ test("仓库根 + rosters/ 布局：--from 就地改成 v2，不删目录", () =
     mkdirSync(nodePath.join(fromDir, "demo"), { recursive: true });
     writeFileSync(nodePath.join(fromDir, "demo", "roster.json"), JSON.stringify(rosterDocument({ roster: "demo" }), null, 2));
 
-    const report = migrateLibrary(root, { write: true, fromDir });
+    const report = migrateLibrary(root, { write: true, fromDir, source: { repo: "someone/demo", ref: "main" } });
     assert.equal(report.diagnostics.filter((item) => item.severity === "error").length, 0);
     assert.deepEqual(report.removed, []);
 
@@ -172,6 +172,9 @@ test("仓库根 + rosters/ 布局：--from 就地改成 v2，不删目录", () =
     assert.match(readFileSync(nodePath.join(root, "roles", "demo-reviewer", "AGENT.md"), "utf8"), /kind: "?dsh-agent-roster\/role@1"?/);
     const dist = readdirSync(nodePath.join(root, "dist"));
     assert.equal(dist.some((name) => /^demo-.*\.json$/.test(name) && !name.endsWith(".tasks.json")), true);
+    // 产物要署发布仓的名，而不是"生成它的那个工具仓库"的名。
+    const artifact = readFileSync(nodePath.join(root, "dist", "demo-1.2.0.json"), "utf8");
+    assert.match(artifact, /"repo": "someone\/demo"/);
 
     const scan = scanRosterLibrary({ rootDir: root });
     assert.equal(scan.rosters.length, 1);

@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.10.4] - 2026-11-03
+
+### Fixed
+
+- **`compile --repo` was accepted and ignored.** The flag was parsed, then the artifact recorded `ownRepo()`
+  — the coordinates of whichever checkout ran the compiler. A repository that committed `dist/` therefore
+  disagreed with its own CI on every run: the drift check recompiled, got a different `source.repo`, and
+  failed. `migrate` had the same fault one layer down: it passed `source: {}` to the compiler instead of
+  the repository it was told to record. Both now write the coordinates they were given, and a test pins it.
+
 ## [0.10.3] - 2026-11-03
 
 ### Added
@@ -490,7 +500,8 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.3...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.4...main
+[0.10.4]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.3...v0.10.4
 [0.10.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.0...v0.10.1

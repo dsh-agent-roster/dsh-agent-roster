@@ -275,7 +275,7 @@ async function runCompile(options) {
   const result = compileRosterAt(rosterDir, {
     rolesDir,
     knownToolPolicies: options.knownPolicies.length > 0 ? options.knownPolicies : null,
-    source: { repo: ownRepo(), ref: "main" },
+    source: { repo: options.repo ?? ownRepo(), ref: "main" },
   });
 
   const diagnostics = [...(result.diagnostics ?? [])];
