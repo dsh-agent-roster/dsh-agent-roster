@@ -26,6 +26,7 @@ import { validateRoster2 } from "./lib/roster2.js";
 import { sendError, sendJson, createAuthGate, readJsonBody, requireMethod } from "./lib/http.js";
 import { buildPanelSnapshot, installCollection, loadRemotePanel, resolveRoots } from "./lib/service.js";
 import { createTtlCache, fetchCollection } from "./lib/remote.js";
+import { searchRosters } from "./lib/search.js";
 import { registerRosterTools } from "./lib/tools.js";
 import { deleteRosterDocument, readRosterDocument, writeRosterDocument } from "./lib/write.js";
 
@@ -171,6 +172,87 @@ export function apply(ctx, config) {
         });
       },
       "collection route",
+    );
+
+    // 搜索是「找一份档案」的入口：一次请求横跨本机与所有订阅来源。
+    // 远端的拉取复用 collection 的 60s 缓存，所以连续输入不会对同一个集合重复打网络。
+    register(
+      "/plugins/dsh-agent-roster/search",
+      async (req, res) => {
+        if (guard(req, res)) return;
+        if (!requireMethod(req, res, "GET")) return;
+        const query = new URL(req.url ?? "/", "http://localhost").searchParams;
+        const q = (query.get("q") ?? "").trim();
+        if (q === "") {
+          sendJson(res, 200, { ok: true, q: "", tokens: [], total: 0, matches: [], counts: { local: 0, remote: 0 }, diagnostics: [] });
+          return;
+        }
+
+        const library = collectLibrary(ctx, settings, { name: pkg.name, version: pkg.version });
+        const entries = [];
+        let localCount = 0;
+        for (const workspace of library.workspaces) {
+          for (const roster of workspace.rosters) {
+            entries.push({ scope: "local", roster, libraryId: workspace.rootDir ?? null, file: roster.file ?? null });
+            localCount += 1;
+          }
+        }
+
+        const diagnostics = [];
+        const collections = [];
+        try {
+          const remote = await loadRemotePanel(settings, {});
+          for (const item of remote.diagnostics ?? []) if (item.severity !== "info") diagnostics.push(item);
+          for (const collection of remote.collections ?? []) collections.push(collection);
+        } catch (error) {
+          diagnostics.push({
+            severity: "warn",
+            code: "search-index-unavailable",
+            message: `订阅索引拉不到，本次只搜索本机档案：${error instanceof Error ? error.message : String(error)}`,
+          });
+        }
+
+        // 来源两两并发：一个慢集合不该把所有来源都拖住，也不该一次打三十个请求。
+        const sourceConcurrency = 2;
+        let cursor = 0;
+        const fetchNext = async () => {
+          while (cursor < collections.length) {
+            const collection = collections[cursor];
+            cursor += 1;
+            const key = `${collection.source ?? ""}::${collection.id}`;
+            try {
+              const cached = collectionCache.get(key);
+              const fetched = cached ?? collectionCache.set(key, await fetchCollection(collection));
+              for (const roster of fetched.rosters ?? []) {
+                entries.push({
+                  scope: "remote",
+                  roster,
+                  collectionId: collection.id,
+                  collectionTitle: collection.title ?? null,
+                  file: roster.file ?? null,
+                });
+              }
+              for (const item of fetched.diagnostics ?? []) if (item.severity === "error") diagnostics.push(item);
+            } catch (error) {
+              diagnostics.push({
+                severity: "warn",
+                code: "search-source-failed",
+                message: `${collection.id} 拉取失败：${error instanceof Error ? error.message : String(error)}`,
+              });
+            }
+          }
+        };
+        await Promise.all(Array.from({ length: Math.min(sourceConcurrency, collections.length) }, fetchNext));
+
+        const result = searchRosters(q, entries);
+        const remoteCount = entries.length - localCount;
+        sendJson(res, 200, {
+          ...result,
+          counts: { local: localCount, remote: remoteCount },
+          diagnostics: diagnostics.slice(0, 20),
+        });
+      },
+      "search route",
     );
 
     register(

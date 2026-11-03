@@ -4,6 +4,29 @@
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-03
+
+### The panel answers "which one", not "show me everything"
+
+Until now the panel was organised by **collection**: expand a source, then read a list. But the real
+question is almost always the opposite — "I need someone who watches data quality" — so the entry
+point is now one search field above the tabs.
+
+- `GET /plugins/dsh-agent-roster/search?q=` searches this machine and every subscribed source in one
+  request, reusing the collection cache (60s) so repeated typing does not hit the network again.
+- Ranking is explainable: every match reports `hits[{field, label, text}]` ("标签：数据质量"), and id
+  matches outrank title matches outrank tag matches outrank member roles. Multiple words are **AND**:
+  "data kubernetes" matches nothing here, instead of matching everything that has "data".
+- A result that lives in another library says so ("来自 agent-roster-collective") and can be pulled
+  from the row itself; a local one opens straight into the roster list filtered to that id.
+- `lib/search.js` is a pure function — no filesystem, no network — so the ranking is unit-tested.
+
+### Added
+
+- `lib/search.js` with `searchRosters`, `searchableFields`, `tokenize`; 6 tests.
+- `/plugins/dsh-agent-roster/search` route (local + remote, bounded source concurrency).
+- Panel lookup field, result rows with match provenance, and `lookup.*` strings in both locales.
+
 ## [0.11.1] - 2026-11-03
 
 ### Fixed
@@ -557,7 +580,8 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.11.1...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.12.0...main
+[0.12.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.7...v0.11.0
 [0.10.7]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.6...v0.10.7

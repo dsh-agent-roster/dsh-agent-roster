@@ -34,6 +34,7 @@ window.__ModuleLoader__.load({
     const INSTALL_ROUTE = "/plugins/dsh-agent-roster/install";
     const COLLECTION_ROUTE = "/plugins/dsh-agent-roster/collection";
     const APPLY_ROUTE = "/plugins/dsh-agent-roster/apply";
+    const SEARCH_ROUTE = "/plugins/dsh-agent-roster/search";
 
     const EFFORTS = ["low", "medium", "high", "default"];
     const LANGUAGES = ["auto", "zh", "en"];
@@ -1283,6 +1284,39 @@ window.__ModuleLoader__.load({
       const [importing, setImporting] = useState(false);
       const [removing, setRemoving] = useState(null);
       const [toast, setToast] = useState(null);
+      // 「找一份档案」是首屏动作，不是某个页签里的筛选器：它同时问本机与所有订阅来源。
+      const [lookup, setLookup] = useState("");
+      const [lookupState, setLookupState] = useState({ status: "idle", body: null });
+      const [pullingCollection, setPullingCollection] = useState("");
+
+      useEffect(() => {
+        const needle = lookup.trim();
+        if (needle.length < 2) {
+          setLookupState({ status: "idle", body: null });
+          return;
+        }
+        const controller = new AbortController();
+        // 停止输入之后才发请求：每敲一个字都打一次，等于自己给自己造并发。
+        const timer = setTimeout(() => {
+          setLookupState((current) => ({ status: "loading", body: current.body }));
+          readJson(`${SEARCH_ROUTE}?q=${encodeURIComponent(needle)}`, { signal: controller.signal })
+            .then((result) => {
+              if (controller.signal.aborted) return;
+              setLookupState(
+                result.ok && result.body !== null
+                  ? { status: "ready", body: result.body }
+                  : { status: "error", body: null },
+              );
+            })
+            .catch(() => {
+              if (!controller.signal.aborted) setLookupState({ status: "error", body: null });
+            });
+        }, 220);
+        return () => {
+          clearTimeout(timer);
+          controller.abort();
+        };
+      }, [lookup]);
 
       useEffect(() => {
         if (toast === null) return;
@@ -1320,6 +1354,38 @@ window.__ModuleLoader__.load({
             .some((value) => value.toLowerCase().includes(needle));
         });
       }, [rosters, query, selectedTags]);
+
+      async function openMatch(match) {
+        if (match.scope === "local") {
+          setLookup("");
+          setTab("rosters");
+          setQuery(match.rosterId);
+          return;
+        }
+        setPullingCollection(match.collectionId ?? "");
+        try {
+          const result = await readJson(INSTALL_ROUTE, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ collection: match.collectionId }),
+          });
+          if (!result.ok || result.body === null) {
+            setToast(`${t("misc.failed")} (${String(result.status)})`);
+            return;
+          }
+          const summary = t("source.pulled", {
+            written: result.body.written ?? 0,
+            unchanged: result.body.unchanged ?? 0,
+            conflicts: result.body.conflicts ?? 0,
+          });
+          setToast(summary);
+          library.reload();
+        } catch {
+          setToast(t("misc.failed"));
+        } finally {
+          setPullingCollection("");
+        }
+      }
 
       function toggleTag(tag) {
         setSelectedTags((current) => {
@@ -1453,6 +1519,82 @@ window.__ModuleLoader__.load({
           ),
         ),
       );
+
+      // 搜索态压过页签：输入了问题就只看答案，不再让人先去挑一个合集。
+      let lookupView = null;
+      const needle = lookup.trim();
+      if (needle !== "") {
+        const body = lookupState.body;
+        const matches = body?.matches ?? [];
+        lookupView = h(
+          "div",
+          { className: "rstr-results" },
+          h(
+            "p",
+            { className: "rstr-results-head" },
+            lookupState.status === "loading" && body === null
+              ? t("lookup.searching")
+              : t("lookup.counts", {
+                  total: String(matches.length),
+                  local: String(body?.counts?.local ?? 0),
+                  remote: String(body?.counts?.remote ?? 0),
+                }),
+          ),
+          lookupState.status === "error"
+            ? h("p", { className: "rstr-muted" }, t("lookup.failed"))
+            : null,
+          lookupState.status === "ready" && matches.length === 0
+            ? h("p", { className: "rstr-muted" }, t("lookup.empty", { q: needle }))
+            : null,
+          matches.map((match) =>
+            h(
+              "article",
+              { key: `${match.scope}:${match.collectionId ?? ""}:${match.rosterId}`, className: "rstr-row" },
+              h(
+                "div",
+                { className: "rstr-row-body" },
+                h("code", { className: "rstr-row-id", title: match.rosterId }, match.rosterId),
+                h(
+                  "div",
+                  { className: "rstr-row-text" },
+                  h("h3", { className: "rstr-row-title" }, match.title === "" ? match.rosterId : match.title),
+                  h(
+                    "p",
+                    { className: "rstr-row-desc" },
+                    match.hits.map((hit) => `${hit.label}：${hit.text}`).join(" · "),
+                  ),
+                ),
+                h(
+                  "div",
+                  { className: "rstr-row-stats" },
+                  h("span", { className: "rstr-stat" }, t("lookup.members", { count: String(match.members) })),
+                  h(
+                    "span",
+                    { className: "rstr-stat" },
+                    match.scope === "local"
+                      ? t("lookup.local")
+                      : t("lookup.remoteFrom", { collection: match.collectionTitle ?? match.collectionId ?? "" }),
+                  ),
+                ),
+                h(
+                  "div",
+                  { className: "rstr-row-actions" },
+                  h(
+                    "button",
+                    {
+                      type: "button",
+                      className: "rstr-btn rstr-btn-sm",
+                      disabled: match.scope === "remote" && pullingCollection !== "",
+                      onClick: () => openMatch(match),
+                    },
+                    match.scope === "local" ? t("lookup.open") : t("lookup.pull"),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
 
       let content = null;
 
@@ -1599,8 +1741,31 @@ window.__ModuleLoader__.load({
         { className: "rstr-page" },
         header,
         banner,
-        tabs,
-        content,
+        h(
+          "div",
+          { className: "rstr-lookup" },
+          h("input", {
+            className: "rstr-input rstr-lookup-input",
+            value: lookup,
+            placeholder: t("lookup.placeholder"),
+            "aria-label": t("lookup.placeholder"),
+            onChange: (event) => setLookup(event.target.value),
+            onKeyDown: (event) => {
+              if (event.key !== "Escape") return;
+              setLookup("");
+              event.stopPropagation();
+            },
+          }),
+          lookup === ""
+            ? h("span", { className: "rstr-lookup-hint" }, t("lookup.hint"))
+            : h(
+                "button",
+                { type: "button", className: "rstr-btn rstr-btn-sm rstr-btn-ghost", onClick: () => setLookup("") },
+                t("lookup.clear"),
+              ),
+        ),
+        lookupView === null ? tabs : null,
+        lookupView === null ? content : lookupView,
         h(
           "footer",
           { className: "rstr-foot" },
@@ -2346,6 +2511,19 @@ window.__ModuleLoader__.load({
 .rstr-search:focus-visible { background: var(--dsw-alias-bg-layer-1); border-color: var(--dsw-alias-border-l3); }
 
 /* ---- 账本（行） ------------------------------------------------------- */
+
+.rstr-lookup { display: flex; align-items: center; gap: 10px; padding: 0 28px 12px; min-width: 0; }
+
+.rstr-lookup-input { flex: 1 1 auto; max-width: 560px; }
+
+.rstr-lookup-hint { font-size: 12px; color: var(--dsw-alias-label-secondary); }
+
+/* 清除按钮不参与压缩：窄面板里被挤成竖排的两个字最难认。 */
+.rstr-lookup > .rstr-btn { flex: 0 0 auto; white-space: nowrap; }
+
+.rstr-results { display: flex; flex-direction: column; min-width: 0; padding: 0 28px 28px; border-top: 1px solid var(--dsw-alias-border-l2); }
+
+.rstr-results-head { margin: 12px 0 4px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 
 .rstr-cards { display: flex; flex-direction: column; min-width: 0; border-top: 1px solid var(--dsw-alias-border-l2); }
 

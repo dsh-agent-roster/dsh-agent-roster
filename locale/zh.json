@@ -301,5 +301,19 @@
   },
   "source.filter": "在这份集合里查找",
   "source.filterPlaceholder": "按 id、标题或成员名过滤",
-  "source.filterCount": "{shown} / {total}"
+  "source.filterCount": "{shown} / {total}",
+  "lookup": {
+    "placeholder": "要找什么能力？例：数据质量、发版、代码评审",
+    "hint": "同时搜本机与已订阅的来源",
+    "clear": "清除",
+    "searching": "正在搜索…",
+    "counts": "命中 {total} 份 · 候选：本机 {local} · 远端 {remote}",
+    "empty": "没有找到「{q}」。换个说法，或到「档案源」看看是否订阅了它。",
+    "failed": "搜索失败：宿主没有响应。",
+    "members": "{count} 名成员",
+    "local": "本机",
+    "remoteFrom": "来自 {collection}",
+    "open": "打开",
+    "pull": "拉取"
+  }
 }

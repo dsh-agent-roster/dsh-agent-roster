@@ -306,6 +306,23 @@ id belongs to the team, and the plugin never writes team state. What it does own
 failure that only exists on a red card never reaches the next compile, which is exactly how a gate
 turns into decoration.
 
+## Find one roster, not a catalogue
+
+The panel used to open on a list of collections. That answers "what is published"; the question people
+actually arrive with is "who can do this". So the first control is now one search field above the tabs:
+
+```
+要找什么能力？例：数据质量、发版、代码评审
+```
+
+It searches this machine and every subscribed source in one request. Each row says **why** it matched
+(`标签：数据质量 · 成员角色：数据质量工程师`) and where it lives (`来自 agent-roster-collective`), and
+carries the action you need next — open it locally, or pull that collection from the row.
+
+Multiple words are AND, not OR: `data kubernetes` returns nothing rather than every roster that merely
+mentions "data". Ranking is a pure function in `lib/search.js`, so it is unit-tested rather than
+eyeballed.
+
 ## Tools
 
 | Tool | Purpose |
@@ -492,7 +509,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 300/300 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
+- `npm test` — 307/307 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.

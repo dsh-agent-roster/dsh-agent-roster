@@ -234,3 +234,21 @@ test("长内容只由面板根滚动：账本与两级展开区都不许自建�
   assert.match(sourceRow, /display:\s*grid/, "展开清单是 id / 标题 / 人数 三列的账本行");
   assert.match(sourceRow, /minmax\(0,\s*1fr\)/, "标题列必须可压缩");
 });
+
+test("查找档案：搜索框在首屏，结果压过页签，命中要说清出处", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  // 搜索必须是首屏动作：输入框挂在页头之下、页签之上，而不是某个页签里的筛选器。
+  assert.match(source, /className: "rstr-lookup"/);
+  assert.match(source, /SEARCH_ROUTE = "\/plugins\/dsh-agent-roster\/search"/);
+  assert.match(source, /lookupView === null \? tabs : null/);
+  assert.match(source, /lookupView === null \? content : lookupView/);
+  // 每一行都要显示"为什么命中"，否则用户没法判断该不该点开。
+  assert.match(source, /match\.hits\.map\(\(hit\) => `\$\{hit\.label\}：\$\{hit\.text\}`\)\.join\(" · "\)/);
+  // 输入停止后才发请求（防抖），并且旧请求要能取消。
+  assert.match(source, /setTimeout\(\(\) => \{[\s\S]{0,400}?SEARCH_ROUTE/, "搜索应当在防抖之后发出");
+  assert.match(source, /controller\.abort\(\)/, "新的输入要取消上一次请求");
+  const css = source.match(/const CSS = `([\s\S]*?)`;/)[1];
+  for (const rule of [".rstr-lookup {", ".rstr-lookup-input {", ".rstr-results {"]) {
+    assert.ok(css.includes(rule), `缺少规则 ${rule}`);
+  }
+});
