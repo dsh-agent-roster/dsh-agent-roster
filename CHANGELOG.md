@@ -4,6 +4,18 @@
 
 ## [Unreleased]
 
+## [0.10.6] - 2026-11-03
+
+### Fixed
+
+- **An index cached before an upgrade kept feeding the old shape.** The cache stored an index document
+  with no notion of what shape it had, so after upgrading to 0.10.3 — the release that added
+  `collection.files` — the panel kept reading a cached index without `files`, fell back to the v1 path, and
+  404'd. Caches now carry `CACHE_VERSION`; a mismatch refetches once.
+- A failed fetch on the v1 fallback path now says *why* it is likely failing: if the collection has no
+  `files` mapping, the diagnostic points at a stale index (refresh, or delete `.index-cache`) instead of
+  leaving a bare `HTTP 404`.
+
 ## [0.10.5] - 2026-11-03
 
 ### Fixed
@@ -512,7 +524,8 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.5...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.6...main
+[0.10.6]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.5...v0.10.6
 [0.10.5]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.4...v0.10.5
 [0.10.4]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.3...v0.10.4
 [0.10.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.2...v0.10.3
