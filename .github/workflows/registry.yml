@@ -10,8 +10,10 @@ on:
     paths:
       - "index/registry.json"
       - "examples/**"
+      - "examples-v2/**"
       - "orgs/**"
       - "schema/**"
+      - "docs/**"
       - "test/**"
       - "bin/**"
       - "lib/**"
@@ -22,8 +24,10 @@ on:
     paths:
       - "index/registry.json"
       - "examples/**"
+      - "examples-v2/**"
       - "orgs/**"
       - "schema/**"
+      - "docs/**"
       - "test/**"
       - "bin/**"
       - "lib/**"
@@ -60,6 +64,14 @@ jobs:
 
       - name: 校验组织示例库（组织文件与磁盘交叉核对）
         run: node bin/cli.mjs validate --dir orgs/agent-roster-collective
+
+      - name: 编译 v2 示例（产物必须与源码同步）
+        run: |
+          node bin/cli.mjs compile --roster examples-v2/rosters/core-review --write
+          git diff --exit-code examples-v2/dist/ || {
+            echo "::error::dist 与源码不一致，请跑 node bin/cli.mjs compile --roster examples-v2/rosters/core-review --write 并提交";
+            exit 1;
+          }
 
       - name: 单测
         run: node --test

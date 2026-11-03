@@ -1,0 +1,38 @@
+kind: dsh-agent-roster/roster@2
+id: core-review
+version: 1.0.0
+title: 核心评审组
+description: 一个小团队：队长拆任务，评审把关，修复收尾。用来演示 v2 的引用式成员与声明式编排。
+license: MIT
+maintainers: [stofone]
+tags: [review, example]
+defaults:
+  route:
+    provider: deepseek
+    model: deepseek-v4.1-flash
+    reasoningEffort: high
+targets: [agent-teams/members]
+members:
+  - as: reviewer
+    role: reviewer@1.0.0
+  - as: fixer
+    role: fixer@1.0.0
+    prompt:
+      append: overrides/fixer.md
+captain:
+  role: lead@1.0.0
+orchestration:
+  shape: gate-pipeline
+  stages:
+    - id: build
+      serial: [fixer]
+    - id: audit
+      parallel: [reviewer]
+  gates:
+    - id: tests-pass
+      after: [audit]
+      by: reviewer
+      requires: [现有测试全部通过, 没有新增未覆盖的分支]
+requires:
+  toolPolicies: [member-safe]
+onMissing: refuse

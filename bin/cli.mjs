@@ -11,8 +11,9 @@
  *   dsh-agent-roster registry validate --file index/registry.json [--json]
  *   dsh-agent-roster registry fetch    --file index/registry.json [--local-only]
  *   dsh-agent-roster registry sync     --file index/registry.json [--write]
+ *   dsh-agent-roster compile --roster rosters/money-lab [--roles roles] [--write] [--json]
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import nodePath from "node:path";
 
 import { resolveDirSpec } from "../lib/home.js";
@@ -20,6 +21,7 @@ import { scanRosterLibrary } from "../lib/registry.js";
 import { renderRosterList } from "../lib/render.js";
 import { REGISTRY_KIND } from "../lib/format.js";
 import { fetchCollection, readRegistryFile } from "../lib/remote.js";
+import { compileRosterAt } from "../lib/compile2.js";
 
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
@@ -29,6 +31,7 @@ const USAGE = `用法：
   dsh-agent-roster registry validate --file <路径>   校验公共索引（registry）
   dsh-agent-roster registry fetch --file <路径>      逐条确认 collection 真的能取到
   dsh-agent-roster registry sync --file <路径>       按仓库实际内容重算 roster 列表
+  dsh-agent-roster compile --roster <目录>            把 v2 组装编译成自包含产物（不写盘）
   dsh-agent-roster --version         输出版本号
 
 选项：
@@ -37,7 +40,9 @@ const USAGE = `用法：
   --file <path>             registry 文件（registry 子命令用）
   --local-only              fetch 只验本仓库登记的 collection（CI 里用，不依赖外网）
   --write                   sync 把重算结果写回文件
-  --json                    以 JSON 输出（validate 与 list 都支持）
+  --roster <path>           v2 组装目录（compile 用）
+  --roles <path>            角色库目录（compile 用；缺省按 rosters/<id> 推同级的 roles/）
+  --json                    以 JSON 输出（validate / list / compile 都支持）
   --help                    显示本帮助
 `;
 
@@ -53,6 +58,8 @@ function parseArgs(argv) {
     file: null,
     localOnly: false,
     write: false,
+    roster: null,
+    roles: null,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -70,6 +77,16 @@ function parseArgs(argv) {
       const value = argv[index + 1];
       if (value === undefined) throw new UsageError("--file 需要一个路径");
       options.file = value;
+      index += 1;
+    } else if (arg === "--roster") {
+      const value = argv[index + 1];
+      if (value === undefined) throw new UsageError("--roster 需要一个路径");
+      options.roster = value;
+      index += 1;
+    } else if (arg === "--roles") {
+      const value = argv[index + 1];
+      if (value === undefined) throw new UsageError("--roles 需要一个路径");
+      options.roles = value;
       index += 1;
     } else if (arg === "--known-policy") {
       const value = argv[index + 1];
@@ -112,6 +129,7 @@ async function main(argv) {
     process.stdout.write(`${pkg.name} ${pkg.version}\n`);
     return 0;
   }
+  if (options.command === "compile") return runCompile(options);
   if (options.command === "registry") {
     if (options.file === null) {
       process.stderr.write(`registry 子命令需要 --file\n\n${USAGE}`);
@@ -201,6 +219,97 @@ async function main(argv) {
  * - `fetch` 确认索引里写的每份档案真的存在（本仓库的走本地文件，其余走网络）；
  * - `sync` 用仓库实际内容重算 `rosters` 与 `generatedAt`，把人肉维护改成机器盖章。
  */
+/**
+ * 编译一份 v2 组装。
+ *
+ * 三条约定：
+ * 1. 默认**不写盘**——编译是纯函数，`--write` 才落 `dist/`；
+ * 2. 有 error 就是退出码 1，警告不影响；
+ * 3. 产物是消费者唯一入口：桥接层与面板不需要再解析源文件。
+ */
+async function runCompile(options) {
+  if (options.roster === null) {
+    process.stderr.write(`compile 需要 --roster\n\n${USAGE}`);
+    return 2;
+  }
+  const rosterDir = nodePath.resolve(process.cwd(), options.roster);
+  const parent = nodePath.dirname(rosterDir);
+  const root = options.roles === null && nodePath.basename(parent) === "rosters" ? nodePath.dirname(parent) : null;
+  const rolesDir =
+    options.roles === null
+      ? root === null
+        ? nodePath.join(parent, "roles")
+        : nodePath.join(root, "roles")
+      : nodePath.resolve(process.cwd(), options.roles);
+
+  const result = compileRosterAt(rosterDir, {
+    rolesDir,
+    knownToolPolicies: options.knownPolicies.length > 0 ? options.knownPolicies : null,
+    source: { repo: ownRepo(), ref: "main" },
+  });
+
+  const diagnostics = result.diagnostics ?? [];
+  const errors = diagnostics.filter((item) => item.severity === "error");
+
+  if (options.json) {
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          plugin: pkg.name,
+          version: pkg.version,
+          rolesDir,
+          rosterDir,
+          ok: result.ok,
+          compiled: result.compiled,
+          diagnostics,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    return errors.length > 0 ? 1 : 0;
+  }
+
+  if (!result.ok || result.compiled === null) {
+    process.stderr.write(`编译失败：${nodePath.basename(rosterDir)}\n`);
+    for (const item of diagnostics) process.stderr.write(`${formatDiagnostic(item)}\n`);
+    return 1;
+  }
+
+  const compiled = result.compiled;
+  const chars = compiled.members.reduce((sum, item) => sum + item.promptStats.chars, 0);
+  process.stdout.write(
+    `产物 ${compiled.source.roster}@${compiled.source.version}  成员 ${compiled.members.length}  ` +
+      `人设合计 ${chars} 字符  声明 ${compiled.declarations.length} 项  targets ${compiled.targets.join(",") || "-"}\n`,
+  );
+  if (compiled.captain !== null) {
+    process.stdout.write(`  队长 ${compiled.captain.role ?? "-"}  persona ${compiled.captain.personaChars} 字符\n`);
+  }
+  if (compiled.orchestration !== null) {
+    process.stdout.write(
+      `  编排 ${compiled.orchestration.shape ?? "-"}  stages ${compiled.orchestration.stages.length}  ` +
+        `gates ${compiled.orchestration.gates.length}  status ${compiled.orchestration.status}\n`,
+    );
+  }
+  for (const member of compiled.members) {
+    process.stdout.write(
+      `  ${member.name.padEnd(24)} ${member.role.padEnd(24)} ${String(member.promptStats.chars).padStart(5)} 字符  ` +
+        `${member.promptStats.sha256.slice(0, 12)}\n`,
+    );
+  }
+  for (const item of diagnostics) process.stdout.write(`${formatDiagnostic(item)}\n`);
+
+  if (options.write) {
+    const outDir = nodePath.join(root ?? parent, "dist");
+    mkdirSync(outDir, { recursive: true });
+    const outFile = nodePath.join(outDir, `${compiled.source.roster}-${compiled.source.version}.json`);
+    writeFileSync(outFile, `${JSON.stringify(compiled, null, 2)}\n`);
+    process.stdout.write(`  已写出 ${nodePath.relative(process.cwd(), outFile) || outFile}\n`);
+  }
+
+  return 0;
+}
+
 async function runRegistry(options) {
   const file = nodePath.resolve(process.cwd(), options.file);
   const output = (text) => process.stdout.write(`${text}\n`);

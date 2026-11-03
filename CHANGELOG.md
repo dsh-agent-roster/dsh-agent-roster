@@ -4,6 +4,27 @@
 
 ## [Unreleased]
 
+### Roles, rosters and compiled artifacts (v2)
+
+- **A roster is no longer one document doing four jobs.** Personas move to `roles/<dir>/AGENT.md`
+  (frontmatter for parameters, markdown body for the persona, optional `parts/`), assemblies stay in
+  `rosters/<id>/roster.yaml` (members are `name@x.y.z` references, the captain gets its own section),
+  and everything consumers read is a self-contained `dist/<id>-<ver>.json`.
+- **Assembly is part of the format**: `executionPrompt = join("\n\n", [body, ...parts, ...append])`,
+  implemented once in `lib/frontmatter.js#assemblePrompt`. The compiled artifact records character
+  count, block list and SHA-256 per prompt.
+- **The discriminator decides the version** — `dsh-agent-roster/role@1`, `/roster@2`, `/compiled@1`.
+  v1 is frozen; two formats never share a directory.
+- **Identity comes from the document**, so the "directory name must equal `id`" rule is replaced by a
+  stronger one: role names are unique within a library, and duplicate `name` is an error.
+- **`orchestration` is compiled as a declaration.** Stages and gates are validated (a gate's `after`
+  must name real stages, `by` must name a real member), the artifact marks
+  `status: "declaration"`, and every non-executed field is listed in `declarations[]`.
+- **New CLI**: `dsh-agent-roster compile --roster <dir> [--roles <dir>] [--write] [--json]`.
+- **Schema alignment tests**: `test/v2-schema.test.js` pins field sets, enums, limits and regexes to
+  `lib/format-v2.js`, and `test/examples-v2.test.js` compiles `examples-v2/` and fails if `dist/` drifts.
+- Design contract: [`docs/roster-v2.md`](./docs/roster-v2.md).
+
 ## [0.9.2] - 2026-11-03
 
 ### The member list is a table

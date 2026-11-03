@@ -1,0 +1,405 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dsh-agent-roster/dsh-agent-roster/blob/main/schema/roster.v2.schema.json",
+  "title": "DSH agent roster assembly (v2)",
+  "description": "一份组装：成员是对 roles/*/AGENT.md 的引用，队长独立成段，编排是一等公民。校验的权威实现是 lib/roster2.js 与 lib/compile2.js；本文件供编辑器提示，两者由 test/v2-schema.test.js 对齐。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "id",
+    "version",
+    "members"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "kind": {
+      "const": "dsh-agent-roster/roster@2"
+    },
+    "id": {
+      "$ref": "#/$defs/id"
+    },
+    "version": {
+      "$ref": "#/$defs/semver"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "license": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "notes": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "maintainers": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/tag"
+      }
+    },
+    "defaults": {
+      "$ref": "#/$defs/defaults"
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "enum": [
+          "agent-teams/members",
+          "agent-teams/orchestration",
+          "profile/agent-preset"
+        ]
+      },
+      "description": "编译目标：决定字段落到哪个面。缺省 agent-teams/members。"
+    },
+    "members": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/$defs/member"
+      }
+    },
+    "captain": {
+      "$ref": "#/$defs/captain"
+    },
+    "orchestration": {
+      "$ref": "#/$defs/orchestration"
+    },
+    "requires": {
+      "$ref": "#/$defs/requires"
+    },
+    "onMissing": {
+      "enum": [
+        "refuse",
+        "degraded"
+      ]
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,63}$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "provider": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "model": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,119}$"
+    },
+    "effort": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "default"
+      ]
+    },
+    "tag": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,31}$"
+    },
+    "skill": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "toolPattern": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.:-]{0,126}\\*?$"
+    },
+    "roleRef": {
+      "type": "string",
+      "pattern": "^([a-z0-9][a-z0-9-]{1,63})@((?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?)$",
+      "description": "角色引用 name@x.y.z；不写范围、不写 latest。"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!.*\\.\\.)(?![A-Za-z]:[\\\\/])(?!/)(?!.*\\\\)(?:[A-Za-z0-9._-]+/)*[A-Za-z0-9._-]+$"
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "$ref": "#/$defs/provider"
+        },
+        "model": {
+          "$ref": "#/$defs/model"
+        },
+        "reasoningEffort": {
+          "$ref": "#/$defs/effort"
+        }
+      },
+      "dependentRequired": {
+        "provider": [
+          "model"
+        ],
+        "model": [
+          "provider"
+        ]
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allow": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/toolPattern"
+          }
+        },
+        "deny": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/toolPattern"
+          }
+        }
+      }
+    },
+    "tools": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "$ref": "#/$defs/id"
+        },
+        "scope": {
+          "$ref": "#/$defs/scope"
+        }
+      }
+    },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "只放能被成员继承的桥接字段；编译时展开成每个人的显式值。",
+      "properties": {
+        "route": {
+          "$ref": "#/$defs/route"
+        },
+        "tools": {
+          "$ref": "#/$defs/tools"
+        }
+      }
+    },
+    "memberPrompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "prepend": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "append": {
+          "$ref": "#/$defs/relativePath"
+        }
+      },
+      "description": "只能加在角色拼装结果的两端，不能重排或替换角色内部片段。"
+    },
+    "member": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "as",
+        "role"
+      ],
+      "properties": {
+        "as": {
+          "$ref": "#/$defs/id",
+          "description": "成员名（编译产物里的 name）。"
+        },
+        "role": {
+          "$ref": "#/$defs/roleRef"
+        },
+        "route": {
+          "$ref": "#/$defs/route"
+        },
+        "tools": {
+          "$ref": "#/$defs/tools"
+        },
+        "prompt": {
+          "$ref": "#/$defs/memberPrompt"
+        },
+        "requires": {
+          "$ref": "#/$defs/requires"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    },
+    "captain": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "队长不是成员：它是创建团队的那个会话。路由与 persona 只能落 profile 配置。",
+      "properties": {
+        "role": {
+          "$ref": "#/$defs/roleRef"
+        },
+        "route": {
+          "$ref": "#/$defs/route"
+        },
+        "persona": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    },
+    "stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "parallel": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "serial": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "join": {
+          "$ref": "#/$defs/id"
+        },
+        "on": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "role": {
+          "$ref": "#/$defs/roleRef"
+        },
+        "maxRounds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "after": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "description": "等哪些阶段结束；必须是存在的 stage id（机器可校验）。"
+        },
+        "requires": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "description": "验收判据（给人读的句子，编译器只钉条数与长度）。"
+        },
+        "by": {
+          "$ref": "#/$defs/id",
+          "description": "由哪个成员判定；必须是本组装的成员名。"
+        }
+      }
+    },
+    "orchestration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "shape": {
+          "enum": [
+            "gate-pipeline"
+          ]
+        },
+        "stages": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "$ref": "#/$defs/stage"
+          }
+        },
+        "gates": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "$ref": "#/$defs/gate"
+          }
+        }
+      }
+    },
+    "requires": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "skills": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/skill"
+          }
+        },
+        "toolPolicies": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    }
+  }
+}

@@ -221,6 +221,35 @@ This file creates nothing. It does not write `team.json`, does not create member
 node bin/cli.mjs validate --dir orgs/agent-roster-collective
 ```
 
+## Roles, rosters and compiled artifacts (v2)
+
+v1 keeps everything in one `roster.yaml`: the persona sits in a YAML block scalar, the assembly protocol lives in plugin code, the captain is written twice, and identity comes from the directory name. v2 splits that into three layers, one authority each:
+
+```text
+roles/<any-dir>/AGENT.md     role: frontmatter is parameters, body is the persona, parts/ optional
+rosters/<id>/roster.yaml     assembly: members are references, the captain has its own section
+dist/<id>-<ver>.json         compiled: self-contained, hashable, the only thing consumers read
+```
+
+The discriminator decides the version — `dsh-agent-roster/role@1`, `dsh-agent-roster/roster@2`, `dsh-agent-roster/compiled@1`. Two formats never share a directory: v1 is frozen, and `roster migrate` (not yet built) rewrites it in place.
+
+Assembly is written into the format rather than hidden in code:
+
+```text
+executionPrompt = join("\n\n", [body, ...parts, ...member.append])
+```
+
+`assemblePrompt()` in `lib/frontmatter.js` is the only implementation, and the compiled artifact records the character count, the block list and a SHA-256 for every prompt, so "which text did this member actually get" is answerable without re-reading the sources.
+
+The example library in [`examples-v2/`](./examples-v2/) compiles end to end:
+
+```bash
+node bin/cli.mjs compile --roster examples-v2/rosters/core-review --write
+node bin/cli.mjs compile --roster examples-v2/rosters/core-review --json
+```
+
+`orchestration` is part of the format but is compiled with `status: "declaration"`: stages and gates are validated (a gate's `after` must name real stages, `by` must name a real member), yet nothing executes them. Declaring a field is not the same as proving it runs, so the artifact says which is which in `declarations[]`. The full contract — field ownership, assembly semantics, identity and uniqueness, migration rules — is in [`docs/roster-v2.md`](./docs/roster-v2.md); the schemas are [`schema/role.v1.schema.json`](./schema/role.v1.schema.json), [`schema/roster.v2.schema.json`](./schema/roster.v2.schema.json) and [`schema/compiled.v1.schema.json`](./schema/compiled.v1.schema.json).
+
 ## Tools
 
 | Tool | Purpose |
@@ -389,7 +418,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 240/240 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, remote registry and one-click install).
+- `npm test` — 268/268 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.

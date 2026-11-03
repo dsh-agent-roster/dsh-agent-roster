@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dsh-agent-roster/dsh-agent-roster/blob/main/schema/role.v1.schema.json",
+  "title": "DSH agent roster role",
+  "description": "一份角色：frontmatter 是参数（路由、工具策略、片段顺序、预算），正文是人设。校验的权威实现是 lib/role.js；本文件供编辑器与外部工具提示，两者由 test/v2-schema.test.js 对齐。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "name",
+    "version",
+    "role"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "编辑器用的 schema 地址，插件不读它。"
+    },
+    "kind": {
+      "const": "dsh-agent-roster/role@1"
+    },
+    "name": {
+      "$ref": "#/$defs/id",
+      "description": "角色身份权威（不是目录名）。同一座角色库里必须唯一。"
+    },
+    "version": {
+      "$ref": "#/$defs/semver",
+      "description": "角色自己的版本，与引用它的 roster 版本无关。"
+    },
+    "role": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/tag"
+      }
+    },
+    "maintainers": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "license": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "notes": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "route": {
+      "$ref": "#/$defs/route"
+    },
+    "tools": {
+      "$ref": "#/$defs/tools"
+    },
+    "prompt": {
+      "$ref": "#/$defs/prompt"
+    },
+    "skills": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/skill"
+      }
+    },
+    "examples": {
+      "$ref": "#/$defs/relativePath"
+    },
+    "requires": {
+      "$ref": "#/$defs/requires"
+    },
+    "onMissing": {
+      "enum": [
+        "refuse",
+        "degraded"
+      ],
+      "description": "部署缺少声明要求时的行为；默认 refuse。"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,63}$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "provider": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "model": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,119}$"
+    },
+    "effort": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "default"
+      ]
+    },
+    "tag": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,31}$"
+    },
+    "skill": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "toolPattern": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.:-]{0,126}\\*?$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!.*\\.\\.)(?![A-Za-z]:[\\\\/])(?!/)(?!.*\\\\)(?:[A-Za-z0-9._-]+/)*[A-Za-z0-9._-]+$",
+      "description": "角色/组装目录内的相对路径；不允许绝对路径、.. 与反斜杠。"
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "$ref": "#/$defs/provider"
+        },
+        "model": {
+          "$ref": "#/$defs/model"
+        },
+        "reasoningEffort": {
+          "$ref": "#/$defs/effort"
+        }
+      },
+      "dependentRequired": {
+        "provider": [
+          "model"
+        ],
+        "model": [
+          "provider"
+        ]
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allow": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/toolPattern"
+          }
+        },
+        "deny": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/toolPattern"
+          }
+        }
+      }
+    },
+    "tools": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "$ref": "#/$defs/id",
+          "description": "direct：部署已声明的 toolPolicy id。"
+        },
+        "scope": {
+          "$ref": "#/$defs/scope",
+          "description": "declaration：只作说明，运行时不生效。"
+        }
+      }
+    },
+    "prompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "parts": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/relativePath"
+          },
+          "description": "按顺序拼在正文之后的片段；拼装语义见 docs/roster-v2.md。"
+        },
+        "budget": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "本角色拼装后的字符预算（不是 token）。"
+        }
+      }
+    },
+    "requires": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "skills": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/skill"
+          }
+        },
+        "toolPolicies": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      },
+      "description": "只收有证据源的要求：技能目录、部署声明的 toolPolicies。其余一律 unknown-field。"
+    }
+  }
+}

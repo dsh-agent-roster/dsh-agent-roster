@@ -1,0 +1,334 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dsh-agent-roster/dsh-agent-roster/blob/main/schema/compiled.v1.schema.json",
+  "title": "DSH agent roster compiled artifact",
+  "description": "编译产物：自包含、可 diff、可哈希。消费者（registry、面板、桥接层）只看它，不看源文件。生成者是 lib/compile2.js，任何手改都会被 CI 的漂移检查打回。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "source",
+    "members",
+    "declarations"
+  ],
+  "properties": {
+    "kind": {
+      "const": "dsh-agent-roster/compiled@1"
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "agent-teams/members",
+          "agent-teams/orchestration",
+          "profile/agent-preset"
+        ]
+      }
+    },
+    "captain": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provider": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reasoningEffort": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "persona": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "personaPath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "personaChars": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "personaSha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "members": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/member"
+      }
+    },
+    "orchestration": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "shape": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stages": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "gates": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "status": {
+          "const": "declaration",
+          "description": "运行时不会执行这份编排：它先是可校验的计划。"
+        }
+      }
+    },
+    "declarations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field",
+          "note"
+        ],
+        "properties": {
+          "scope": {
+            "enum": [
+              "member",
+              "roster",
+              "captain",
+              "orchestration"
+            ]
+          },
+          "member": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "requires": {
+      "$ref": "#/$defs/requires"
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "roster",
+        "version"
+      ],
+      "properties": {
+        "roster": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "repo": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lock": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "file": {
+          "type": "string"
+        }
+      }
+    },
+    "requires": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "toolPolicies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "member": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "role",
+        "executionPrompt",
+        "promptStats",
+        "provenance"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "roleRef": {
+          "type": "string",
+          "description": "产出这份人设的角色引用 name@x.y.z。"
+        },
+        "role": {
+          "type": "string"
+        },
+        "roleName": {
+          "type": "string"
+        },
+        "roleVersion": {
+          "type": "string"
+        },
+        "provider": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reasoningEffort": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "toolPolicy": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "executionPrompt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "promptStats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "chars",
+            "parts",
+            "sha256"
+          ],
+          "properties": {
+            "chars": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "parts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "path",
+                  "kind"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "enum": [
+                      "prepend",
+                      "body+parts",
+                      "part",
+                      "append"
+                    ]
+                  }
+                }
+              }
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "role",
+            "sha256"
+          ],
+          "properties": {
+            "role": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}$"
+            }
+          }
+        }
+      }
+    }
+  }
+}
