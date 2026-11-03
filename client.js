@@ -1458,12 +1458,17 @@ window.__ModuleLoader__.load({
 
       if (tab === "rosters") {
         if (rosters.length === 0) {
-          content = h(EmptyState, {
-            title: t("panel.emptyTitle"),
-            body: t("panel.emptyBody"),
-            cta: targets.length === 0 ? undefined : t("panel.emptyCta"),
-            onCta: () => setEditor({ roster: null, rootDir: defaultRoot }),
-          });
+          // 空状态与列表共享同一条左沿：页面本身 padding 为 0，留白由各页签自己给。
+          content = h(
+            "div",
+            { className: "rstr-empty-wrap" },
+            h(EmptyState, {
+              title: t("panel.emptyTitle"),
+              body: t("panel.emptyBody"),
+              cta: targets.length === 0 ? undefined : t("panel.emptyCta"),
+              onCta: () => setEditor({ roster: null, rootDir: defaultRoot }),
+            }),
+          );
         } else {
           content = h(
             "div",
@@ -1561,7 +1566,7 @@ window.__ModuleLoader__.load({
       if (tab === "teams") {
         content =
           teams.length === 0
-            ? h(EmptyState, { title: t("team.emptyTitle"), body: t("team.emptyBody") })
+            ? h("div", { className: "rstr-empty-wrap" }, h(EmptyState, { title: t("team.emptyTitle"), body: t("team.emptyBody") }))
             : h("div", { className: "rstr-cards" }, teams.map((team) => h(TeamCard, { key: team.id, team })));
       }
 
@@ -2600,6 +2605,10 @@ window.__ModuleLoader__.load({
 
 /* ---- 空态 / 健康 / 页脚 ------------------------------------------------ */
 
+.rstr-empty-wrap {
+  padding: 16px 28px 28px;
+  min-width: 0;
+}
 .rstr-empty { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; padding: 40px 2px; color: var(--dsw-alias-label-primary); }
 .rstr-empty-title { margin: 0; font-size: 15px; font-weight: 600; }
 .rstr-health { display: flex; flex-direction: column; gap: 14px; padding: 16px 28px 28px; }

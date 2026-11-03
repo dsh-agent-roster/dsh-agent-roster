@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-11-03
+
+### Fixed
+
+- Empty states hugged the panel edge: the rosters and teams tabs rendered their "nothing here yet" block
+  straight into a page whose padding is `0` (each tab supplies its own gutter), so the sentence sat against
+  the window border while the tab labels and lists were indented. Both now sit in `.rstr-empty-wrap`, the
+  same 16/28px measure the source tab and the health tab use.
+
 ## [0.11.0] - 2026-11-03
 
 ### Changed
@@ -548,7 +557,8 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.11.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.11.1...main
+[0.11.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.7...v0.11.0
 [0.10.7]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.6...v0.10.7
 [0.10.6]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.5...v0.10.6

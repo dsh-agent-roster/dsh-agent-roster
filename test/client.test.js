@@ -221,6 +221,15 @@ test("长内容只由面板根滚动：账本与两级展开区都不许自建�
   const sources = ruleOf(".rstr-sources");
   assert.match(sources, /padding:\s*16px 28px/, "档案源页签要和档案页一样有自己的内边距，否则内容贴着窗口边");
 
+  // 空库 / 空团队时页签里只剩一句空状态。它原来直接挂在页面根下（页面 padding 为 0），
+  // 于是「还没有档案」四个字贴着窗口左上角——列表有留白、空状态没有，看着就是没做完。
+  const emptyWrap = ruleOf(".rstr-empty-wrap");
+  assert.match(emptyWrap, /padding:\s*16px 28px/, "空状态要占与列表同一块版心");
+  assert.ok(
+    (source.match(/className: "rstr-empty-wrap"/g) ?? []).length >= 2,
+    "空档案与空团队两处都要包进版心，不能只包一处",
+  );
+
   const sourceRow = ruleOf(".rstr-source-roster");
   assert.match(sourceRow, /display:\s*grid/, "展开清单是 id / 标题 / 人数 三列的账本行");
   assert.match(sourceRow, /minmax\(0,\s*1fr\)/, "标题列必须可压缩");
