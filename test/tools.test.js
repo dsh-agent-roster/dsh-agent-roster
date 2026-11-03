@@ -21,7 +21,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const examples = path.join(root, "examples");
 
 /** 用最小的假 ctx 注册工具，返回 name → tool 的映射。 */
-function register() {
+function register(overrides = {}) {
   const tools = new Map();
   const disposers = [];
   const ctx = {
@@ -35,7 +35,7 @@ function register() {
       disposers.push(fn());
     },
   };
-  registerRosterTools(ctx, { rosterDirs: ["rosters"], knownToolPolicies: [], agentTeamsStateDir: ".agent-teams" }, { version: "0.1.0" });
+  registerRosterTools(ctx, { rosterDirs: ["rosters"], knownToolPolicies: [], agentTeamsStateDir: ".agent-teams", ...overrides }, { version: "0.1.0" });
   return { tools, disposers };
 }
 
@@ -112,4 +112,14 @@ test("释放后不残留工具", () => {
   assert.equal(tools.size, 6);
   for (const dispose of disposers) dispose();
   assert.equal(tools.size, 0);
+});
+
+test("roster_index 能真的跑起来：工具体里引用的函数都 import 了", async () => {
+  // 这条针对 0.10.2 的事故：execute() 里用了 loadRemotePanel / fetchCollection，
+  // 文件顶部却没 import，模块加载期不报错，一调用就 ReferenceError。
+  const { tools } = register({ indexes: false });
+  const { value, firstLine } = await call(tools, "roster_index", {});
+  assert.match(firstLine, /^\[roster_index\] /);
+  assert.deepEqual(value.collections, []);
+  assert.deepEqual(value.indexes, []);
 });

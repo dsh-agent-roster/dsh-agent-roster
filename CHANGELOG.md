@@ -4,6 +4,18 @@
 
 ## [Unreleased]
 
+## [0.10.5] - 2026-11-03
+
+### Fixed
+
+- **`roster_index` could not run at all.** Its `execute()` called `loadRemotePanel` and `fetchCollection`,
+  neither of which was imported; the module loaded fine and threw `ReferenceError` on the first call.
+  It now imports both, and a test executes the tool so this class of breakage cannot pass silently again.
+- **Every public collection answered HTTP 404.** `loadRemotePanel` rebuilds each registry collection from
+  an explicit field list, and `files` was not on it — so every URL fell back to the v1 path
+  `<id>/roster.yaml`, which no longer exists for a v2 library. The projection keeps `files` now, with a
+  test that fails if the field is dropped again.
+
 ## [0.10.4] - 2026-11-03
 
 ### Fixed
@@ -500,7 +512,8 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.4...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.5...main
+[0.10.5]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.4...v0.10.5
 [0.10.4]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.3...v0.10.4
 [0.10.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.1...v0.10.2

@@ -10,6 +10,7 @@ import {
   buildHints,
   buildPanelSnapshot,
   countDeployments,
+  loadRemotePanel,
   resolveRoots,
 } from "../lib/service.js";
 
@@ -314,4 +315,39 @@ requires:
   } finally {
     fs.rmSync(workspace, { recursive: true, force: true });
   }
+});
+
+describe("面板的远端索引投影", () => {
+  it("保留每个 collection 的 files 映射（丢掉它，URL 就会退回不存在的 v1 路径）", async () => {
+    const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), "dsh-panel-index-"));
+    const panel = await loadRemotePanel(
+      { indexes: [{ id: "demo", url: "https://example.com/registry.json" }] },
+      {
+        cacheDir,
+        refresh: true,
+        fetchImpl: async () => ({
+          ok: true,
+          status: 200,
+          headers: { get: () => "application/json" },
+          text: async () =>
+            JSON.stringify({
+              kind: "dsh-agent-roster-registry/v1",
+              collections: [
+                {
+                  id: "demo",
+                  repo: "github:someone/demo",
+                  path: "examples",
+                  rosters: ["core-review"],
+                  files: { "core-review": "dist/core-review-1.0.0.json" },
+                },
+              ],
+            }),
+        }),
+      },
+    );
+    fs.rmSync(cacheDir, { recursive: true, force: true });
+
+    assert.equal(panel.collections.length, 1);
+    assert.deepEqual(panel.collections[0].files, { "core-review": "dist/core-review-1.0.0.json" });
+  });
 });
