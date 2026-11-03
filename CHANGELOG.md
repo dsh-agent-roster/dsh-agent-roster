@@ -4,6 +4,17 @@
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-11-03
+
+### Docs
+
+- The Chinese README said `migrate` was "not implemented", listed one example library where there are
+  two, and had a file tree from before `roles/`, `roster.v2` and `compiled.v1` existed — docs that
+  describe last week's format read as current, which is worse than no docs.
+- Both READMEs now carry the same two sections: one-command v1→v2 migration (including why role names
+  are prefixed and why a colliding captain gets `-captain`), and feeding a failed round back into the
+  plan with `compile --run`.
+
 ## [0.10.0] - 2026-11-03
 
 ### Roles, rosters and compiled artifacts (v2)
