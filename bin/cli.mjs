@@ -13,6 +13,7 @@
  *   dsh-agent-roster registry sync     --file index/registry.json [--write]
  *   dsh-agent-roster compile --roster rosters/money-lab [--roles roles] [--run run.json] [--write] [--json]
  *   dsh-agent-roster migrate --dir examples [--write] [--json]
+ *   dsh-agent-roster migrate --dir . --from rosters --repo owner/repo --write
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import nodePath from "node:path";
@@ -37,7 +38,8 @@ const USAGE = `用法：
   dsh-agent-roster registry fetch --file <路径>      逐条确认 collection 真的能取到
   dsh-agent-roster registry sync --file <路径>       按仓库实际内容重算 roster 列表
   dsh-agent-roster compile --roster <目录>            把 v2 组装编译成自包含产物（不写盘）
-  dsh-agent-roster migrate --dir <目录>               把 v1 档案原地迁成 v2（roles/ + rosters/ + dist/）
+  dsh-agent-roster migrate --dir <目录> [--from <子目录>] [--repo <owner/repo>] [--write]
+                                                      把 v1 档案原地迁成 v2（roles/ + rosters/ + dist/）
   dsh-agent-roster --version         输出版本号
 
 选项：
@@ -47,6 +49,8 @@ const USAGE = `用法：
   --local-only              fetch 只验本仓库登记的 collection（CI 里用，不依赖外网）
   --write                   sync 把重算结果写回文件
   --roster <path>           v2 组装目录（compile 用）
+  --from <path>             v1 档案所在目录（migrate 用；缺省与 --dir 相同，用于仓库根 + rosters/ 布局）
+  --repo <owner/repo>       写进 dist 产物的仓库坐标（migrate 用；缺省取本仓 remote）
   --run <path>              执行回执（compile 用；把上一轮失败并入重试卡）
   --roles <path>            角色库目录（compile 用；缺省按 rosters/<id> 推同级的 roles/）
   --json                    以 JSON 输出（validate / list / compile 都支持）
@@ -68,6 +72,8 @@ function parseArgs(argv) {
     roster: null,
     roles: null,
     run: null,
+    from: null,
+    repo: null,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -90,6 +96,16 @@ function parseArgs(argv) {
       const value = argv[index + 1];
       if (value === undefined) throw new UsageError("--roster 需要一个路径");
       options.roster = value;
+      index += 1;
+    } else if (arg === "--from") {
+      const value = argv[index + 1];
+      if (value === undefined) throw new UsageError("--from 需要一个路径");
+      options.from = value;
+      index += 1;
+    } else if (arg === "--repo") {
+      const value = argv[index + 1];
+      if (value === undefined) throw new UsageError("--repo 需要 owner/name");
+      options.repo = value;
       index += 1;
     } else if (arg === "--run") {
       const value = argv[index + 1];
@@ -520,7 +536,13 @@ function runMigrate(options) {
   const reports = [];
   for (const dir of dirs) {
     const rootDir = resolveDirSpec(dir, process.cwd());
-    const report = migrateLibrary(rootDir, { write: options.write, knownToolPolicies, source: { repo: ownRepo(), ref: "main" } });
+    const fromDir = options.from === null ? rootDir : resolveDirSpec(options.from, process.cwd());
+    const report = migrateLibrary(rootDir, {
+      write: options.write,
+      knownToolPolicies,
+      source: { repo: options.repo ?? ownRepo(), ref: "main" },
+      fromDir,
+    });
     reports.push({ dir, rootDir, report });
     if (report.diagnostics.some((item) => item.severity === "error")) rc = 1;
     if (options.json) continue;

@@ -197,6 +197,8 @@ gates:
 ## 8. 迁移
 
 - `roster migrate --dir <库> [--write]` 读 v1 档案，把 `systemPrompt` 拆成角色（`roles/<member>/AGENT.md`）+ 组装（成员改为引用），原地重写并生成 `dist/`。默认只出计划，`--write` 才落盘——这是唯一会删旧目录的命令。
+- `roster migrate --dir <库根> --from <旧目录> [--repo <owner/repo>] [--write]`：v1 档案放在子目录（`rosters/<id>/roster.yaml`，即"仓库本身就是库、只是档案隔了一层"）时用这条。它就地重写 `rosters/<id>/roster.yaml`、在库根补 `roles/` 与 `dist/`、删掉并排的 `roster.json`/`roster.yml`（同义文件=第二真源），**不删** `rosters/<id>/` —— 那个目录就是新档案的落脚处。`--repo` 写进产物的 `source.repo`，避免发布仓的产物署错名。
+- **collection 的 `path` 可以是空字符串**，表示仓库根就是库：`roles/`、`rosters/`、`dist/` 直接躺在根上。配合 `files` 映射指向 `dist/<id>-<ver>.json`。
 - **角色名带档案 id 前缀**（`core-review-reviewer`）：v2 要求同库角色名唯一，而真实档案库里几十套组装都可能叫 `lead`。队长与成员同名时，队长得到 `-captain` 后缀，不与人设合并。
 - `maintainers` 用 `handle` 模式（允许大写与点），不复用档案 id 的小写短横线规则——维护者是账号，不是标识符。
 - v1 冻结：新字段只进 v2，不再回填 v1。

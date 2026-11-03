@@ -7,7 +7,8 @@
  * @module test/migrate
  */
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import nodePath from "node:path";
 import test from "node:test";
 
@@ -150,4 +151,32 @@ test("migrate：convertRoster 把成员路由搬进角色、把 defaults 留给�
   assert.equal(roster2.members[0].role, "squad-solo@1.0.0");
   assert.equal(roster2.defaults.route.provider, "deepseek");
   assert.deepEqual(emitYaml({ a: [], b: {} }), 'a: []\nb: {}');
+});
+
+test("仓库根 + rosters/ 布局：--from 就地改成 v2，不删目录", () => {
+  const root = mkdtempSync(nodePath.join(tmpdir(), "dsh-migrate-flat-"));
+  try {
+    const fromDir = nodePath.join(root, "rosters");
+    mkdirSync(nodePath.join(fromDir, "demo"), { recursive: true });
+    writeFileSync(nodePath.join(fromDir, "demo", "roster.json"), JSON.stringify(rosterDocument({ roster: "demo" }), null, 2));
+
+    const report = migrateLibrary(root, { write: true, fromDir });
+    assert.equal(report.diagnostics.filter((item) => item.severity === "error").length, 0);
+    assert.deepEqual(report.removed, []);
+
+    // 组装被就地改写成 v2 —— 目录还在，内容换了版本。
+    const roster = readFileSync(nodePath.join(fromDir, "demo", "roster.yaml"), "utf8");
+    assert.match(roster, /kind: "?dsh-agent-roster\/roster@2"?/);
+    assert.equal(existsSync(nodePath.join(fromDir, "demo", "roster.json")), false);
+    // 角色与产物落在仓库根上。
+    assert.match(readFileSync(nodePath.join(root, "roles", "demo-reviewer", "AGENT.md"), "utf8"), /kind: "?dsh-agent-roster\/role@1"?/);
+    const dist = readdirSync(nodePath.join(root, "dist"));
+    assert.equal(dist.some((name) => /^demo-.*\.json$/.test(name) && !name.endsWith(".tasks.json")), true);
+
+    const scan = scanRosterLibrary({ rootDir: root });
+    assert.equal(scan.rosters.length, 1);
+    assert.equal(scan.rosters[0].format, "v2");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

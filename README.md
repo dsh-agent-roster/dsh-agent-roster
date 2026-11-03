@@ -276,6 +276,18 @@ Migration keeps personas verbatim: a member's `systemPrompt` becomes the body of
 loose field and becomes a role file of its own — `<roster>-<captain>-captain` when its name collides
 with a member, because those are two different personas and silently merging them would lose one.
 
+If the v1 rosters live in a subdirectory (the usual case for a repository that publishes a
+collection), point the migration at the library root and tell it where the old files are:
+
+```bash
+node bin/cli.mjs migrate --dir . --from rosters --repo owner/repo --write
+```
+
+That layout rewrites `rosters/<id>/roster.yaml` in place, adds `roles/` and `dist/` at the repository
+root, and drops the stale `roster.json`/`roster.yml` next to it — two spellings of one roster are two
+sources of truth. The collection then uses `path: ""` (the repository root *is* the library) and a
+`files` map pointing at `dist/`, because an assembly only references roles and cannot be pulled alone.
+
 Role names carry the roster id prefix because v2 requires role names to be **unique per library**,
 and a library whose 21 rosters all call their captain `lead` cannot have 21 files with the same name.
 
@@ -468,7 +480,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 286/286 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
+- `npm test` — 293/293 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.

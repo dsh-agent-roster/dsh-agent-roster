@@ -71,7 +71,7 @@
             "type": "string",
             "pattern": "^(?:/)?(?:[A-Za-z0-9._-]+/)*[A-Za-z0-9._-]*$",
             "default": "rosters",
-            "description": "仓库内存放档案的目录。"
+            "description": "仓库内存放档案的目录；空字符串表示仓库根（v2 布局的 roles/ + rosters/ + dist/ 就在根上）。"
           },
           "rosters": {
             "type": "array",

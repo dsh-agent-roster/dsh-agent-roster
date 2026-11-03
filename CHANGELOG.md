@@ -4,6 +4,24 @@
 
 ## [Unreleased]
 
+## [0.10.3] - 2026-11-03
+
+### Added
+
+- `migrate --from <dir>` and `--repo <owner/repo>`: a repository that publishes a collection keeps its
+  v1 rosters in `rosters/<id>/`, so the library root and the old files are not the same directory. The
+  migration now rewrites that file in place, adds `roles/` and `dist/` at the root, removes the stale
+  `roster.json`/`roster.yml` beside it (two spellings of one roster are two sources of truth), and does
+  **not** delete `rosters/<id>/` — that is where the new assembly lives.
+- A collection's `path` may be empty, meaning the repository root *is* the library. The three example
+  repositories (`agent-teams`, `metagpt-company`, `openmanus`) now use that shape: `roles/`, `rosters/`,
+  `dist/` at the root, `files` pointing at the compiled artifact.
+
+### Fixed
+
+- The `agent-teams`, `metagpt-company` and `openmanus` collections were still published as v1, so their
+  `roster.yaml` was fetched while a v2 world had already moved on; every entry now names its artifact.
+
 ## [0.10.2] - 2026-11-03
 
 ### Fixed
@@ -472,7 +490,8 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.2...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.3...main
+[0.10.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.10.0

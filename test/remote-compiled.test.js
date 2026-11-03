@@ -127,3 +127,23 @@ test("v2 组装单文件拉不到角色：给一条 warn，不假装取到了", 
   assert.equal(fetched.diagnostics[0].code, "collection-roster-needs-roles");
   assert.match(fetched.diagnostics[0].reason, /dist\/ 里的编译产物/);
 });
+
+test("path 为空表示仓库根：索引合法，地址不多一层", () => {
+  const checked = validateRegistry({
+    kind: "dsh-agent-roster-registry/v1",
+    collections: [
+      {
+        id: "agent-teams",
+        repo: "github:dsh-agent-roster/agent-teams",
+        path: "",
+        rosters: ["agent-teams"],
+        files: { "agent-teams": "dist/agent-teams-1.0.0.json" },
+      },
+    ],
+  });
+  assert.equal(checked.ok, true);
+  assert.equal(
+    collectionFileUrl(checked.registry.collections[0], "agent-teams", "roster.yaml"),
+    "https://raw.githubusercontent.com/dsh-agent-roster/agent-teams/main/dist/agent-teams-1.0.0.json",
+  );
+});

@@ -2,7 +2,7 @@
   "$schema": "../schema/registry.v1.schema.json",
   "kind": "dsh-agent-roster-registry/v1",
   "version": 1,
-  "generatedAt": "2026-11-03T05:50:01.540Z",
+  "generatedAt": "2026-11-03T06:14:00.000Z",
   "generator": "dsh-agent-roster/dsh-agent-roster (hand-maintained; verified by .github/workflows/registry.yml)",
   "source": "https://github.com/dsh-agent-roster/dsh-agent-roster",
   "collections": [
@@ -105,7 +105,7 @@
       "description": "把 wshobson/agents 的 agent-teams 插件（4.2 万星，MIT）迁成档案：队长、实现者、审查者、调试者，保留上游工具边界。",
       "repo": "github:dsh-agent-roster/agent-teams",
       "ref": "main",
-      "path": "rosters",
+      "path": "",
       "rosters": [
         "agent-teams"
       ],
@@ -119,7 +119,10 @@
       "maintainers": [
         "STofone"
       ],
-      "homepage": "https://github.com/dsh-agent-roster/agent-teams"
+      "homepage": "https://github.com/dsh-agent-roster/agent-teams",
+      "files": {
+        "agent-teams": "dist/agent-teams-1.0.0.json"
+      }
     },
     {
       "id": "metagpt-company",
@@ -127,7 +130,7 @@
       "description": "MetaGPT（5 万星+，MIT）的软件公司角色：产品经理、架构师、项目经理、工程师，字段取自上游 Role 的 profile/goal/constraints。",
       "repo": "github:dsh-agent-roster/metagpt-company",
       "ref": "main",
-      "path": "rosters",
+      "path": "",
       "rosters": [
         "metagpt-company"
       ],
@@ -140,7 +143,10 @@
       "maintainers": [
         "STofone"
       ],
-      "homepage": "https://github.com/dsh-agent-roster/metagpt-company"
+      "homepage": "https://github.com/dsh-agent-roster/metagpt-company",
+      "files": {
+        "metagpt-company": "dist/metagpt-company-1.0.0.json"
+      }
     },
     {
       "id": "openmanus",
@@ -148,7 +154,7 @@
       "description": "OpenManus（5.8 万星，MIT）的三个代理提示词：规划、编码、浏览器，systemPrompt 保留上游原文。",
       "repo": "github:dsh-agent-roster/openmanus",
       "ref": "main",
-      "path": "rosters",
+      "path": "",
       "rosters": [
         "openmanus"
       ],
@@ -162,7 +168,10 @@
       "maintainers": [
         "STofone"
       ],
-      "homepage": "https://github.com/dsh-agent-roster/openmanus"
+      "homepage": "https://github.com/dsh-agent-roster/openmanus",
+      "files": {
+        "openmanus": "dist/openmanus-1.0.0.json"
+      }
     }
   ]
 }

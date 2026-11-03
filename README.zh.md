@@ -269,6 +269,16 @@ node bin/cli.mjs migrate --dir examples --write    # 原地重写：roles/ + ros
 
 迁移逐字保留人设：成员的 `systemPrompt` 原文成为 `roles/<档案>-<成员>/AGENT.md` 的正文，成员本身变成引用。队长不再是一个散字段，而是自己的角色文件——与成员同名时得到 `-captain` 后缀，因为那是两份人设，悄悄合并会丢掉一份。
 
+如果 v1 的档案在子目录里（把仓库当 collection 发布的常见形态），把 `--dir` 指到库根、用 `--from` 指旧目录：
+
+```bash
+node bin/cli.mjs migrate --dir . --from rosters --repo owner/repo --write
+```
+
+这种布局会就地重写 `rosters/<id>/roster.yaml`，在仓库根上补 `roles/` 与 `dist/`，并删掉并排的旧
+`roster.json`/`roster.yml`——同一份档案两种写法就是两个真源。之后 collection 用 `path: ""`（仓库根就是库），
+再用 `files` 指向 `dist/`：组装只引用角色，单独拉一个文件拉不到角色目录。
+
 角色名带档案 id 前缀，是因为 v2 要求同库角色名唯一：一座库里 21 套组装都叫自己的队长 `lead`，不可能有 21 个同名文件。
 
 ### 把失败的一轮喂回施工图
@@ -444,7 +454,7 @@ test/             单测
 
 本机已验证：
 
-- `npm test` —— 286/286 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐、v1→v2 迁移、执行回执并入施工图）。
+- `npm test` —— 293/293 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐、v1→v2 迁移、执行回执并入施工图）。
 - `npm run smoke` —— 用真实 DSH bundle 的 `defineTool` 注册六个工具，逐个调用：输出全部通过无损校验、`path` 覆盖生效、释放干净；同一条命令随后用桩模块表加载 `client.js`，断言三处槽位注册、样式只注入一次、effect 可回收。
 - CLI：`validate --dir examples` 对两座示例库退出码 0。
 - 用插件管理器真的装进了本机 profile（`plugin_manager install_bundle` 指向本仓库 → `link:` 依赖 + bundle 条目），重启后按链接读取本仓库文件。
