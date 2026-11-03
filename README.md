@@ -326,6 +326,11 @@ response, the tag strip summarises every tag in view with its count (multiple ta
 segmented control switches between **by source** (this machine, then one group per collection) and **flat**
 (one list, source named per row). Tag filtering is view state only; it never writes back to a file.
 
+By source, each group's head **is the space**: its id sits in the same column as the roster ids, the
+right side states two facts you can check on the spot — how many rosters it holds, how many are already
+here — and carries one button that pulls the whole space. A roster that is already here says so in its row
+and its button reads **Open**: the panel never asks you to pull something you already have.
+
 Multiple words are AND, not OR: `data kubernetes` returns nothing rather than every roster that merely
 mentions "data". Ranking is a pure function in `lib/search.js`, so it is unit-tested rather than eyeballed.
 

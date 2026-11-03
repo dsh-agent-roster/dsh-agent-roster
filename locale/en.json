@@ -320,6 +320,8 @@
     "refresh": "Refresh",
     "installed": "Installed",
     "pullSpace": "Pull whole space",
-    "pulledSpace": "Space pulled: {files} files written, {skipped} skipped"
+    "pulledSpace": "Space pulled: {files} files written, {skipped} skipped",
+    "facts": "{count} rosters · {installed} here",
+    "here": "Already here"
   }
 }

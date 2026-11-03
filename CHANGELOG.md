@@ -4,6 +4,23 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-03
+
+### The library reads as spaces, not groups
+
+1.0.0 made the space a real level in the format. The panel still showed collections as small labels, so the
+level existed in the files and not on screen. Each group header is now the space itself: its id sits in the
+same column as the roster ids (the register keeps one spine), the right side states two facts you can check
+on the spot — how many rosters it holds, how many are already here — and one button pulls the whole space.
+
+Rows also stopped lying about state. A roster that is already on this machine says so, and its action
+becomes **Open** instead of **Pull**: the panel no longer offers to fetch something you already have. The
+local group drops the per-row "local" label, because the group header already says it.
+
+On a narrow panel the space header folds into two lines (id + action, then title + facts) instead of
+squeezing a long space name into a vertical stack one character wide.
+
+
 ## [1.0.0] - 2026-11-03
 
 ### A space is the thing a repository holds
@@ -668,6 +685,7 @@ point is now one search field above the tabs.
 [Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.12.0...main
 [0.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.13.0...v0.13.1
 [1.0.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.13.1...v1.0.0
+[1.1.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.0.0...v1.1.0
 [0.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.11.0...v0.11.1

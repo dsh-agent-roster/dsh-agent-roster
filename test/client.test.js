@@ -255,7 +255,7 @@ test("档案库：独立的页签，支持搜索、标签筛选、按来源聚�
   assert.match(source, /setTimeout\(\(\) => \{[\s\S]{0,400}?SEARCH_ROUTE/, "搜索应当在防抖之后发出");
   assert.match(source, /controller\.abort\(\)/, "新的输入要取消上一次请求");
   const css = source.match(/const CSS = `([\s\S]*?)`;/)[1];
-  for (const rule of [".rstr-catalog {", ".rstr-catalog-tags {", ".rstr-group-head {"]) {
+  for (const rule of [".rstr-catalog {", ".rstr-catalog-tags {", ".rstr-space-head {", ".rstr-space-id {"]) {
     assert.ok(css.includes(rule), `缺少规则 ${rule}`);
   }
 });
@@ -264,10 +264,20 @@ test("空间：档案库能整空间拉取，并标出本机已有的档案", ()
   assert.match(source, /INSTALL_SPACE_ROUTE = "\/plugins\/dsh-agent-roster\/install-space"/);
   assert.match(source, /function CatalogTab\(\{ onOpen, onPull, onPullSpace \}\)/);
   assert.match(source, /t\("catalog\.pullSpace"\)/);
-  assert.match(source, /t\("catalog\.installed"\)/);
+  assert.match(source, /t\("catalog\.here"\)/);
+  // 已经在本机的那份，按钮必须变成「打开」——不能叫人去拉一份自己已经有的。
+  assert.match(source, /installed\.has\(entry\.rosterId\)\) \{[\s\S]{0,80}?onOpen\(entry\.rosterId\)/);
+  // 空间头在窄面板上必须折成两行，否则长空间名会被挤成竖排。
+  const css = source.match(/const CSS = `([\s\S]*?)`;/)[1];
+  const narrow = css.slice(css.indexOf("@media (max-width: 860px)"));
+  for (const rule of [".rstr-space-head {", "grid-area: 1 / 1;", ".rstr-space-facts { grid-area: 2 / 2"]) {
+    assert.ok(narrow.includes(rule), `窄屏缺少 ${rule}`);
+  }
+  // 本机行不再重复写「本机」——分组头已经说了。
+  assert.match(source, /entry\.scope === "local"\s*\?\s*null/);
   const zh = JSON.parse(readFileSync(new URL("../locale/zh.json", import.meta.url), "utf8"));
   const en = JSON.parse(readFileSync(new URL("../locale/en.json", import.meta.url), "utf8"));
-  for (const key of ["installed", "pullSpace", "pulledSpace"]) {
+  for (const key of ["installed", "here", "facts", "pullSpace", "pulledSpace"]) {
     assert.equal(typeof zh.catalog[key], "string", key);
     assert.equal(typeof en.catalog[key], "string", key);
   }

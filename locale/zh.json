@@ -320,6 +320,8 @@
     "refresh": "刷新",
     "installed": "已安装",
     "pullSpace": "拉取整个空间",
-    "pulledSpace": "空间已拉取：写入 {files} 个文件，跳过 {skipped} 个"
+    "pulledSpace": "空间已拉取：写入 {files} 个文件，跳过 {skipped} 个",
+    "facts": "{count} 份 · 已装 {installed}",
+    "here": "已在本机"
   }
 }

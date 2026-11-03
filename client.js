@@ -1373,14 +1373,19 @@ window.__ModuleLoader__.load({
             map.set(key, {
               key,
               scope: entry.scope,
-              title: entry.scope === "local" ? t("catalog.local") : entry.collectionTitle ?? entry.collectionId ?? "",
+              id: entry.scope === "local" ? t("catalog.local") : entry.collectionId ?? "",
+              title: entry.scope === "local" ? "" : entry.collectionTitle ?? "",
               entries: [],
             });
           }
           map.get(key).entries.push(entry);
         }
-        return [...map.values()];
-      }, [filtered, mode]);
+        // 空间头上只放两件能当场核对的事实：有几份、其中几份本机已经有。
+        return [...map.values()].map((group) => ({
+          ...group,
+          installed: group.entries.filter((entry) => installed.has(entry.rosterId)).length,
+        }));
+      }, [filtered, mode, installed, t]);
 
       function toggleTag(tag) {
         setSelected((current) => {
@@ -1419,15 +1424,16 @@ window.__ModuleLoader__.load({
               { className: "rstr-row-stats" },
               h("span", { className: "rstr-stat" }, t("catalog.members", { count: String(entry.members ?? 0) })),
               entry.scope === "remote" && installed.has(entry.rosterId)
-                ? h(Badge, { tone: "ok" }, t("catalog.installed"))
+                ? h("span", { className: "rstr-row-here" }, t("catalog.here"))
                 : null,
-              h(
-                "span",
-                { className: "rstr-stat" },
-                entry.scope === "local"
-                  ? t("catalog.local")
-                  : t("catalog.remoteFrom", { collection: entry.collectionTitle ?? entry.collectionId ?? "" }),
-              ),
+              // 本机组里每行再写一次「本机」是废话：所在的分组头已经说了。
+              entry.scope === "local"
+                ? null
+                : h(
+                    "span",
+                    { className: "rstr-stat" },
+                    t("catalog.remoteFrom", { collection: entry.collectionTitle ?? entry.collectionId ?? "" }),
+                  ),
             ),
             h(
               "div",
@@ -1439,7 +1445,8 @@ window.__ModuleLoader__.load({
                   className: "rstr-btn rstr-btn-sm",
                   disabled: busy,
                   onClick: async () => {
-                    if (entry.scope === "local") {
+                    // 已经在本机的那份，按钮就该是「打开」——不能让人去拉一份自己已经有的。
+                    if (entry.scope === "local" || installed.has(entry.rosterId)) {
                       onOpen(entry.rosterId);
                       return;
                     }
@@ -1452,7 +1459,7 @@ window.__ModuleLoader__.load({
                     }
                   },
                 },
-                entry.scope === "local" ? t("catalog.open") : t("catalog.pull"),
+                entry.scope === "local" || installed.has(entry.rosterId) ? t("catalog.open") : t("catalog.pull"),
               ),
             ),
           ),
@@ -1549,14 +1556,22 @@ window.__ModuleLoader__.load({
           : groups.map((group) =>
               h(
                 "div",
-                { key: group.key, className: "rstr-group" },
-                mode === "flat" || group.title === ""
+                { key: group.key, className: "rstr-space" },
+                mode === "flat"
                   ? null
                   : h(
                       "div",
-                      { className: "rstr-group-head" },
-                      h("span", { className: "rstr-group-title" }, group.title),
-                      h("span", { className: "rstr-group-count" }, String(group.entries.length)),
+                      { className: "rstr-space-head" },
+                      h("code", { className: "rstr-space-id", title: group.id }, group.id),
+                      h("span", { className: "rstr-space-title" }, group.title),
+                      h(
+                        "span",
+                        { className: "rstr-space-facts" },
+                        t("catalog.facts", {
+                          count: String(group.entries.length),
+                          installed: String(group.installed),
+                        }),
+                      ),
                       group.scope === "remote" && typeof onPullSpace === "function"
                         ? h(
                             "button",
@@ -2735,13 +2750,37 @@ window.__ModuleLoader__.load({
 }
 .rstr-catalog .rstr-search { max-width: 560px; }
 
-.rstr-group { display: flex; flex-direction: column; min-width: 0; }
+.rstr-space { display: flex; flex-direction: column; min-width: 0; }
+.rstr-space + .rstr-space { margin-top: 24px; }
+.rstr-space-head {
+  display: grid;
+  grid-template-columns: minmax(110px, 176px) minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 8px 16px;
+  padding: 16px 8px 6px 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  min-width: 0;
+}
+.rstr-space-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rstr-space-title { font-size: 13px; color: var(--dsw-alias-label-secondary); min-width: 0; }
+.rstr-space-facts {
+  font-size: 11px;
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rstr-row-here { font-size: 11px; color: var(--dsw-alias-label-tertiary); }
 
-.rstr-group-head { display: flex; align-items: baseline; gap: 8px; padding: 10px 0 4px; border-bottom: 1px solid var(--dsw-alias-border-l2); }
 
-.rstr-group-title { font-size: 12px; font-weight: 600; letter-spacing: 0.02em; color: var(--dsw-alias-label-secondary); }
 
-.rstr-group-count { font-size: 11px; color: var(--dsw-alias-label-tertiary); font-variant-numeric: tabular-nums; }
 
 .rstr-results { display: flex; flex-direction: column; min-width: 0; padding: 0 28px 28px; border-top: 1px solid var(--dsw-alias-border-l2); }
 
@@ -3080,6 +3119,16 @@ window.__ModuleLoader__.load({
   .rstr-tag { border-left: none; border-bottom: 2px solid transparent; border-radius: 0; white-space: nowrap; }
   .rstr-tag-on { border-left: none; border-bottom-color: var(--dsw-alias-state-business-primary); background: transparent; }
   .rstr-tag-clear { margin-top: 0; flex: 0 0 auto; }
+  /* 空间头：窄屏由一列 id/标题/事实/按钮的四列网格折成两行 */
+  .rstr-space-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 2px;
+    padding-top: 14px;
+  }
+  .rstr-space-id { grid-area: 1 / 1; }
+  .rstr-space-head > .rstr-btn { grid-area: 1 / 2; }
+  .rstr-space-title { grid-area: 2 / 1; }
+  .rstr-space-facts { grid-area: 2 / 2; text-align: right; }
   .rstr-row-body { grid-template-columns: minmax(0, 1fr) auto; }
   .rstr-row-id { grid-column: 1; }
   .rstr-row-text { grid-column: 1; }
