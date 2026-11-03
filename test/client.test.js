@@ -164,7 +164,7 @@ test("面板样式只用宿主语义 token（不写死颜色）", () => {
   }
 });
 
-test("长内容面板自己滚动：页面、账本、展开清单三层都不能被裁", () => {
+test("长内容只由面板根滚动：账本与两级展开区都不许自建小滚动盒", () => {
   const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
   const css = source.match(/const CSS = `([\s\S]*?)`;/)[1];
   /** 取一条 CSS 规则的声明体（规则体可能跨多行，按花括号配平读取）。 */
@@ -201,7 +201,27 @@ test("长内容面板自己滚动：页面、账本、展开清单三层都不�
   const row = ruleOf(".rstr-row");
   assert.match(row, /min-width:\s*0/, "行自己也要允许收缩");
 
+  // 展开区不是一个独立的小滚动盒：曾经给它 max-height:320px + overflow-y:auto，
+  // 21 份档案的集合被关进 320px 的盒子里，用户看到的就是"展开后显示不全"。
+  // 现在只有 .rstr-page 一个滚动容器，展开区只负责把高度撑开。
   const detail = ruleOf(".rstr-source-detail");
-  assert.match(detail, /overflow-y:\s*auto/, "展开后的档案清单必须可滚，否则集合一大就显示不全");
-  assert.match(detail, /max-height:\s*\d+px/, "展开清单要有高度上限，靠自身滚动，而不是把行拉长到天际");
+  assert.doesNotMatch(detail, /max-height:/, "展开清单不能再有高度上限：那会把内容关进小盒子");
+  assert.doesNotMatch(detail, /overflow/, "展开清单不该自己滚，否则滚轮会被套娃");
+
+  const rowDetail = ruleOf(".rstr-row-detail");
+  assert.doesNotMatch(rowDetail, /max-height:/, "成员展开区同样不能有高度上限");
+  assert.doesNotMatch(rowDetail, /overflow/, "成员展开区同样不该自己滚");
+
+  // 档案源里的集合曾经还用 0.8 的卡片类名（.rstr-card / .rstr-card-head…），
+  // 那些规则在账本改版时被删掉了 —— 结果集合页签渲染出一堆没有样式的裸元素，
+  // 看上去就是"显示不全 / 排版散架"。现在集合和档案共用同一套账本行。
+  assert.doesNotMatch(source, /className: "rstr-card(-|")/, "档案源不许再用已无样式的 rstr-card 类名");
+  assert.match(source, /className: openId === collection\.id \? "rstr-row rstr-row-open" : "rstr-row"/, "集合必须渲染成账本行");
+
+  const sources = ruleOf(".rstr-sources");
+  assert.match(sources, /padding:\s*16px 28px/, "档案源页签要和档案页一样有自己的内边距，否则内容贴着窗口边");
+
+  const sourceRow = ruleOf(".rstr-source-roster");
+  assert.match(sourceRow, /display:\s*grid/, "展开清单是 id / 标题 / 人数 三列的账本行");
+  assert.match(sourceRow, /minmax\(0,\s*1fr\)/, "标题列必须可压缩");
 });

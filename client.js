@@ -474,9 +474,8 @@ window.__ModuleLoader__.load({
         h(
           "div",
           { className: "rstr-member-head" },
-          h("strong", null, member.name),
+          h("strong", { className: "rstr-member-name" }, member.name),
           member.role ? h(Chip, null, member.role) : null,
-          member.toolPolicy ? h(Chip, { tone: "policy" }, `${t("member.policy")}: ${member.toolPolicy}`) : null,
         ),
         member.description ? h("p", { className: "rstr-member-desc" }, member.description) : null,
         Array.isArray(member.aliases) && member.aliases.length > 0
@@ -485,6 +484,7 @@ window.__ModuleLoader__.load({
         h(
           "div",
           { className: "rstr-member-meta" },
+          member.toolPolicy ? h(Chip, { tone: "policy" }, member.toolPolicy) : null,
           member.model ? h("span", null, `${t("member.model")}: ${member.model}`) : null,
           member.reasoningEffort ? h("span", null, `${t("member.effort")}: ${member.reasoningEffort}`) : null,
           member.fallback ? h("span", null, `${t("member.fallback")}: ${member.fallback}`) : null,
@@ -1755,22 +1755,34 @@ window.__ModuleLoader__.load({
           collections.map((collection) =>
             h(
               "article",
-              { key: `${collection.origin?.source ?? ""}::${collection.id}`, className: "rstr-card" },
-              h(
-                "header",
-                { className: "rstr-card-head" },
-                h("h3", { className: "rstr-card-title" }, collection.title || collection.id),
-                h(Badge, { tone: "neutral" }, t("source.registered", { count: collection.rosters?.length ?? 0 })),
-              ),
-              collection.description ? h("p", { className: "rstr-card-desc" }, collection.description) : null,
-              h(
-                "p",
-                { className: "rstr-muted rstr-small" },
-                `${t("source.repo")} ${collection.repo ?? ""}@${collection.ref ?? "main"}${collection.path ? `/${collection.path}` : ""}`,
-              ),
+              {
+                key: `${collection.origin?.source ?? ""}::${collection.id}`,
+                className: openId === collection.id ? "rstr-row rstr-row-open" : "rstr-row",
+              },
               h(
                 "div",
-                { className: "rstr-card-actions" },
+                { className: "rstr-row-body" },
+                h("code", { className: "rstr-row-id", title: collection.id }, collection.id),
+                h(
+                  "div",
+                  { className: "rstr-row-text" },
+                  h(
+                    "h3",
+                    { className: "rstr-row-title" },
+                    collection.title || collection.id,
+                    h(Badge, { tone: "neutral" }, t("source.registered", { count: collection.rosters?.length ?? 0 })),
+                  ),
+                  collection.description ? h("p", { className: "rstr-row-desc" }, collection.description) : null,
+                  h(
+                    "p",
+                    { className: "rstr-source-meta" },
+                    `${collection.repo ?? ""}@${collection.ref ?? "main"}${collection.path ? `/${collection.path}` : ""}`,
+                  ),
+                ),
+                h("div", { className: "rstr-row-stats" }, h("span", null, `${collection.rosters?.length ?? 0}`)),
+                h(
+                  "div",
+                  { className: "rstr-row-actions" },
                 h(
                   "button",
                   {
@@ -1785,6 +1797,7 @@ window.__ModuleLoader__.load({
                   "button",
                   { type: "button", className: "rstr-btn", onClick: () => toggle(collection) },
                   openId === collection.id ? t("source.hide") : t("source.open"),
+                  ),
                 ),
               ),
               openId === collection.id
@@ -2301,7 +2314,7 @@ window.__ModuleLoader__.load({
 
 .rstr-row-body {
   display: grid;
-  grid-template-columns: minmax(88px, 140px) minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(110px, 176px) minmax(0, 1fr) auto auto;
   align-items: baseline;
   gap: 8px 16px;
   padding: 13px 8px 13px 0;
@@ -2336,11 +2349,12 @@ window.__ModuleLoader__.load({
 .rstr-row-detail {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 10px 14px 18px 14px;
+  gap: 14px;
+  padding: 12px 16px 20px 16px;
   margin: 0 0 12px -1px;
   min-width: 0;
   background: var(--dsw-alias-bg-layer-2);
+  border-left: 2px solid var(--dsw-alias-border-l2);
 }
 .rstr-row-detail-actions { display: flex; gap: 6px; flex-wrap: wrap; padding-top: 4px; }
 
@@ -2394,21 +2408,33 @@ window.__ModuleLoader__.load({
 
 /* ---- 档案源 ----------------------------------------------------------- */
 
-.rstr-sources { display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--dsw-alias-border-l2); }
+.rstr-sources { display: flex; flex-direction: column; gap: 0; min-width: 0; padding: 16px 28px 28px; border-top: 1px solid var(--dsw-alias-border-l2); }
 .rstr-sources-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+/* 展开区自己滚会把内容关进小盒子（曾经 max-height:320px 就是"显示不全"的来源）。
+   整页只有 .rstr-page 一个滚动容器，展开区只负责把高度撑开。 */
 .rstr-source-detail {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
-  max-height: 320px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 6px 0 10px 15px;
+  padding: 8px 0 12px 15px;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+  border-left: 2px solid var(--dsw-alias-border-l2);
+  margin-left: 2px;
+}
+.rstr-source-roster {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 4px 14px;
+  min-width: 0;
+  font-size: 12px;
+  padding: 4px 6px 4px 0;
   border-bottom: 1px solid var(--dsw-alias-border-l1);
 }
-.rstr-source-roster { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; font-size: 12px; padding: 3px 0; }
-.rstr-source-roster > .rstr-muted { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rstr-source-roster:last-of-type { border-bottom: none; }
+.rstr-source-roster > .rstr-muted { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rstr-source-meta { margin: 2px 0 0 0; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; color: var(--dsw-alias-label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---- 通用件 ----------------------------------------------------------- */
 

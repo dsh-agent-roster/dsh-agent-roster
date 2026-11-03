@@ -4,6 +4,26 @@
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-11-03
+
+### Expansion stops clipping itself
+
+- **No more scroll boxes inside expansions.** 0.8.3 capped the expanded collection list at
+  `max-height: 340px` with its own scrollbar; with 21 rosters that reads as "the list is cut off".
+  The cap and the nested scroller are gone — the panel root is the only thing that scrolls, and
+  an expanded section simply grows.
+- **The sources tab gets its page padding back** (`16px 28px 28px`); its collections had been
+  rendering flush against the window edge, hard against `overflow-x: hidden`.
+- **Source collections use the ledger row**, like rosters and teams. They were still emitting
+  `.rstr-card*` class names whose rules disappeared in the 0.9.0 ledger rewrite, so the tab
+  rendered unstyled elements. A regression assertion now forbids those class names returning.
+- **Member rows keep name and role on one line**: `toolPolicy` moved from the head to the meta
+  strip, where the model, effort and prompt size already sit.
+- **Wider id column with a title tooltip**, so `agent-roster-collective` is readable instead of
+  truncated to `agent-roster-collec…`.
+- The CSS guard now asserts the opposite of what it did in 0.8.3: expansions must carry neither
+  `max-height` nor `overflow`, because nested scrolling is what made the content look incomplete.
+
 ## [0.9.0] - 2026-11-03
 
 ### The roster list is a ledger
@@ -356,7 +376,8 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.9.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.9.1...main
+[0.9.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.9.1
 [0.9.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.9.0
 [0.8.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.8.3
 [0.8.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.8.2
