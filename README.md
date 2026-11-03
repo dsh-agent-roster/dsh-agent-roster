@@ -268,6 +268,8 @@ member and finally `roster_verify`. Creating the team stays with the runtime.
 
 ## Sidebar panel
 
+The roster list is a **ledger, not a wall of cards**: one row per roster — a 3px state edge (lit only when something is wrong, quiet when it is fine), a monospace id column, the title with a one-line description, right-aligned counts (members / errors / warnings / deployment), and a quiet pair of actions (edit, expand). Duplicate, copy-create and delete moved into the expanded area, which turns 105 buttons across 21 rosters into 42. Below 860px the tag pool becomes a top row and the metadata wraps.
+
 The panel takes the full page width; nothing constrains it to a reading column. The archive list has
 a **tag pool** on the left: every tag present in the library, with how many archives carry it. Clicking
 tags narrows the list — multiple selections are ANDed — and one button clears the selection. The tag

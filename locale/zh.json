@@ -60,7 +60,11 @@
     "tagPool": "标签",
     "tagPoolEmpty": "还没有标签——给档案加 `tags:`。",
     "tagClear": "清除标签",
-    "settings": "设置"
+    "settings": "设置",
+    "metaRosters": "份档案",
+    "metaMembers": "名成员",
+    "metaTeams": "支团队",
+    "metaOrganization": "组织 {name}"
   },
   "roster": {
     "members": "{count} 名成员",
@@ -79,7 +83,9 @@
     "noMembers": "这份档案没有成员。",
     "diagnostics": "{count} 条发现",
     "showMembers": "展开成员",
-    "hideMembers": "收起成员"
+    "hideMembers": "收起成员",
+    "warnings": "{count} 条提醒",
+    "deployedDrifted": "在 {teams}（{count} 处不一致）"
   },
   "member": {
     "prompt": "人设",
@@ -109,7 +115,10 @@
     "faithful": "与档案一致",
     "drift": "与档案不一致",
     "promptChars": "{count} 字人设",
-    "driftDetail": "{field}：档案 {wanted}，运行时 {actual}"
+    "driftDetail": "{field}：档案 {wanted}，运行时 {actual}",
+    "showMembers": "展开成员",
+    "hideMembers": "收起成员",
+    "taskCount": "{count} 个任务"
   },
   "editor": {
     "createTitle": "新建档案",

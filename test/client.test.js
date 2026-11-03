@@ -164,28 +164,44 @@ test("面板样式只用宿主语义 token（不写死颜色）", () => {
   }
 });
 
-test("长内容面板自己滚动：页面、卡片网格、展开清单三层都不能被裁", () => {
+test("长内容面板自己滚动：页面、账本、展开清单三层都不能被裁", () => {
   const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
   const css = source.match(/const CSS = `([\s\S]*?)`;/)[1];
-  /** 取一条单行 CSS 规则的声明体。 */
+  /** 取一条 CSS 规则的声明体（规则体可能跨多行，按花括号配平读取）。 */
   const ruleOf = (selector) => {
-    const line = css.split("\n").find((item) => item.startsWith(`${selector} {`));
-    assert.ok(line, `缺少 ${selector} 规则`);
-    return line.slice(line.indexOf("{") + 1, line.lastIndexOf("}"));
+    const lines = css.split("\n");
+    const at = lines.findIndex((item) => item.startsWith(`${selector} {`) || item.startsWith(`${selector}{`));
+    assert.ok(at >= 0, `缺少 ${selector} 规则`);
+    const body = [];
+    let depth = 0;
+    for (let index = at; index < lines.length; index += 1) {
+      const line = lines[index];
+      const opens = (line.match(/\{/g) ?? []).length;
+      const closes = (line.match(/\}/g) ?? []).length;
+      const text = index === at ? line.slice(line.indexOf("{") + 1) : line;
+      if (text.trim() !== "") body.push(text);
+      depth += opens - closes;
+      if (depth <= 0) break;
+    }
+    return body.join("\n").replace(/\}\s*$/, "");
   };
 
   const page = ruleOf(".rstr-page");
   assert.match(page, /height:\s*100%/, "面板根要占满高度：宿主 centerCol 是 overflow:hidden，不会替我们滚");
   assert.match(page, /overflow-y:\s*auto/, "面板根必须自己滚动，否则下半截内容直接看不见");
 
-  const cards = ruleOf(".rstr-cards");
-  assert.match(
-    cards,
-    /minmax\(min\(380px,\s*100%\),\s*1fr\)/,
-    "卡片最小宽度要夹在容器宽度内，否则侧栏这种窄面板里卡片会被横向裁掉",
-  );
+  // 列表是单列账本：一份档案一行。多列卡片网格在窄面板里会被横向裁掉，
+  // 而且 21 份档案就是 21 张同样大小的卡片——扫不动。
+  const list = ruleOf(".rstr-cards");
+  assert.match(list, /display:\s*flex/, "档案列表必须是单列账本，不再是卡片网格");
+  assert.match(list, /flex-direction:\s*column/, "列表要竖着排，一行一份档案");
+
+  const body = ruleOf(".rstr-row-body");
+  assert.match(body, /minmax\(0,\s*1fr\)/, "行内文字列必须能被压缩，否则窄面板里会把右侧状态挤出去");
+  const row = ruleOf(".rstr-row");
+  assert.match(row, /min-width:\s*0/, "行自己也要允许收缩");
 
   const detail = ruleOf(".rstr-source-detail");
   assert.match(detail, /overflow-y:\s*auto/, "展开后的档案清单必须可滚，否则集合一大就显示不全");
-  assert.match(detail, /max-height:\s*\d+px/, "展开清单要有高度上限，靠自身滚动，而不是把卡片拉长到天际");
+  assert.match(detail, /max-height:\s*\d+px/, "展开清单要有高度上限，靠自身滚动，而不是把行拉长到天际");
 });

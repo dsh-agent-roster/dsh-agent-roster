@@ -4,6 +4,22 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-03
+
+### The roster list is a ledger
+
+- **Rows, not cards.** Each roster is one row: a 3px state edge (lit only for `error` / `warn`),
+  a monospace id column, the title with its one-line description, right-aligned counts and a
+  quiet pair of actions. Duplicate / copy-create / delete moved into the expanded area — 21
+  rosters go from 105 always-visible buttons to 42.
+- **The edge is the only loud thing.** Healthy rows carry no colour at all; the accent colour is
+  reserved for the selected tab underline and the selected tag's left edge. Every colour still
+  comes from `--dsw-alias-*` tokens, so light and dark themes stay consistent.
+- **Teams are rows too**, collapsed by default, with the same state edge.
+- **The header states what the library holds**: rosters, members, teams, and the owning
+  `organization.yaml` id when the directory has one.
+- Narrow panels (below 860px) fold the tag pool into a wrapping top row instead of clipping it.
+
 ## [0.8.3] - 2026-11-03
 
 ### The panel no longer cuts long content
@@ -340,7 +356,8 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.8.3...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.9.0...main
+[0.9.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.9.0
 [0.8.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.8.3
 [0.8.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.8.2
 [0.8.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.8.1

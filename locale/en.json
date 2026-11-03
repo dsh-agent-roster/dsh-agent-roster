@@ -60,7 +60,11 @@
     "tagPool": "Tags",
     "tagPoolEmpty": "No tags yet — add `tags:` to an archive.",
     "tagClear": "Clear tags",
-    "settings": "Settings"
+    "settings": "Settings",
+    "metaRosters": "rosters",
+    "metaMembers": "members",
+    "metaTeams": "teams",
+    "metaOrganization": "Organization {name}"
   },
   "roster": {
     "members": "{count} members",
@@ -79,7 +83,9 @@
     "noMembers": "This roster has no members.",
     "diagnostics": "{count} findings",
     "showMembers": "Show members",
-    "hideMembers": "Hide members"
+    "hideMembers": "Hide members",
+    "warnings": "{count} warnings",
+    "deployedDrifted": "In {teams} ({count} drifted)"
   },
   "member": {
     "prompt": "Prompt",
@@ -109,7 +115,10 @@
     "faithful": "Matches the roster",
     "drift": "Differs from the roster",
     "promptChars": "{count} prompt characters",
-    "driftDetail": "{field}: roster {wanted}, runtime {actual}"
+    "driftDetail": "{field}: roster {wanted}, runtime {actual}",
+    "showMembers": "Show members",
+    "hideMembers": "Hide members",
+    "taskCount": "{count} tasks"
   },
   "editor": {
     "createTitle": "New roster",

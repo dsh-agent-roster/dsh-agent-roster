@@ -91,7 +91,7 @@ test("客户端半边：能被模块表加载，面板在左栏、语言与配�
   assert.match(source, /registryMirror/, "镜像地址要写进配置表单的 registryMirror 字段");
   assert.match(source, /settings\.mirror/, "设置里要能直接填镜像地址");
   assert.match(source, /registryMirror/, "镜像地址要写进配置表单的 registryMirror 字段");
-  assert.match(source, /grid-template-columns: 200px minmax\(0, 1fr\)/, "标签池在左、列表在右");
+  assert.match(source, /grid-template-columns: 176px minmax\(0, 1fr\)/, "标签池在左、列表在右");
   // 纯语法检查：编译通过即可，不执行（执行需要浏览器模块表）。
   assert.doesNotThrow(() => new Function(source), "client.js 必须语法合法");
 });
