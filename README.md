@@ -308,8 +308,9 @@ turns into decoration.
 
 ## The library tab: find by capability, not by source
 
-The panel opens on **Library**, which is meant to read like a plugin marketplace: one search field, one row
-of tags, and one list that spans this machine and every subscribed source.
+The panel opens on **Rosters** — the local ones: what you work with every day, its tags and members, ready
+to filter or edit. The second tab is the **Library**, meant to read like a plugin marketplace: one search
+field, one row of tags, and one list that spans this machine and every subscribed source.
 
 ```
 要找什么能力？例：数据质量、发版、代码评审

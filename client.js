@@ -1556,7 +1556,7 @@ window.__ModuleLoader__.load({
     function Panel() {
       useTranslation();
       const library = useLibrary();
-      const [tab, setTab] = useState("catalog");
+      const [tab, setTab] = useState("rosters");
       const [query, setQuery] = useState("");
       const [selectedTags, setSelectedTags] = useState(() => new Set());
       const [settingsOpen, setSettingsOpen] = useState(false);
@@ -1713,8 +1713,8 @@ window.__ModuleLoader__.load({
         "div",
         { className: "rstr-tabs", role: "tablist" },
         [
-          ["catalog", t("panel.tabsCatalog"), null],
           ["rosters", t("panel.tabsRosters"), rosters.length],
+          ["catalog", t("panel.tabsCatalog"), null],
           ["teams", t("panel.tabsTeams"), teams.length],
           ["sources", t("panel.tabsSources"), snapshot?.remote?.collections?.length ?? 0],
           // 只有真正要用户处理的问题才计数：info 只是说明，不该在页签上挂数字。

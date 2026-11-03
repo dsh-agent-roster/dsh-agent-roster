@@ -237,9 +237,9 @@ test("长内容只由面板根滚动：账本与两级展开区都不许自建�
 
 test("档案库：独立的页签，支持搜索、标签筛选、按来源聚合与平铺", () => {
   const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
-  // 它是第一个页签，也是默认页签：找档案是进入面板的第一件事。
-  assert.match(source, /\["catalog", t\("panel\.tabsCatalog"\), null\]/);
-  assert.match(source, /const \[tab, setTab\] = useState\("catalog"\)/);
+  // 首屏是本机档案；档案库是第二个页签，负责"去外面找"。
+  assert.match(source, /\["rosters", t\("panel\.tabsRosters"\), rosters\.length\],\n\s*\["catalog", t\("panel\.tabsCatalog"\), null\]/);
+  assert.match(source, /const \[tab, setTab\] = useState\("rosters"\)/);
   assert.match(source, /function CatalogTab\(/);
   assert.match(source, /className: "rstr-catalog"/);
   // 两条路由各司其职：catalog 摊开全部，search 负责排序。

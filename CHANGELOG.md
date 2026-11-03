@@ -4,6 +4,18 @@
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-11-03
+
+### The local rosters are the front page
+
+0.13.0 opened on the library tab. That got the metaphor right and the priority wrong: the rosters you
+already manage are what you come back to every day, and they were one tab away. The panel now lands on
+**Rosters** — local, searchable, with its tag pool — and the library marketplace is the second tab.
+
+- Tab order is `Rosters, Library, Teams, Sources, Health`; the default tab is `rosters` again.
+- Nothing moved between the two: both read the same snapshot, both filter by tag, and the tag pools stay
+  independent (local-only vs everything in view) so neither one silently changes the other's counts.
+
 ## [0.13.0] - 2026-11-03
 
 ### A tab that behaves like a marketplace, not a filter on a list
@@ -615,6 +627,7 @@ point is now one search field above the tabs.
   且所有返回值先过 `lib/json.js#lossless`。
 
 [Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.12.0...main
+[0.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.11.0...v0.11.1
