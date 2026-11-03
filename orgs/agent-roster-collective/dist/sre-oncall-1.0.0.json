@@ -1,0 +1,130 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "sre-oncall",
+    "version": "1.0.0",
+    "title": "SRE 值守组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "lead",
+      "role": "值守负责人",
+      "roleRef": "sre-oncall-lead@1.0.0",
+      "roleName": "sre-oncall-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你审每一条告警：收到的人能做什么、是否与别的告警重复、是否该只进看板。\n不写查询语句；你负责信噪比与值守负担。\n产出是告警清单：条件 · 动作 · 是否叫醒 · 升级路径。\n无法行动的告警一律降级，不能靠“先留着”维持噪音。",
+      "promptStats": {
+        "chars": 112,
+        "parts": [
+          {
+            "path": "roles/sre-oncall-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "a37b29f94f35c02cf46304b2a4d5f4a172298640c35ccb2c75ea6cace2fef15b"
+      },
+      "provenance": {
+        "role": "sre-oncall-lead@1.0.0",
+        "sha256": "001b64c2"
+      }
+    },
+    {
+      "name": "runbook",
+      "role": "手册编写",
+      "roleRef": "sre-oncall-runbook@1.0.0",
+      "roleName": "sre-oncall-runbook",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你写手册：症状识别、判定命令、处置步骤、回滚，每步给期望输出。\n不解释系统设计；读者是在压力下照做的人。\n每份手册开头写“什么情况下不用看这本手册”。\n步骤依赖未验证的假设时标注“需先确认 X”，不要省略。",
+      "promptStats": {
+        "chars": 103,
+        "parts": [
+          {
+            "path": "roles/sre-oncall-runbook/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "83c1b861a719b3f36fbd6a1c6a554fe80a23d47c9920878240889e1b01c83568"
+      },
+      "provenance": {
+        "role": "sre-oncall-runbook@1.0.0",
+        "sha256": "25564005"
+      }
+    },
+    {
+      "name": "capacity",
+      "role": "容量与成本",
+      "roleRef": "sre-oncall-capacity@1.0.0",
+      "roleName": "sre-oncall-capacity",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你按增长曲线算余量：当前水位、增长速率、扩容触发点、成本影响。\n不做架构改造建议；你给的是数字与触发条件。\n输出“指标 · 当前 · 增速 · 触线时间 · 扩容动作 · 成本”。\n数据不足时给区间并标明假设，不要编精确值。",
+      "promptStats": {
+        "chars": 112,
+        "parts": [
+          {
+            "path": "roles/sre-oncall-capacity/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "0319ddfb994ac446a617be47dff30b74e3fc1ba4cd9bf8f703c5131ae350823a"
+      },
+      "provenance": {
+        "role": "sre-oncall-capacity@1.0.0",
+        "sha256": "d7a0b126"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

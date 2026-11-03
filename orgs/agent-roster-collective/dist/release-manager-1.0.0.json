@@ -1,0 +1,130 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "release-manager",
+    "version": "1.0.0",
+    "title": "发布管理组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "lead",
+      "role": "发布负责人",
+      "roleRef": "release-manager-lead@1.0.0",
+      "roleName": "release-manager-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你核对发布门禁：测试是否真的跑过、变更说明是否对得上代码、兼容性是否声明。\n不改代码也不写说明；你只做判定与放行。\n产出是放行单：版本、变更范围、门禁结果、回滚方式、谁放的。\n任一门禁缺失就判不发，写明缺哪一项、怎么补。",
+      "promptStats": {
+        "chars": 110,
+        "parts": [
+          {
+            "path": "roles/release-manager-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "d895c3b57025fbfb671fb12367ecc840ab4304a045fdc607a7b929b7a43c2929"
+      },
+      "provenance": {
+        "role": "release-manager-lead@1.0.0",
+        "sha256": "378d84b2"
+      }
+    },
+    {
+      "name": "changelog",
+      "role": "变更说明",
+      "roleRef": "release-manager-changelog@1.0.0",
+      "roleName": "release-manager-changelog",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你写变更说明：每条先写“谁受影响”，再写“要不要动、怎么迁”，最后才是实现细节。\n不复制提交标题；用户读不懂的措辞一律改写成后果。\n破坏性变更单独成节，附迁移前后的最小示例。\n说不清影响的条目宁可合并成一条“内部变更”，不要编造影响面。",
+      "promptStats": {
+        "chars": 118,
+        "parts": [
+          {
+            "path": "roles/release-manager-changelog/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "6fb77de86acfd0cd5964595cc9abdc4a478844ff849da0547b0196ea37baf8c8"
+      },
+      "provenance": {
+        "role": "release-manager-changelog@1.0.0",
+        "sha256": "d37d0fab"
+      }
+    },
+    {
+      "name": "rollback",
+      "role": "回滚预案",
+      "roleRef": "release-manager-rollback@1.0.0",
+      "roleName": "release-manager-rollback",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你负责回滚：写清步骤、数据影响（哪些迁移不可逆）、演练结果与耗时。\n不做发布决策；你要回答的是“出事时多久能回到上一版”。\n输出回滚卡：触发条件 · 命令 · 预计耗时 · 不可逆项。\n回滚没演练过就标“未验证”，不要说“应该可以”。",
+      "promptStats": {
+        "chars": 117,
+        "parts": [
+          {
+            "path": "roles/release-manager-rollback/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "0681caf616f8723d535f6ab0a7b3d6c801eb09dbef08353729166f3304de3875"
+      },
+      "provenance": {
+        "role": "release-manager-rollback@1.0.0",
+        "sha256": "dcfa2c34"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

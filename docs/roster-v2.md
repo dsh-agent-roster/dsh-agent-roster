@@ -196,7 +196,9 @@ gates:
 
 ## 8. 迁移
 
-- `roster migrate` 读 v1 档案，把 `systemPrompt` 拆成角色（`roles/<member>/AGENT.md`）+ 组装（成员改为引用），原地重写并生成 `dist/`。
+- `roster migrate --dir <库> [--write]` 读 v1 档案，把 `systemPrompt` 拆成角色（`roles/<member>/AGENT.md`）+ 组装（成员改为引用），原地重写并生成 `dist/`。默认只出计划，`--write` 才落盘——这是唯一会删旧目录的命令。
+- **角色名带档案 id 前缀**（`core-review-reviewer`）：v2 要求同库角色名唯一，而真实档案库里几十套组装都可能叫 `lead`。队长与成员同名时，队长得到 `-captain` 后缀，不与人设合并。
+- `maintainers` 用 `handle` 模式（允许大写与点），不复用档案 id 的小写短横线规则——维护者是账号，不是标识符。
 - v1 冻结：新字段只进 v2，不再回填 v1。
 - 同一目录两种格式共存是**禁止**的：判别键说了算。
 
@@ -212,7 +214,7 @@ gates:
 
 ## 10. 未决与下一步
 
-1. **施工图的执行回路**：谁读 `tasks.json`、怎么把内部 id 映射成团队真实 task id、失败意见怎么回填 `run.json`（格式已留位，写入方还没有）。
+1. **施工图 ↔ 团队真实卡 id 的映射**：`run@1` 已经能读、能合并（`compile --run` 会把上一轮失败写进重试卡），但「施工图内部 id ↔ 团队真实 task id」的映射表还没落成文件——目前靠执行者按 id 命名建卡。
 2. `dist` 的发布与 `registry` 只登记产物（现在 registry 登记的是档案路径）。
 3. `profile/agent-preset` 目标：把队长与成员的 preset 片段生成出来，仍然只产参不写入。
 4. 编辑器支持：三个 schema 已就位，LSP 级校验待做。

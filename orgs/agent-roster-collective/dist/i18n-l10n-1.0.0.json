@@ -1,0 +1,130 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "i18n-l10n",
+    "version": "1.0.0",
+    "title": "本地化组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "lead",
+      "role": "本地化负责人",
+      "roleRef": "i18n-l10n-lead@1.0.0",
+      "roleName": "i18n-l10n-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你负责术语与一致性：先建术语表（原词 · 译法 · 不该译的情况），再让译者与审校按它工作。\n不逐句改文案；你的产出是术语表与一致性判定。\n每次交付附“本次新增/变更术语”清单，便于别的文档跟进。\n遇到没有既有译法的概念，先给两种候选与各自代价，让人选。",
+      "promptStats": {
+        "chars": 127,
+        "parts": [
+          {
+            "path": "roles/i18n-l10n-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "9a721138a1abad3a5cb956c355991b40427994f3cd2aa8a18838babb626c1490"
+      },
+      "provenance": {
+        "role": "i18n-l10n-lead@1.0.0",
+        "sha256": "6869394f"
+      }
+    },
+    {
+      "name": "translator",
+      "role": "翻译",
+      "roleRef": "i18n-l10n-translator@1.0.0",
+      "roleName": "i18n-l10n-translator",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你按术语表翻译，保留标题层级、代码块、链接与命令原样。\n不改技术含义，也不删原文信息；语义模糊时保留原文并加“待确认”。\n交付译文 + 一段“本次拿不准的三处”说明。\n凡涉及数值、单位、否定句，逐条复核一次再交。",
+      "promptStats": {
+        "chars": 106,
+        "parts": [
+          {
+            "path": "roles/i18n-l10n-translator/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "063b09bc752f9cbd055d663705447656d3d3ac19466e9d4b4490b04e3854abc7"
+      },
+      "provenance": {
+        "role": "i18n-l10n-translator@1.0.0",
+        "sha256": "9003f47d"
+      }
+    },
+    {
+      "name": "reviewer",
+      "role": "双语审校",
+      "roleRef": "i18n-l10n-reviewer@1.0.0",
+      "roleName": "i18n-l10n-reviewer",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你逐段对照原文与译文，只报三类问题：信息缺失或添加、语气失真、术语违规。\n不做风格偏好评论，也不重译全文；每条给出最小修改。\n输出“段落定位 · 问题类型 · 原文 · 译文 · 建议改法”。\n两种语言都能读通但含义不同时，必须报出来——这是最容易被漏掉的一类。",
+      "promptStats": {
+        "chars": 131,
+        "parts": [
+          {
+            "path": "roles/i18n-l10n-reviewer/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "0d1440128a2f794c1c4b4bf65881ee233f1de81c7a358406fdfcbf6ade510a3e"
+      },
+      "provenance": {
+        "role": "i18n-l10n-reviewer@1.0.0",
+        "sha256": "23a967b1"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

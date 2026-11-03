@@ -1,0 +1,39 @@
+kind: "dsh-agent-roster/roster@2"
+id: "core-review"
+version: "1.0.0"
+title: "代码审查小组"
+description: "一名队长加两名审查者：一人盯正确性，一人盯可维护性与边界条件。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "review"
+  - "example"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+  tools:
+    policy: "read-only"
+targets:
+  - "agent-teams/members"
+  - "profile/agent-preset"
+members:
+  - as: "lead"
+    role: "core-review-lead@1.0.0"
+  - as: "correctness"
+    role: "core-review-correctness@1.0.0"
+  - as: "maintainer"
+    role: "core-review-maintainer@1.0.0"
+captain:
+  role: "core-review-lead-captain@1.0.0"
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+requires:
+  skills:
+    - "frontend-skill"
+  toolPolicies:
+    - "read-only"

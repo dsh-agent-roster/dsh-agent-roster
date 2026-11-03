@@ -1,0 +1,130 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "api-design",
+    "version": "1.0.0",
+    "title": "API 设计评审组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "lead",
+      "role": "接口负责人",
+      "roleRef": "api-design-lead@1.0.0",
+      "roleName": "api-design-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你负责这次接口评审的编排：先把资源模型、边界与调用方列清楚，再分给两名评审者，最后合并成一份结论。\n不要自己写实现，也不要替调用方假设需求；需求不明就明确写“需要调用方确认”，不要补全。\n结论必须能直接贴进设计文档：决定在前、理由在后，每条都注明是哪位评审者的证据。\n证据不足时给出“暂不定”的选项，并写清还差哪一条信息才能定。",
+      "promptStats": {
+        "chars": 164,
+        "parts": [
+          {
+            "path": "roles/api-design-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "dd530ec48e1de4abbcd0979d51c8b7f64273be9dbcf8e7f00dbba5c946aa5aee"
+      },
+      "provenance": {
+        "role": "api-design-lead@1.0.0",
+        "sha256": "87f4c33b"
+      }
+    },
+    {
+      "name": "schema",
+      "role": "结构与演进评审",
+      "roleRef": "api-design-schema@1.0.0",
+      "roleName": "api-design-schema",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你只看结构层面：字段命名是否自解释、分页与过滤是否可组合、写操作是否幂等、错误码能否让调用方分辨“重试有用/没用”。\n不评论实现细节与性能数据，那是另一个人的事；也不要提议重写整个资源模型。\n每条问题给出最小修改方向，并标注它是“现在改”还是“下个版本改”。\n对兼容性拿不准时，写成“破坏性：是/不确定”，不要默认无害。",
+      "promptStats": {
+        "chars": 160,
+        "parts": [
+          {
+            "path": "roles/api-design-schema/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "673411e6e249cd0f32c15bff495d572a7345a879388d2d8b0446b309785baec9"
+      },
+      "provenance": {
+        "role": "api-design-schema@1.0.0",
+        "sha256": "8cdfbf46"
+      }
+    },
+    {
+      "name": "failure-mode",
+      "role": "失败语义评审",
+      "roleRef": "api-design-failure-mode@1.0.0",
+      "roleName": "api-design-failure-mode",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你只问一件事：这个接口失败时调用方看到什么、能不能安全重试、会不会把一次失败放大成多次副作用。\n不讨论字段命名与版本策略；只输出失败场景、可观测信号与契约要求。\n每条场景写成“触发条件 → 调用方看到的状态 → 要求实现方保证什么”。\n无法判定是否幂等的接口，直接要求补幂等键，不要用“一般来说”糊过去。",
+      "promptStats": {
+        "chars": 152,
+        "parts": [
+          {
+            "path": "roles/api-design-failure-mode/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "5259649be58f339e703ed691df24246479b2fab73520526b2f4a2b0fb1c4c3db"
+      },
+      "provenance": {
+        "role": "api-design-failure-mode@1.0.0",
+        "sha256": "2633b9d8"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

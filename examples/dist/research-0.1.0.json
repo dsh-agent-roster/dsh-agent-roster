@@ -1,0 +1,95 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "research",
+    "version": "0.1.0",
+    "title": "外部调研小组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "scout",
+      "role": "一手资料",
+      "roleRef": "research-scout@1.0.0",
+      "roleName": "research-scout",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-pro",
+      "reasoningEffort": "medium",
+      "toolPolicy": null,
+      "executionPrompt": "你负责找一手资料：官方文档、源码、发布说明、原始数据。二手转述只能用来说明\"存在争议\"。\n每条事实必须附可点击链接与日期；找不到就写\"没找到\"，不要用常识补。",
+      "promptStats": {
+        "chars": 79,
+        "parts": [
+          {
+            "path": "roles/research-scout/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "a5b6baa0b2177b2d2f48bafa71f93699bd64d4d9400838ecc3b467cab394e4e7"
+      },
+      "provenance": {
+        "role": "research-scout@1.0.0",
+        "sha256": "220dbcd9"
+      }
+    },
+    {
+      "name": "verifier",
+      "role": "交叉复核",
+      "roleRef": "research-verifier@1.0.0",
+      "roleName": "research-verifier",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-pro",
+      "reasoningEffort": "medium",
+      "toolPolicy": null,
+      "executionPrompt": "你只做一件事：拿另一条独立来源验证别人的结论。你有意不共享 scout 的上下文，避免同源偏差。\n结论分三档：已复现 / 部分一致 / 无法复现。无法复现时必须写清缺哪条关键证据。",
+      "promptStats": {
+        "chars": 90,
+        "parts": [
+          {
+            "path": "roles/research-verifier/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "7c89d62baf193550f90abd75f6f08a517bff06b6b91bf3b7984314f055539f5c"
+      },
+      "provenance": {
+        "role": "research-verifier@1.0.0",
+        "sha256": "af8cce36"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

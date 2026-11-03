@@ -1,0 +1,25 @@
+kind: "dsh-agent-roster/roster@2"
+id: "contract-review"
+version: "1.0.0"
+title: "合同审阅组"
+description: "找到会让你赔钱、被锁定或无法退出的条款。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "legal"
+  - "contract"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "contract-review-lead@1.0.0"
+  - as: "clause-reader"
+    role: "contract-review-clause-reader@1.0.0"
+  - as: "risk-note"
+    role: "contract-review-risk-note@1.0.0"

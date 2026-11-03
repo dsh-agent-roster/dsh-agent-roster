@@ -1,0 +1,25 @@
+kind: "dsh-agent-roster/roster@2"
+id: "performance"
+version: "1.0.0"
+title: "性能优化组"
+description: "先量再改：没有基线就没有优化。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "performance"
+  - "profiling"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "performance-lead@1.0.0"
+  - as: "profiler"
+    role: "performance-profiler@1.0.0"
+  - as: "load-tester"
+    role: "performance-load-tester@1.0.0"

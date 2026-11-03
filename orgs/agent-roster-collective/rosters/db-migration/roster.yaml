@@ -1,0 +1,26 @@
+kind: "dsh-agent-roster/roster@2"
+id: "db-migration"
+version: "1.0.0"
+title: "数据库迁移组"
+description: "把一次 schema 变更做到可回滚：先证明能回，再动手。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "database"
+  - "migration"
+  - "reliability"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "db-migration-lead@1.0.0"
+  - as: "migrator"
+    role: "db-migration-migrator@1.0.0"
+  - as: "verifier"
+    role: "db-migration-verifier@1.0.0"

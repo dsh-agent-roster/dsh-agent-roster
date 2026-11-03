@@ -82,6 +82,11 @@ out
 .nuxt
 dist
 .output
+# ...but compiled roster artifacts are source-of-truth in this repo: examples ship them,
+# and CI asserts `compile --write` reproduces them byte for byte.
+!examples/dist/
+!examples-orchestration/dist/
+!orgs/agent-roster-collective/dist/
 
 # Gatsby files
 .cache/

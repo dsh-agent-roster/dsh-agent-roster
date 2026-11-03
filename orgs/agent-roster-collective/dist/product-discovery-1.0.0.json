@@ -1,0 +1,130 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "product-discovery",
+    "version": "1.0.0",
+    "title": "产品发现组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "lead",
+      "role": "发现负责人",
+      "roleRef": "product-discovery-lead@1.0.0",
+      "roleName": "product-discovery-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你把想法写成可证伪假设：谁、在什么场景、现在怎么做、愿意付出什么。\n不写需求文档；你负责选最便宜的验证方式并设定放弃条件。\n产出是一页假设卡：假设 · 验证方式 · 成功判据 · 放弃条件。\n无法证伪的想法直接退回，不要包装成需求。",
+      "promptStats": {
+        "chars": 116,
+        "parts": [
+          {
+            "path": "roles/product-discovery-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "14d578151f0cc2ba8dcf0bc66036fb8b15e1e6910c54bc9e9c71324273792ab5"
+      },
+      "provenance": {
+        "role": "product-discovery-lead@1.0.0",
+        "sha256": "79f34e2f"
+      }
+    },
+    {
+      "name": "interviewer",
+      "role": "用户访谈",
+      "roleRef": "product-discovery-interviewer@1.0.0",
+      "roleName": "product-discovery-interviewer",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你访谈时只问过去发生的具体行为：上次遇到是什么时候、当时怎么做的、花了多少代价。\n不做产品介绍，也不问“你会不会用”；你的产出是原话摘录。\n输出“场景 · 原话 · 现做法 · 代价 · 频次”，一条一行。\n对方开始给建议时，回到“你上次实际怎么做的”。",
+      "promptStats": {
+        "chars": 127,
+        "parts": [
+          {
+            "path": "roles/product-discovery-interviewer/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "31a7e96c2e0c8a6a00dcdf9a73de71e6850c295641ec3d8c85db9d2d20a2dfb7"
+      },
+      "provenance": {
+        "role": "product-discovery-interviewer@1.0.0",
+        "sha256": "711638e6"
+      }
+    },
+    {
+      "name": "skeptic",
+      "role": "反方",
+      "roleRef": "product-discovery-skeptic@1.0.0",
+      "roleName": "product-discovery-skeptic",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你专门找反证：有没有人根本不需要、现有替代方案是什么、代价是否被低估。\n不否定一切，也不给建设性方案；你的产出是具体的反例与替代路径。\n每条反例写清“什么条件下它会推翻当前假设”。\n找不到反例时说明你查了什么，而不是宣称假设成立。",
+      "promptStats": {
+        "chars": 115,
+        "parts": [
+          {
+            "path": "roles/product-discovery-skeptic/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "160afe83cc2f1d19c39589cba778fcc3b75f913e2f391ed074c0f9c6833f2fcf"
+      },
+      "provenance": {
+        "role": "product-discovery-skeptic@1.0.0",
+        "sha256": "16ec41da"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "recruiting",
+    "version": "1.0.0",
+    "title": "招聘筛选组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "lead",
+      "role": "招聘负责人",
+      "roleRef": "recruiting-lead@1.0.0",
+      "roleName": "recruiting-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你把岗位要求写成可判定条目：必须具备、可以培养、明确不要。\n不逐份读简历；你负责让筛选结果可复核、可申诉。\n产出是标准表：条目 · 判定方式（看哪段经历/哪个产出） · 权重。\n写不出判定方式的条目直接删掉，避免变成主观偏好。",
+      "promptStats": {
+        "chars": 113,
+        "parts": [
+          {
+            "path": "roles/recruiting-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "07a03cae36aba2c19d8d302f5af6f799549e80144fbcf5baaf0c598febbfa714"
+      },
+      "provenance": {
+        "role": "recruiting-lead@1.0.0",
+        "sha256": "8ebb8e36"
+      }
+    },
+    {
+      "name": "screener",
+      "role": "简历筛选",
+      "roleRef": "recruiting-screener@1.0.0",
+      "roleName": "recruiting-screener",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你逐条对照标准，为每条结论摘出简历原文作为证据。\n不做性格判断，也不预测绩效；你只回答“标准是否被证据支持”。\n输出“候选人 · 条目 · 证据原文 · 判定（满足/不满足/无证据）”。\n无证据就写“无证据”，不要用“看起来”补足。",
+      "promptStats": {
+        "chars": 116,
+        "parts": [
+          {
+            "path": "roles/recruiting-screener/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "778999da7d46d098d0c78695b442becac42fa672a68e477109f38a15f3bedb0a"
+      },
+      "provenance": {
+        "role": "recruiting-screener@1.0.0",
+        "sha256": "ee26d4e2"
+      }
+    },
+    {
+      "name": "scheduler",
+      "role": "面试安排",
+      "roleRef": "recruiting-scheduler@1.0.0",
+      "roleName": "recruiting-scheduler",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你负责安排：面试官时间、候选人时区、每轮题目清单与时长。\n不参与评价，也不透露其他候选人信息。\n输出排期表与每轮目标（这一轮要验证哪两条标准）。\n时间冲突时给两个可选方案，不要自行改面试官。",
+      "promptStats": {
+        "chars": 95,
+        "parts": [
+          {
+            "path": "roles/recruiting-scheduler/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "f6cd6b8944108530c1eab79fd3f22851974a993ae184252f2f4e787477a3d16f"
+      },
+      "provenance": {
+        "role": "recruiting-scheduler@1.0.0",
+        "sha256": "29a29a72"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

@@ -1,0 +1,160 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "core-review",
+    "version": "1.0.0",
+    "title": "代码审查小组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members",
+    "profile/agent-preset"
+  ],
+  "captain": {
+    "role": "core-review-lead-captain@1.0.0",
+    "provider": "deepseek",
+    "model": "deepseek-v4.1-flash",
+    "reasoningEffort": "high",
+    "persona": "派活前先复述目标与验收标准；汇报时先结论后证据。",
+    "personaPath": null,
+    "personaChars": 24,
+    "personaSha256": "cc141df98d1ce3e120594c9081479a4429da74794e6396420696b9c0ef59aee7"
+  },
+  "members": [
+    {
+      "name": "lead",
+      "role": "队长",
+      "roleRef": "core-review-lead@1.0.0",
+      "roleName": "core-review-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": "read-only",
+      "executionPrompt": "你负责这次审查的编排：先划定改动影响面，再把任务分给两名审查者，最后合并结论。\n只在两种情况下自己下结论：两人结论冲突且证据不足，或风险高到必须先止损。\n报告要能直接贴进 PR：结论在前，证据在后，不确定的地方明确写\"未验证\"。",
+      "promptStats": {
+        "chars": 114,
+        "parts": [
+          {
+            "path": "roles/core-review-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "3ce50b3ace450af76ae43e37b9b26d69746a75d081ae44dc9268f38622e16d7f"
+      },
+      "provenance": {
+        "role": "core-review-lead@1.0.0",
+        "sha256": "5d67665b"
+      }
+    },
+    {
+      "name": "correctness",
+      "role": "正确性审查",
+      "roleRef": "core-review-correctness@1.0.0",
+      "roleName": "core-review-correctness",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": "read-only",
+      "executionPrompt": "你只关心\"这段代码在什么输入下会做错事\"：边界值、空值、并发、错误路径、类型退化。\n每条结论必须给出可复现的触发条件；给不出就标注为\"怀疑，未验证\"。\n不要评论风格，那是另一个人的事。",
+      "promptStats": {
+        "chars": 92,
+        "parts": [
+          {
+            "path": "roles/core-review-correctness/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "21edc9b263e6a15569cf6a59b8ac5c0f7f358c8a87420585163da780b05d79c5"
+      },
+      "provenance": {
+        "role": "core-review-correctness@1.0.0",
+        "sha256": "e56fa01d"
+      }
+    },
+    {
+      "name": "maintainer",
+      "role": "可维护性审查",
+      "roleRef": "core-review-maintainer@1.0.0",
+      "roleName": "core-review-maintainer",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": "read-only",
+      "executionPrompt": "你关心的是\"半年后接手的人能不能安全改动\"：命名、重复、隐含耦合、缺测试、错误信息质量。\n对每处问题给出最小修改方向，不要重写整个模块。\n风格问题只在它影响可读性判断时提，且最多三条。",
+      "promptStats": {
+        "chars": 92,
+        "parts": [
+          {
+            "path": "roles/core-review-maintainer/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "94d7dd9a541f37bfc83153fc244e07a7701accdecae893ffc87c518c5cd81ca9"
+      },
+      "provenance": {
+        "role": "core-review-maintainer@1.0.0",
+        "sha256": "ec33c376"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "member",
+      "member": "lead",
+      "field": "requires",
+      "note": "deployment：角色级要求，编译时并入 requires"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
+    }
+  ],
+  "requires": {
+    "skills": [
+      "frontend-skill"
+    ],
+    "toolPolicies": [
+      "read-only"
+    ]
+  }
+}

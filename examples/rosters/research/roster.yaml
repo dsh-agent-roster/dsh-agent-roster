@@ -1,0 +1,20 @@
+kind: "dsh-agent-roster/roster@2"
+id: "research"
+version: "0.1.0"
+title: "外部调研小组"
+description: "一手资料收集 + 交叉复核；复核者的结论必须能被另一条独立来源支撑。"
+tags:
+  - "research"
+  - "example"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-pro"
+    reasoningEffort: "medium"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "scout"
+    role: "research-scout@1.0.0"
+  - as: "verifier"
+    role: "research-verifier@1.0.0"

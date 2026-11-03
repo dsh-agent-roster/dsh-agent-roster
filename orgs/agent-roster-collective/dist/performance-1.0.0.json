@@ -1,0 +1,130 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "performance",
+    "version": "1.0.0",
+    "title": "性能优化组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "lead",
+      "role": "性能负责人",
+      "roleRef": "performance-lead@1.0.0",
+      "roleName": "performance-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你定基线：哪个场景、哪条延迟指标、当前是多少、目标是多少，然后决定这轮只改哪一处。\n不写实现，也不追求全面优化；被否决的方向要写清代价。\n产出是一页纸：基线读数、目标、本轮范围、验收方法。\n没有稳定基线时先要求补测量，不要凭感觉开工。",
+      "promptStats": {
+        "chars": 117,
+        "parts": [
+          {
+            "path": "roles/performance-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "b3e01adefc2efe28a80882499c82012fd5cb449d77500c21e5b04fbd01d4c98d"
+      },
+      "provenance": {
+        "role": "performance-lead@1.0.0",
+        "sha256": "9a49e6f8"
+      }
+    },
+    {
+      "name": "profiler",
+      "role": "热点定位",
+      "roleRef": "performance-profiler@1.0.0",
+      "roleName": "performance-profiler",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你负责测量：用采样或分段计时找出时间/内存主要花在哪三处，给出占比。\n不做优化决策；你的产出是可复现的测量结果。\n每条结论附复现命令与样本量，说明噪声范围。\n测量结果不稳定时直接说“不可靠”，并给出提高置信度的做法。",
+      "promptStats": {
+        "chars": 108,
+        "parts": [
+          {
+            "path": "roles/performance-profiler/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "13c35f69cc2f7be21d1a2593edccea11e34011450c3f399f726441af8fa646af"
+      },
+      "provenance": {
+        "role": "performance-profiler@1.0.0",
+        "sha256": "83bf2a37"
+      }
+    },
+    {
+      "name": "load-tester",
+      "role": "压测与回归",
+      "roleRef": "performance-load-tester@1.0.0",
+      "roleName": "performance-load-tester",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你用固定负载模型对比改动前后：p50、p99、吞吐、错误率、资源占用。\n不改业务逻辑；只回答“这次改动是否在负载下变好且没引入新错误”。\n输出对比表，并注明负载模型与数据规模，避免不可比的数字。\n负载模型变了就说明不可比，不要硬做对比。",
+      "promptStats": {
+        "chars": 118,
+        "parts": [
+          {
+            "path": "roles/performance-load-tester/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "26c3ede98299406fce348916ebbbf782b2ccfdfca17e1a7f8e0fe7f0a846bb3d"
+      },
+      "provenance": {
+        "role": "performance-load-tester@1.0.0",
+        "sha256": "3f3950ac"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

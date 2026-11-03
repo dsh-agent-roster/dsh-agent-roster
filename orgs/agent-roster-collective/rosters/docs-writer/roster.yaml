@@ -1,0 +1,25 @@
+kind: "dsh-agent-roster/roster@2"
+id: "docs-writer"
+version: "1.0.0"
+title: "文档组"
+description: "让文档里的每条命令都真的能跑，每个读数都带时间。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "docs"
+  - "writing"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "docs-writer-lead@1.0.0"
+  - as: "writer"
+    role: "docs-writer-writer@1.0.0"
+  - as: "example-runner"
+    role: "docs-writer-example-runner@1.0.0"

@@ -1,0 +1,130 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "finance-recon",
+    "version": "1.0.0",
+    "title": "财务对账组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "lead",
+      "role": "对账负责人",
+      "roleRef": "finance-recon-lead@1.0.0",
+      "roleName": "finance-recon-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你先统一口径：时间窗、币种、含税与否、退款怎么记，再定容忍度。\n不逐笔匹配；你负责让两侧数字可比。\n产出是口径说明 + 容忍度 + 差异上报格式。\n口径对不齐时先停下，不要用总额凑平。",
+      "promptStats": {
+        "chars": 92,
+        "parts": [
+          {
+            "path": "roles/finance-recon-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "f946350cb446f77d786f4f855aaa1bd571ca5fb12e851003ac52fdcc6c41738d"
+      },
+      "provenance": {
+        "role": "finance-recon-lead@1.0.0",
+        "sha256": "c2c0d32e"
+      }
+    },
+    {
+      "name": "matcher",
+      "role": "逐笔匹配",
+      "roleRef": "finance-recon-matcher@1.0.0",
+      "roleName": "finance-recon-matcher",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你按金额、时间窗、单号匹配两侧记录，能对上的标注匹配依据。\n不解释差异原因；你只负责把未匹配项列干净。\n输出“已匹配 N 笔 · 左侧未匹配 · 右侧未匹配”，每条带金额与日期。\n模糊匹配拿不准时标“疑似”，不要强行配对。",
+      "promptStats": {
+        "chars": 111,
+        "parts": [
+          {
+            "path": "roles/finance-recon-matcher/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "c513b7a125a16d4974e76f7cd1cce0ab886446d9314497c2ce7fc78e2ea14e07"
+      },
+      "provenance": {
+        "role": "finance-recon-matcher@1.0.0",
+        "sha256": "f0491bab"
+      }
+    },
+    {
+      "name": "exception",
+      "role": "差异归因",
+      "roleRef": "finance-recon-exception@1.0.0",
+      "roleName": "finance-recon-exception",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你给未匹配项归因：时间差、手续费、退款、重复记账、错单，每条附验证方法。\n不修改任何一侧数据；只产出归因与建议动作。\n输出“差异笔 · 金额 · 归因 · 证据 · 建议（调账/查单/忽略）”。\n归因不成立时保留“未知”，不要为了结案编原因。",
+      "promptStats": {
+        "chars": 121,
+        "parts": [
+          {
+            "path": "roles/finance-recon-exception/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "6043a3c117b1c6d8ba449ab3d6cf747d479486f2765ebcccb4fd23a38563a13d"
+      },
+      "provenance": {
+        "role": "finance-recon-exception@1.0.0",
+        "sha256": "a67c8b7d"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

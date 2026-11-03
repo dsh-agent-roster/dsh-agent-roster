@@ -1,0 +1,26 @@
+kind: "dsh-agent-roster/roster@2"
+id: "sre-oncall"
+version: "1.0.0"
+title: "SRE 值守组"
+description: "值守不是盯屏：定告警阈值、写手册、算容量。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "sre"
+  - "oncall"
+  - "capacity"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "sre-oncall-lead@1.0.0"
+  - as: "runbook"
+    role: "sre-oncall-runbook@1.0.0"
+  - as: "capacity"
+    role: "sre-oncall-capacity@1.0.0"

@@ -1,0 +1,185 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "core-review",
+    "version": "1.0.0",
+    "title": "核心评审组",
+    "repo": "dsh-agent-roster/dsh-agent-roster",
+    "ref": "main",
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": {
+    "role": "lead@1.0.0",
+    "provider": "deepseek",
+    "model": "deepseek-v4.1-flash",
+    "reasoningEffort": "high",
+    "persona": "你负责推进，不负责写代码。每张卡先写清验收标准再派出去；收到回报先核对证据，再决定收口还是打回。\n遇到需要用户拍板的事，直接说清选项与代价，不要替他选。",
+    "personaPath": null,
+    "personaChars": 76,
+    "personaSha256": "9ea2862bd577f049067484509b710f32f7b8a95abcb2ae569de0ff25f4f5c5ae"
+  },
+  "members": [
+    {
+      "name": "reviewer",
+      "role": "代码评审",
+      "roleRef": "reviewer@1.0.0",
+      "roleName": "reviewer",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": "member-safe",
+      "executionPrompt": "你是这个团队的代码评审。你的读者是写这段代码的人，他比你更了解背景，但没你冷静。\n\n先说结论：这段改动能不能合、卡在哪一条。再按严重度从高到低列问题，每条给出文件、行号与具体改法。\n没有把握的地方标成「猜测」，不要用肯定的语气说出来。\n\n## 检查清单\n\n1. 边界：空值、空数组、零、负数、超长输入。\n2. 错误：失败时调用方能不能分辨「没数据」与「坏了」。\n3. 并发：有没有共享可变状态；重入会不会踩同一份缓存。\n4. 契约：改了返回形状就要在同一次改动里改所有调用点。\n",
+      "promptStats": {
+        "chars": 239,
+        "parts": [
+          {
+            "path": "roles/reviewer/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          },
+          {
+            "path": "parts/checklist.md",
+            "kind": "part"
+          }
+        ],
+        "sha256": "821be94c03087f86f9eb42620933c05a6a6a257101abfdba2abe19e77bedcb78"
+      },
+      "provenance": {
+        "role": "reviewer@1.0.0",
+        "sha256": "8c331102"
+      }
+    },
+    {
+      "name": "fixer",
+      "role": "修复",
+      "roleRef": "fixer@1.0.0",
+      "roleName": "fixer",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": "member-safe",
+      "executionPrompt": "只改评审指出的问题。每改一条说明改了哪个文件、为什么这样改、怎么验证的。\n发现意见本身不对时先说明，不要默默按错的方向改。\n\n在这个团队里，你还要顺带跑一次 `node --test`，把失败用例贴进回报里。",
+      "promptStats": {
+        "chars": 104,
+        "parts": [
+          {
+            "path": "roles/fixer/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          },
+          {
+            "path": "在这个团队里，你还要顺带跑一次 `node --test`，把失败用例贴进回报里。",
+            "kind": "append"
+          }
+        ],
+        "sha256": "ae95875f1ce3098b29475dd4a13609a8da5eac0a95a71bbe0be5cac92f2ec3ce"
+      },
+      "provenance": {
+        "role": "fixer@1.0.0",
+        "sha256": "a50981a7"
+      }
+    }
+  ],
+  "orchestration": {
+    "shape": "gate-pipeline",
+    "stages": [
+      {
+        "id": "build",
+        "parallel": [],
+        "serial": [
+          "fixer"
+        ],
+        "join": null,
+        "on": null,
+        "role": null,
+        "maxRounds": 1
+      },
+      {
+        "id": "audit",
+        "parallel": [
+          "reviewer"
+        ],
+        "serial": [],
+        "join": null,
+        "on": null,
+        "role": null,
+        "maxRounds": 1
+      }
+    ],
+    "gates": [
+      {
+        "id": "tests-pass",
+        "after": [
+          "audit"
+        ],
+        "requires": [
+          "现有测试全部通过",
+          "没有新增未覆盖的分支"
+        ],
+        "verify": [
+          {
+            "command": "node --test",
+            "expectExit": 0
+          },
+          {
+            "command": "node bin/cli.mjs validate --dir examples",
+            "expectExit": 0
+          }
+        ],
+        "by": "reviewer"
+      }
+    ],
+    "status": "declaration"
+  },
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "member",
+      "member": "fixer",
+      "field": "prompt.append/prepend",
+      "note": "materialized：已拼进 executionPrompt"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
+    },
+    {
+      "scope": "orchestration",
+      "field": "stages/gates",
+      "note": "declaration：运行时不会执行这份编排；它先作为可校验的计划存在，编译成任务 DAG 是下一步"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": [
+      "member-safe"
+    ]
+  }
+}

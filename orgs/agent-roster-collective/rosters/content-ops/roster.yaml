@@ -1,0 +1,25 @@
+kind: "dsh-agent-roster/roster@2"
+id: "content-ops"
+version: "1.0.0"
+title: "内容运营组"
+description: "一次发布：选题、成稿、分发，三件事各有验收。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "content"
+  - "publishing"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "content-ops-lead@1.0.0"
+  - as: "editor"
+    role: "content-ops-editor@1.0.0"
+  - as: "distributor"
+    role: "content-ops-distributor@1.0.0"

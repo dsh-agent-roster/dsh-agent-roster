@@ -84,7 +84,7 @@ captain:                     # optional: what the captain (the session that crea
 
 JSON works too (`roster.json`); YAML and JSON are probed in the order `roster.yaml`, `roster.yml`, `roster.json`. Exactly one file per directory — a second one is reported, never silently picked.
 
-This package ships two example libraries in [`examples/`](./examples). `rosterDirs` is empty by
+This package ships two example libraries: [`examples/`](./examples) (v2, migrated from the v1 archives this repo grew up with) and [`examples-orchestration/`](./examples-orchestration) (v2, hand-written to show gates and a construction plan). `rosterDirs` is empty by
 default, meaning the global library above, which is empty in a fresh install — so the panel shows
 "0 rosters" until you create one in the UI. To look at the examples instead, point the CLI at them:
 
@@ -255,14 +255,44 @@ A gate must be runnable, not self-certified: every gate carries at least one `ve
 
 `executor: "captain"` is the whole point: the plugin never calls `agent_teams_create_task`, because writing team state belongs to the captain session. The plan is a drawing the captain builds from, not the plugin building for it.
 
-The example library in [`examples-v2/`](./examples-v2/) compiles end to end:
+The example library in [`examples-orchestration/`](./examples-orchestration/) compiles end to end:
 
 ```bash
-node bin/cli.mjs compile --roster examples-v2/rosters/core-review --write
-node bin/cli.mjs compile --roster examples-v2/rosters/core-review --json
+node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review --write
+node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review --json
 ```
 
 `orchestration` is part of the format but is compiled with `status: "declaration"`: stages and gates are validated (a gate's `after` must name real stages, `by` must name a real member), yet nothing executes them. Declaring a field is not the same as proving it runs, so the artifact says which is which in `declarations[]`. The full contract — field ownership, assembly semantics, identity and uniqueness, migration rules — is in [`docs/roster-v2.md`](./docs/roster-v2.md); the schemas are [`schema/role.v1.schema.json`](./schema/role.v1.schema.json), [`schema/roster.v2.schema.json`](./schema/roster.v2.schema.json) and [`schema/compiled.v1.schema.json`](./schema/compiled.v1.schema.json).
+
+### From v1 to v2 in one command
+
+```bash
+node bin/cli.mjs migrate --dir examples            # 只出计划：要写哪些文件、能不能编译
+node bin/cli.mjs migrate --dir examples --write    # 原地重写：roles/ + rosters/ + dist/，删掉旧目录
+```
+
+Migration keeps personas verbatim: a member's `systemPrompt` becomes the body of
+`roles/<roster>-<member>/AGENT.md`, and the member turns into a reference. The captain stops being a
+loose field and becomes a role file of its own — `<roster>-<captain>-captain` when its name collides
+with a member, because those are two different personas and silently merging them would lose one.
+
+Role names carry the roster id prefix because v2 requires role names to be **unique per library**,
+and a library whose 21 rosters all call their captain `lead` cannot have 21 files with the same name.
+
+### Feeding a failed round back into the plan
+
+`compile --run <file>` reads an execution record (`run@1`) and appends the previous round's failures
+to the retry card's description:
+
+```bash
+node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
+  --run examples-orchestration/dist/core-review-1.0.0.run.json
+```
+
+The record is written by whoever executes the plan (the captain session), not by the plugin: a task
+id belongs to the team, and the plugin never writes team state. What it does own is the merge — a
+failure that only exists on a red card never reaches the next compile, which is exactly how a gate
+turns into decoration.
 
 ## Tools
 
@@ -421,9 +451,10 @@ lib/              format, parse, validate, registry, bridge, verify, render, lib
 client.js         client plugin: sidebar entry, main panel (rosters/teams/health), settings section
 locale/           panel + listing dictionaries (en/zh)
 schema/           roster / capabilities / organization / registry v1 schemas (editor completion; kept aligned by tests)
-bin/cli.mjs       validate/list/version for CI
+bin/cli.mjs       validate/list/compile/migrate/registry for CI
 scripts/          host-smoke.mjs, client-smoke.mjs, check-locale.mjs (dev only, not shipped)
-examples/         two example libraries
+examples/         a v2 library migrated from the v1 archives
+examples-orchestration/  a v2 library with orchestration, gates and a construction plan
 orgs/             a worked example library with its own organization.yaml (21 rosters)
 test/             unit tests
 ```
@@ -432,7 +463,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 276/276 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, remote registry and one-click install).
+- `npm test` — 286/286 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.

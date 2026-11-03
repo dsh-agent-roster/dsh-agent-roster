@@ -1,0 +1,26 @@
+kind: "dsh-agent-roster/roster@2"
+id: "api-design"
+version: "1.0.0"
+title: "API 设计评审组"
+description: "在写第一行实现之前，把接口的形状、演进与失败语义定下来。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "api"
+  - "design"
+  - "review"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "api-design-lead@1.0.0"
+  - as: "schema"
+    role: "api-design-schema@1.0.0"
+  - as: "failure-mode"
+    role: "api-design-failure-mode@1.0.0"

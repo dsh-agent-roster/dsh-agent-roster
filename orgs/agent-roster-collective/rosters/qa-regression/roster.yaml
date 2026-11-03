@@ -1,0 +1,26 @@
+kind: "dsh-agent-roster/roster@2"
+id: "qa-regression"
+version: "1.0.0"
+title: "回归测试组"
+description: "每次改动都问：哪些旧行为可能被碰坏。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "qa"
+  - "regression"
+  - "testing"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "qa-regression-lead@1.0.0"
+  - as: "case-writer"
+    role: "qa-regression-case-writer@1.0.0"
+  - as: "flake-hunter"
+    role: "qa-regression-flake-hunter@1.0.0"

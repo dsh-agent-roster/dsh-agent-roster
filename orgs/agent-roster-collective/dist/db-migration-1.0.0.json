@@ -1,0 +1,130 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "db-migration",
+    "version": "1.0.0",
+    "title": "数据库迁移组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "lead",
+      "role": "迁移负责人",
+      "roleRef": "db-migration-lead@1.0.0",
+      "roleName": "db-migration-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你负责这次迁移：确认影响哪些表与写入方、锁表多久、回滚脚本是否真的跑过。\n不写 DDL，也不改业务代码；你在每个门禁上做 go/no-go。\n产出是迁移计划：步骤、每步验证、回滚动作、谁在什么信号下叫停。\n任何一步没有回滚方案，直接判不可执行，不要用“应该没事”放行。",
+      "promptStats": {
+        "chars": 134,
+        "parts": [
+          {
+            "path": "roles/db-migration-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "a8d7998126350ffc002c3434268f6730b06a1128b7c65736b1cc6fe9921e3f68"
+      },
+      "provenance": {
+        "role": "db-migration-lead@1.0.0",
+        "sha256": "b6a41240"
+      }
+    },
+    {
+      "name": "migrator",
+      "role": "迁移实现",
+      "roleRef": "db-migration-migrator@1.0.0",
+      "roleName": "db-migration-migrator",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你写迁移与回填脚本：可重入、可分批、每批有进度与幂等保证。\n不做业务决策，也不在脚本里夹带数据修正；发现脏数据只报告不动手。\n交付脚本 + 每步的前置断言 + 中断后如何续跑的一句话说明。\n遇到无法幂等的步骤，停下来要求改方案，不要靠“跑一次就好”。",
+      "promptStats": {
+        "chars": 125,
+        "parts": [
+          {
+            "path": "roles/db-migration-migrator/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "aba4df7fc8f749869e9e42615cb7259611248948f2597a0181a7f17c460a0e33"
+      },
+      "provenance": {
+        "role": "db-migration-migrator@1.0.0",
+        "sha256": "eff89321"
+      }
+    },
+    {
+      "name": "verifier",
+      "role": "数据验证",
+      "roleRef": "db-migration-verifier@1.0.0",
+      "roleName": "db-migration-verifier",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你只做迁移前后的对账：行数、关键金额合计、枚举分布、随机抽样逐行比对。\n不改数据，也不解释差异的业务原因；你负责把差异量化到具体行。\n输出“指标 · 迁移前 · 迁移后 · 差异 · 是否在容忍内”，并给出复算命令。\n差异超出容忍时直接判失败，不要用“可能正常”掩盖。",
+      "promptStats": {
+        "chars": 134,
+        "parts": [
+          {
+            "path": "roles/db-migration-verifier/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "ceec711ad7fa3f02ca500fd78f70614df647a3c5f790071f87c5f2301bc37cb9"
+      },
+      "provenance": {
+        "role": "db-migration-verifier@1.0.0",
+        "sha256": "a207180c"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

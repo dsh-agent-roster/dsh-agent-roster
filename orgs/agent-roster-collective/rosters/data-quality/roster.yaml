@@ -1,0 +1,26 @@
+kind: "dsh-agent-roster/roster@2"
+id: "data-quality"
+version: "1.0.0"
+title: "数据质量组"
+description: "为一份数据表定“什么算合格”，并把不合格变成可复现的判据。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "data"
+  - "quality"
+  - "checks"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "data-quality-lead@1.0.0"
+  - as: "profiler"
+    role: "data-quality-profiler@1.0.0"
+  - as: "rule-author"
+    role: "data-quality-rule-author@1.0.0"

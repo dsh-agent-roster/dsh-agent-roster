@@ -1,0 +1,25 @@
+kind: "dsh-agent-roster/roster@2"
+id: "product-discovery"
+version: "1.0.0"
+title: "产品发现组"
+description: "在写需求之前，先证明这个需求真的存在。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "product"
+  - "discovery"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "product-discovery-lead@1.0.0"
+  - as: "interviewer"
+    role: "product-discovery-interviewer@1.0.0"
+  - as: "skeptic"
+    role: "product-discovery-skeptic@1.0.0"

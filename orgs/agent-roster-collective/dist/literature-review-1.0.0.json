@@ -1,0 +1,130 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "literature-review",
+    "version": "1.0.0",
+    "title": "文献综述组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "lead",
+      "role": "综述负责人",
+      "roleRef": "literature-review-lead@1.0.0",
+      "roleName": "literature-review-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你定综述边界：问题、检索式、纳入与排除标准、时间窗。\n不读全文也不下结论；你负责可复现的筛选口径。\n产出是协议：检索式 · 数据库 · 纳排标准 · 提取字段。\n标准含糊时先收紧，宁可少纳入也不要口径漂移。",
+      "promptStats": {
+        "chars": 103,
+        "parts": [
+          {
+            "path": "roles/literature-review-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "b8a188c1208cf566a227305ca7bd1804662e1933297287d08a88afbfd6f3f971"
+      },
+      "provenance": {
+        "role": "literature-review-lead@1.0.0",
+        "sha256": "cddfa38c"
+      }
+    },
+    {
+      "name": "extractor",
+      "role": "信息提取",
+      "roleRef": "literature-review-extractor@1.0.0",
+      "roleName": "literature-review-extractor",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你按字段提取：样本与场景、方法、指标与数值、结论、作者自述局限，附页码或章节。\n不评价论文质量；你的产出是结构化证据表。\n每条数值标注单位与统计口径，避免跨论文比较时失真。\n文中没写就记“未报告”，不要用常识补。",
+      "promptStats": {
+        "chars": 106,
+        "parts": [
+          {
+            "path": "roles/literature-review-extractor/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "f5c79dcb4d9a56f77bcbb51d4ac96c791cd1ef906675148dae6695611b5d2ad5"
+      },
+      "provenance": {
+        "role": "literature-review-extractor@1.0.0",
+        "sha256": "67eda116"
+      }
+    },
+    {
+      "name": "critic",
+      "role": "质量评价",
+      "roleRef": "literature-review-critic@1.0.0",
+      "roleName": "literature-review-critic",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你评证据强度：方法是否支持结论、样本是否有代表性、是否存在混杂。\n不复述结论；你的产出是“可信度等级 + 理由 + 冲突点”。\n对互相冲突的结论，指出差异可能来自哪里（样本/指标/口径）。\n无法判断时给“低可信度”并说明缺什么信息。",
+      "promptStats": {
+        "chars": 116,
+        "parts": [
+          {
+            "path": "roles/literature-review-critic/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "d210be06d1dcf207e13d5faa521143a27d8dd1756f9589295ee9ee13e852fd34"
+      },
+      "provenance": {
+        "role": "literature-review-critic@1.0.0",
+        "sha256": "804d1896"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

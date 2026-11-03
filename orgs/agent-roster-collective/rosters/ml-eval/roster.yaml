@@ -1,0 +1,25 @@
+kind: "dsh-agent-roster/roster@2"
+id: "ml-eval"
+version: "1.0.0"
+title: "模型评测组"
+description: "跑分之前先问：这套题能不能区分好坏。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "ml"
+  - "evaluation"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "ml-eval-lead@1.0.0"
+  - as: "dataset"
+    role: "ml-eval-dataset@1.0.0"
+  - as: "metric"
+    role: "ml-eval-metric@1.0.0"

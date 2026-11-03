@@ -1,0 +1,30 @@
+kind: "dsh-agent-roster/roster@2"
+id: "security-audit"
+version: "1.0.0"
+title: "安全审计组"
+description: "在代码里找“能被利用”的东西，而不是“看着不安全”的东西。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "security"
+  - "audit"
+  - "review"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "security-audit-lead@1.0.0"
+  - as: "code-auditor"
+    role: "security-audit-code-auditor@1.0.0"
+  - as: "threat-modeler"
+    role: "security-audit-threat-modeler@1.0.0"
+requires:
+  toolPolicies:
+    - "member-safe"
+onMissing: "degraded"

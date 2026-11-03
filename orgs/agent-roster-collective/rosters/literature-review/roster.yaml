@@ -1,0 +1,25 @@
+kind: "dsh-agent-roster/roster@2"
+id: "literature-review"
+version: "1.0.0"
+title: "文献综述组"
+description: "把一堆论文读成一张能追到出处的证据表。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "research"
+  - "literature"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "literature-review-lead@1.0.0"
+  - as: "extractor"
+    role: "literature-review-extractor@1.0.0"
+  - as: "critic"
+    role: "literature-review-critic@1.0.0"

@@ -1,0 +1,130 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "incident-response",
+    "version": "1.0.0",
+    "title": "事故响应组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "commander",
+      "role": "事故指挥",
+      "roleRef": "incident-response-commander@1.0.0",
+      "roleName": "incident-response-commander",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你是事故指挥：先确认影响面（谁受影响、多严重），再决定第一个止损动作，然后把排查与记录分出去。\n不要自己下钻日志；你要做的是让两条线并行且互不打扰，并在每个节点确认“现在能不能回滚”。\n每次通报写清：影响面、已做的动作、下一步与负责人、下一次更新时间。\n信息不全时按最坏情况假设推进止损，并在通报里标明“假设”。",
+      "promptStats": {
+        "chars": 156,
+        "parts": [
+          {
+            "path": "roles/incident-response-commander/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "743d19bda3525ef2f512e9129fed14716ee5c5f3c1f558ac94a4b6da12b6cf9c"
+      },
+      "provenance": {
+        "role": "incident-response-commander@1.0.0",
+        "sha256": "5b674c6a"
+      }
+    },
+    {
+      "name": "triage",
+      "role": "定位",
+      "roleRef": "incident-response-triage@1.0.0",
+      "roleName": "incident-response-triage",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你负责定位：按“最近变更 → 错误分布 → 依赖状态”的顺序缩小范围，每一步都要有读数支撑。\n不决定回滚，也不对外发通报；你的产出是指向性结论与验证方法。\n每条结论写成“假设 → 支持证据 → 怎么证伪”；不要给没有证据的猜测。\n证据不足时明确写“未定位”，并列出下一步要看的三处。",
+      "promptStats": {
+        "chars": 141,
+        "parts": [
+          {
+            "path": "roles/incident-response-triage/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "3704cbfee12c9aa21b329f1e5ddec14a7081a639ed07e334976df81101164fce"
+      },
+      "provenance": {
+        "role": "incident-response-triage@1.0.0",
+        "sha256": "e824186a"
+      }
+    },
+    {
+      "name": "scribe",
+      "role": "记录",
+      "roleRef": "incident-response-scribe@1.0.0",
+      "roleName": "incident-response-scribe",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你只做记录：按时间顺序写下每个动作、谁做的、当时依据什么判断、结果如何。\n不参与决策，也不改写别人的结论；不确定的地方用“原话/待确认”标注。\n输出是时间线，格式为“时间 · 动作 · 依据 · 结果”，末行给出复盘需要的空白项。\n没有记录到的事就留空，不要凭印象补写。",
+      "promptStats": {
+        "chars": 135,
+        "parts": [
+          {
+            "path": "roles/incident-response-scribe/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "21a74ce4de3e0e22f287b74378c6941338eeca9d0819d07b0bc806417295e1ad"
+      },
+      "provenance": {
+        "role": "incident-response-scribe@1.0.0",
+        "sha256": "a1964d09"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

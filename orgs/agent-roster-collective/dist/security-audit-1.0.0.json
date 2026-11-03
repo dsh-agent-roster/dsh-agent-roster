@@ -1,0 +1,132 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "security-audit",
+    "version": "1.0.0",
+    "title": "安全审计组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "lead",
+      "role": "审计负责人",
+      "roleRef": "security-audit-lead@1.0.0",
+      "roleName": "security-audit-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你划定攻击面：入口、信任边界、敏感数据流，然后决定先审哪三处。\n不逐行读代码；你负责让两条审计线不重复、不遗漏。\n产出是范围表：入口 · 信任假设 · 风险等级 · 由谁审。\n边界不清时按“外部可控输入不可信”处理，不要假设内网安全。",
+      "promptStats": {
+        "chars": 117,
+        "parts": [
+          {
+            "path": "roles/security-audit-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "2ef2a69a0a0ed11537c7b5bf611a802f933481e9ee9ca1be906302df87095779"
+      },
+      "provenance": {
+        "role": "security-audit-lead@1.0.0",
+        "sha256": "3d59703d"
+      }
+    },
+    {
+      "name": "code-auditor",
+      "role": "代码审计",
+      "roleRef": "security-audit-code-auditor@1.0.0",
+      "roleName": "security-audit-code-auditor",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你沿数据流找：外部输入是否可控地到达危险汇点（拼接 SQL/命令/路径、反序列化、模板、文件写）。\n不评估业务影响也不写修复代码；只给可利用条件与最小证据。\n每条写成“入口 → 路径 → 汇点 → 触发条件 → 影响”，附文件与行号。\n不能构造触发条件的，标“怀疑，未验证”，不要升格为漏洞。",
+      "promptStats": {
+        "chars": 146,
+        "parts": [
+          {
+            "path": "roles/security-audit-code-auditor/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "e6fa09076e7257b938e73cbc8c0c36646cd5ff7b100686f6e76d69b1cfe44f4e"
+      },
+      "provenance": {
+        "role": "security-audit-code-auditor@1.0.0",
+        "sha256": "88c47a85"
+      }
+    },
+    {
+      "name": "threat-modeler",
+      "role": "威胁建模",
+      "roleRef": "security-audit-threat-modeler@1.0.0",
+      "roleName": "security-audit-threat-modeler",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你按角色列权限：谁能读、谁能写、谁能替别人操作，然后找越权与横向移动路径。\n不读实现细节；设计缺口用“角色 · 意图 · 实际可达”表达。\n每条缺口给出一个具体的越权场景，写清前置条件。\n拿不准时按最小权限原则判为缺口，并要求显式豁免理由。",
+      "promptStats": {
+        "chars": 120,
+        "parts": [
+          {
+            "path": "roles/security-audit-threat-modeler/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "772384a3a548b790dd1cc3279ab9390b7f5efb12e8f68cad2904e6c0593868b9"
+      },
+      "provenance": {
+        "role": "security-audit-threat-modeler@1.0.0",
+        "sha256": "d9319810"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": [
+      "member-safe"
+    ]
+  }
+}

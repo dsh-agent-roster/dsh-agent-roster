@@ -1,0 +1,25 @@
+kind: "dsh-agent-roster/roster@2"
+id: "finance-recon"
+version: "1.0.0"
+title: "财务对账组"
+description: "让两套账的差异落到具体行，而不是“大概对得上”。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "finance"
+  - "reconciliation"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "finance-recon-lead@1.0.0"
+  - as: "matcher"
+    role: "finance-recon-matcher@1.0.0"
+  - as: "exception"
+    role: "finance-recon-exception@1.0.0"

@@ -20,7 +20,9 @@ import { configView } from "./lib/config-view.js";
 import { applyCaptain, listSessions } from "./lib/apply.js";
 import { collectLibrary } from "./lib/library.js";
 import { parseDocumentText } from "./lib/parse.js";
+import { ROSTER2_KIND } from "./lib/format-v2.js";
 import { validateRoster } from "./lib/validate.js";
+import { validateRoster2 } from "./lib/roster2.js";
 import { sendError, sendJson, createAuthGate, readJsonBody, requireMethod } from "./lib/http.js";
 import { buildPanelSnapshot, installCollection, loadRemotePanel, resolveRoots } from "./lib/service.js";
 import { fetchCollection } from "./lib/remote.js";
@@ -203,7 +205,12 @@ export function apply(ctx, config) {
         }
         // 编辑表单需要人设原文：解析一份给编辑器用，解析失败也不挡"看源码"这条路。
         const parsed = parseDocumentText(result.text, { file: result.file, format: result.format });
-        const validated = parsed.ok ? validateRoster(parsed.value, { file: result.file }) : null;
+        const isV2 = parsed.ok && parsed.value?.kind === ROSTER2_KIND;
+        const validated = parsed.ok
+          ? isV2
+            ? validateRoster2(parsed.value, { file: result.file })
+            : validateRoster(parsed.value, { file: result.file })
+          : null;
         sendJson(res, 200, {
           ok: true,
           file: result.file,

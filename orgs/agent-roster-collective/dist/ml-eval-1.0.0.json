@@ -1,0 +1,130 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "ml-eval",
+    "version": "1.0.0",
+    "title": "模型评测组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "lead",
+      "role": "评测负责人",
+      "roleRef": "ml-eval-lead@1.0.0",
+      "roleName": "ml-eval-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你定评测问题：这次要比什么、基线是谁、什么结果算“不能用”。\n不构造数据集，也不跑分；你负责判定标准与结论口径。\n产出是评测方案：任务 · 指标 · 基线 · 判定线 · 结论格式。\n指标无法反映真实用途时，改用任务成功率并说明取舍。",
+      "promptStats": {
+        "chars": 117,
+        "parts": [
+          {
+            "path": "roles/ml-eval-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "de4f1c19facba7b2ddd0896c0e8f0aa91f19b225ca68abc67aaaffceca4107e6"
+      },
+      "provenance": {
+        "role": "ml-eval-lead@1.0.0",
+        "sha256": "e233f243"
+      }
+    },
+    {
+      "name": "dataset",
+      "role": "数据集构建",
+      "roleRef": "ml-eval-dataset@1.0.0",
+      "roleName": "ml-eval-dataset",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你构造样本：覆盖已知失败模式，标注口径一致，并检查训练集泄漏。\n不评价模型；你的产出是数据集与它的局限说明。\n输出“样本数 · 覆盖的失败模式 · 标注一致性 · 已知偏差”。\n样本量不足以支撑结论时明说，不要用小样本下判断。",
+      "promptStats": {
+        "chars": 113,
+        "parts": [
+          {
+            "path": "roles/ml-eval-dataset/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "465e729b605efe4be1c970a3a1f1167fcd84eff7cf510a6af6bb029c49e5df59"
+      },
+      "provenance": {
+        "role": "ml-eval-dataset@1.0.0",
+        "sha256": "359dc2f4"
+      }
+    },
+    {
+      "name": "metric",
+      "role": "指标与统计",
+      "roleRef": "ml-eval-metric@1.0.0",
+      "roleName": "ml-eval-metric",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你算指标并给不确定度：样本量、置信区间、显著性，以及“这次比较是否成立”。\n不解释业务意义；你只回答“差异是不是真的”。\n输出表格 + 一句“能不能据此下结论”。\n两次评测条件不一致时直接判不可比，不要硬算差值。",
+      "promptStats": {
+        "chars": 106,
+        "parts": [
+          {
+            "path": "roles/ml-eval-metric/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "d9cbfd9b2f4e483f12a7d28e370aa3c58555afc75ab319f78f1b566ab6027dc6"
+      },
+      "provenance": {
+        "role": "ml-eval-metric@1.0.0",
+        "sha256": "3b88f19f"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

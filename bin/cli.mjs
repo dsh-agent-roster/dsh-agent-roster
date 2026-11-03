@@ -11,7 +11,8 @@
  *   dsh-agent-roster registry validate --file index/registry.json [--json]
  *   dsh-agent-roster registry fetch    --file index/registry.json [--local-only]
  *   dsh-agent-roster registry sync     --file index/registry.json [--write]
- *   dsh-agent-roster compile --roster rosters/money-lab [--roles roles] [--write] [--json]
+ *   dsh-agent-roster compile --roster rosters/money-lab [--roles roles] [--run run.json] [--write] [--json]
+ *   dsh-agent-roster migrate --dir examples [--write] [--json]
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import nodePath from "node:path";
@@ -22,7 +23,9 @@ import { renderRosterList } from "../lib/render.js";
 import { REGISTRY_KIND } from "../lib/format.js";
 import { fetchCollection, readRegistryFile } from "../lib/remote.js";
 import { compileRosterAt } from "../lib/compile2.js";
+import { migrateLibrary } from "../lib/migrate.js";
 import { compilePlan } from "../lib/plan.js";
+import { mergeRunIntoPlan, validateRun } from "../lib/run.js";
 
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
@@ -33,6 +36,7 @@ const USAGE = `用法：
   dsh-agent-roster registry fetch --file <路径>      逐条确认 collection 真的能取到
   dsh-agent-roster registry sync --file <路径>       按仓库实际内容重算 roster 列表
   dsh-agent-roster compile --roster <目录>            把 v2 组装编译成自包含产物（不写盘）
+  dsh-agent-roster migrate --dir <目录>               把 v1 档案原地迁成 v2（roles/ + rosters/ + dist/）
   dsh-agent-roster --version         输出版本号
 
 选项：
@@ -42,6 +46,7 @@ const USAGE = `用法：
   --local-only              fetch 只验本仓库登记的 collection（CI 里用，不依赖外网）
   --write                   sync 把重算结果写回文件
   --roster <path>           v2 组装目录（compile 用）
+  --run <path>              执行回执（compile 用；把上一轮失败并入重试卡）
   --roles <path>            角色库目录（compile 用；缺省按 rosters/<id> 推同级的 roles/）
   --json                    以 JSON 输出（validate / list / compile 都支持）
   --help                    显示本帮助
@@ -61,6 +66,7 @@ function parseArgs(argv) {
     write: false,
     roster: null,
     roles: null,
+    run: null,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -83,6 +89,11 @@ function parseArgs(argv) {
       const value = argv[index + 1];
       if (value === undefined) throw new UsageError("--roster 需要一个路径");
       options.roster = value;
+      index += 1;
+    } else if (arg === "--run") {
+      const value = argv[index + 1];
+      if (value === undefined) throw new UsageError("--run 需要一个路径");
+      options.run = value;
       index += 1;
     } else if (arg === "--roles") {
       const value = argv[index + 1];
@@ -131,6 +142,7 @@ async function main(argv) {
     return 0;
   }
   if (options.command === "compile") return runCompile(options);
+  if (options.command === "migrate") return runMigrate(options);
   if (options.command === "registry") {
     if (options.file === null) {
       process.stderr.write(`registry 子命令需要 --file\n\n${USAGE}`);
@@ -251,8 +263,27 @@ async function runCompile(options) {
 
   const diagnostics = [...(result.diagnostics ?? [])];
   const planResult = result.compiled === null ? { plan: null, diagnostics: [] } : compilePlan(result.compiled);
-  const plan = planResult.plan;
+  let plan = planResult.plan;
   diagnostics.push(...planResult.diagnostics);
+  let feedback = [];
+  if (options.run !== null) {
+    const runPath = nodePath.resolve(process.cwd(), options.run);
+    let runValue = null;
+    try {
+      runValue = JSON.parse(readFileSync(runPath, "utf8"));
+    } catch (error) {
+      diagnostics.push({ severity: "error", code: "run-unreadable", path: "", file: options.run, reason: `读不到执行回执：${error?.message ?? error}` });
+    }
+    if (runValue !== null) {
+      const validation = validateRun(runValue, { file: options.run });
+      diagnostics.push(...validation.diagnostics);
+      if (validation.ok) {
+        const merged = mergeRunIntoPlan(plan, validation.run);
+        plan = merged.plan;
+        feedback = merged.feedback;
+      }
+    }
+  }
   const errors = diagnostics.filter((item) => item.severity === "error");
 
   if (options.json) {
@@ -303,6 +334,9 @@ async function runCompile(options) {
       `  施工图 ${plan.tasks.length} 张卡  门 ${gates}  executor ${plan.executor}  ` +
         `重试回到 ${loop.retry ?? "-"}（最多 ${loop.maxRounds} 轮）\n`,
     );
+  }
+  if (feedback.length > 0) {
+    process.stdout.write(`  回执 上一轮失败 ${feedback.length} 张卡，已并入重试卡\n`);
   }
   for (const member of compiled.members) {
     process.stdout.write(
@@ -460,3 +494,68 @@ function isOwnCollection(collection, own) {
 }
 
 process.exitCode = await main(process.argv.slice(2));
+
+/**
+ * `migrate`：把一座 v1 档案库原地迁到 v2 布局。
+ *
+ * 默认只出计划（要写哪些文件、编译能不能过），`--write` 才真的落盘；这是唯一一个会删旧目录
+ * 的命令，所以默认不动手。
+ */
+function runMigrate(options) {
+  const dirs = options.dirs.length > 0 ? options.dirs : [""];
+  const knownToolPolicies = options.knownPolicies.length > 0 ? options.knownPolicies : null;
+  let rc = 0;
+  const reports = [];
+  for (const dir of dirs) {
+    const rootDir = resolveDirSpec(dir, process.cwd());
+    const report = migrateLibrary(rootDir, { write: options.write, knownToolPolicies });
+    reports.push({ dir, rootDir, report });
+    if (report.diagnostics.some((item) => item.severity === "error")) rc = 1;
+    if (options.json) continue;
+    process.stdout.write(`${options.write ? "迁移" : "迁移计划（未写盘）"}  ${rootDir}\n`);
+    if (report.entries.length === 0) process.stdout.write("  没有找到 v1 档案（每个子目录里的 roster.yaml）\n");
+    for (const entry of report.entries) {
+      const extra = [entry.hasCaptain ? "含队长" : null, entry.capabilities ? "能力要求" : null].filter(Boolean).join(" · ");
+      process.stdout.write(`  ${entry.id}@${entry.version}  成员 ${entry.memberCount}  文件 ${entry.files.length}${extra ? `  ${extra}` : ""}\n`);
+      if (!options.write) {
+        for (const file of entry.files) process.stdout.write(`    + ${file.path}\n`);
+      }
+    }
+    if (options.write) {
+      process.stdout.write(`  写入 ${report.written.length} 个文件，删除 ${report.removed.length} 个旧目录，编译 ${report.compiled.length} 份\n`);
+    }
+    for (const item of report.diagnostics) process.stdout.write(`  ${formatDiagnostic(item)}\n`);
+  }
+  if (options.json) {
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          plugin: pkg.name,
+          version: pkg.version,
+          write: options.write,
+          reports: reports.map((item) => ({
+            dir: item.dir,
+            rootDir: item.rootDir,
+            write: item.report.write,
+            entries: item.report.entries.map((entry) => ({
+              id: entry.id,
+              version: entry.version,
+              from: entry.from,
+              files: entry.files.map((file) => file.path),
+              memberCount: entry.memberCount,
+              hasCaptain: entry.hasCaptain,
+              capabilities: entry.capabilities,
+            })),
+            written: item.report.written,
+            removed: item.report.removed,
+            compiled: item.report.compiled,
+            diagnostics: item.report.diagnostics,
+          })),
+        },
+        null,
+        2,
+      )}\n`,
+    );
+  }
+  return rc;
+}

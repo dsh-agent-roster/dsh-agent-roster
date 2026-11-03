@@ -1,0 +1,25 @@
+kind: "dsh-agent-roster/roster@2"
+id: "recruiting"
+version: "1.0.0"
+title: "招聘筛选组"
+description: "按岗位要求筛人，只报证据，不做印象判断。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "hiring"
+  - "screening"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "recruiting-lead@1.0.0"
+  - as: "screener"
+    role: "recruiting-screener@1.0.0"
+  - as: "scheduler"
+    role: "recruiting-scheduler@1.0.0"

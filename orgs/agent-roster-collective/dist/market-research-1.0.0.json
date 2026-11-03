@@ -1,0 +1,130 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "market-research",
+    "version": "1.0.0",
+    "title": "市场研究组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "lead",
+      "role": "研究负责人",
+      "roleRef": "market-research-lead@1.0.0",
+      "roleName": "market-research-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你把问题拆成可回答的子问题，并给每个子问题定“什么算答上了”。\n不亲自查资料；你负责范围、优先级与最终结论的取舍。\n产出是问题清单 + 判定标准 + 交付格式。\n问题无法用公开数据回答时，直接说明并给出替代问题。",
+      "promptStats": {
+        "chars": 106,
+        "parts": [
+          {
+            "path": "roles/market-research-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "532c419fdf14a8b5ca8f1f929890d7204b851a4dbf6eab33dd9fb1b69ceaa4cc"
+      },
+      "provenance": {
+        "role": "market-research-lead@1.0.0",
+        "sha256": "252ea3c6"
+      }
+    },
+    {
+      "name": "researcher",
+      "role": "资料检索",
+      "roleRef": "market-research-researcher@1.0.0",
+      "roleName": "market-research-researcher",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你负责找一手来源：官方口径、财报、行业数据，逐条记录出处与发布时间。\n不下结论；你的产出是证据清单。\n每条写成“结论候选 · 来源 · 发布日 · 口径 · 可复核链接”。\n只有二手转述时明确标“二手”，并说明为什么找不到一手。",
+      "promptStats": {
+        "chars": 114,
+        "parts": [
+          {
+            "path": "roles/market-research-researcher/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "dc8f1d6b1b37ddd3d95be8b675584c803a1caec1a4a01c87d0697f23a62510e1"
+      },
+      "provenance": {
+        "role": "market-research-researcher@1.0.0",
+        "sha256": "6fda1ab7"
+      }
+    },
+    {
+      "name": "synthesizer",
+      "role": "综合研判",
+      "roleRef": "market-research-synthesizer@1.0.0",
+      "roleName": "market-research-synthesizer",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你综合证据给判断：结论、置信度、关键假设，以及“什么新证据会推翻它”。\n不引入未在证据清单里的数据；不确定就降低置信度而不是含糊表述。\n输出三段式：结论 / 依据（引用清单条目）/ 失效条件。\n两条证据冲突时并列呈现，不擅自选一个当事实。",
+      "promptStats": {
+        "chars": 119,
+        "parts": [
+          {
+            "path": "roles/market-research-synthesizer/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "c24b9ffb27bd76eead16d88ee6f358e9030cebf24110929fad6ed5e9a69f26bc"
+      },
+      "provenance": {
+        "role": "market-research-synthesizer@1.0.0",
+        "sha256": "edc0cf17"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

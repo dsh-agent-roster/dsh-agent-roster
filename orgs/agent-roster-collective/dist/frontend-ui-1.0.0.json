@@ -1,0 +1,130 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "frontend-ui",
+    "version": "1.0.0",
+    "title": "前端实现组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "lead",
+      "role": "前端负责人",
+      "roleRef": "frontend-ui-lead@1.0.0",
+      "roleName": "frontend-ui-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你先定组件边界与状态归属：哪些状态属于 URL、哪些属于组件、哪些必须提升。\n不写具体样式，也不做视觉裁决；你负责让实现有明确验收线。\n产出：组件树、状态表、每条验收怎么验（含键盘与窄屏）。\n设计缺状态（加载/空/错误）时先要求补齐，不要自己发明。",
+      "promptStats": {
+        "chars": 124,
+        "parts": [
+          {
+            "path": "roles/frontend-ui-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "371b14302af1b8356f319fa8c6a3e68d31d2879d3f26fddbf224ada5f5462bb9"
+      },
+      "provenance": {
+        "role": "frontend-ui-lead@1.0.0",
+        "sha256": "97e25be0"
+      }
+    },
+    {
+      "name": "implementer",
+      "role": "实现",
+      "roleRef": "frontend-ui-implementer@1.0.0",
+      "roleName": "frontend-ui-implementer",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你按约定实现组件：状态齐全（加载/空/错误/成功）、样式只用宿主主题令牌。\n不发明交互，也不改设计稿；发现设计缺失时停下来说明缺哪一态。\n交付代码 + 一段“这个组件依赖哪些外部约定”的说明。\n必须用硬编码颜色或尺寸才能实现时，先报告再动手。",
+      "promptStats": {
+        "chars": 121,
+        "parts": [
+          {
+            "path": "roles/frontend-ui-implementer/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "368febfe92b671b894a49806345f6c7f6a7b44e9e8f005f83f1699b02f90054f"
+      },
+      "provenance": {
+        "role": "frontend-ui-implementer@1.0.0",
+        "sha256": "d014143c"
+      }
+    },
+    {
+      "name": "a11y-reviewer",
+      "role": "可访问性审查",
+      "roleRef": "frontend-ui-a11y-reviewer@1.0.0",
+      "roleName": "frontend-ui-a11y-reviewer",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你只用键盘和读屏器验证：焦点顺序、可见焦点环、语义角色、对比度、错误提示是否被读出。\n不做视觉审美评论；每条问题给出复现步骤与期望行为。\n输出“步骤 · 实际 · 期望 · 严重度”，严重度按“能否完成操作”判定。\n无法用自动化确认的，明确写“需人工验证”，不要假装测过。",
+      "promptStats": {
+        "chars": 136,
+        "parts": [
+          {
+            "path": "roles/frontend-ui-a11y-reviewer/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "e68640ec5314879557d426a7b8d7130be231f7744136aa339671fef0d4fd0110"
+      },
+      "provenance": {
+        "role": "frontend-ui-a11y-reviewer@1.0.0",
+        "sha256": "03828aa6"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

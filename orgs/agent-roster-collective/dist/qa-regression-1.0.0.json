@@ -1,0 +1,130 @@
+{
+  "kind": "dsh-agent-roster/compiled@1",
+  "source": {
+    "roster": "qa-regression",
+    "version": "1.0.0",
+    "title": "回归测试组",
+    "repo": null,
+    "ref": null,
+    "lock": null,
+    "file": "roster.yaml"
+  },
+  "targets": [
+    "agent-teams/members"
+  ],
+  "captain": null,
+  "members": [
+    {
+      "name": "lead",
+      "role": "测试负责人",
+      "roleRef": "qa-regression-lead@1.0.0",
+      "roleName": "qa-regression-lead",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你按改动影响面选回归范围：先列被碰到的旧行为，再选用例与放行线。\n不写用例细节；你负责范围与判定。\n产出是回归清单：行为 · 用例 · 判定标准 · 谁跑。\n影响面说不清时按最坏假设扩大范围，并注明成本。",
+      "promptStats": {
+        "chars": 102,
+        "parts": [
+          {
+            "path": "roles/qa-regression-lead/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "556cf9aa90c984561d99b0825beaed53dc587381a3a2316ab74f5e81a8a62ea3"
+      },
+      "provenance": {
+        "role": "qa-regression-lead@1.0.0",
+        "sha256": "1337dcbd"
+      }
+    },
+    {
+      "name": "case-writer",
+      "role": "用例编写",
+      "roleRef": "qa-regression-case-writer@1.0.0",
+      "roleName": "qa-regression-case-writer",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你写用例：前置条件、步骤、期望结果，并说明它覆盖哪个旧行为。\n不评价实现质量；只保证用例可执行、可判定。\n每条用例配一个“故意改坏实现”的变体，证明它会红。\n写不出失败变体的用例视为无效，删掉而不是留着充数。",
+      "promptStats": {
+        "chars": 104,
+        "parts": [
+          {
+            "path": "roles/qa-regression-case-writer/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "6ff4e2f26ee795cc9f659d203354259c5be52bf8c321bcee0133eb34c6553029"
+      },
+      "provenance": {
+        "role": "qa-regression-case-writer@1.0.0",
+        "sha256": "24b76053"
+      }
+    },
+    {
+      "name": "flake-hunter",
+      "role": "不稳定排查",
+      "roleRef": "qa-regression-flake-hunter@1.0.0",
+      "roleName": "qa-regression-flake-hunter",
+      "roleVersion": "1.0.0",
+      "provider": "deepseek",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "high",
+      "toolPolicy": null,
+      "executionPrompt": "你排查不稳定用例：重复运行、对比失败样本、找时间、顺序、数据依赖。\n不改业务代码；把随机失败变成可复现的确定失败。\n输出“用例 · 失败率 · 触发条件 · 最小复现命令”。\n定位不到就报告失败率与已排除项，不要标“环境问题”了事。",
+      "promptStats": {
+        "chars": 116,
+        "parts": [
+          {
+            "path": "roles/qa-regression-flake-hunter/AGENT.md",
+            "kind": "body+parts"
+          },
+          {
+            "path": "body",
+            "kind": "part"
+          }
+        ],
+        "sha256": "35e3c3fb59b1d2405dc7bd5bb8b391b5c2bd1ae26ae19a93d693fecd8c4c79ad"
+      },
+      "provenance": {
+        "role": "qa-regression-flake-hunter@1.0.0",
+        "sha256": "a6d3ab0f"
+      }
+    }
+  ],
+  "orchestration": null,
+  "declarations": [
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "roster",
+      "field": "defaults.route",
+      "note": "materialized：已展开成每个成员的显式值"
+    }
+  ],
+  "requires": {
+    "skills": [],
+    "toolPolicies": []
+  }
+}

@@ -1,0 +1,25 @@
+kind: "dsh-agent-roster/roster@2"
+id: "market-research"
+version: "1.0.0"
+title: "市场研究组"
+description: "把“听说”变成“有出处的数”，并说清它什么时候会失效。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "research"
+  - "market"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "market-research-lead@1.0.0"
+  - as: "researcher"
+    role: "market-research-researcher@1.0.0"
+  - as: "synthesizer"
+    role: "market-research-synthesizer@1.0.0"

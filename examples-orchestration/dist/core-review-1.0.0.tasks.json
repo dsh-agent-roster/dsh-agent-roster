@@ -1,0 +1,76 @@
+{
+  "kind": "dsh-agent-roster/plan@1",
+  "roster": {
+    "id": "core-review",
+    "version": "1.0.0"
+  },
+  "shape": "gate-pipeline",
+  "executor": "captain",
+  "tasks": [
+    {
+      "id": "build",
+      "kind": "stage",
+      "stage": "build",
+      "member": "fixer",
+      "subject": "核心评审组 · build · fixer",
+      "description": "阶段 build：fixer（修复）负责。\n这是第一个阶段，没有前置卡片。\n完成后把结果写进任务输出；不要自行判定门。",
+      "dependencies": [],
+      "gate": null
+    },
+    {
+      "id": "audit",
+      "kind": "stage",
+      "stage": "audit",
+      "member": "reviewer",
+      "subject": "核心评审组 · audit · reviewer",
+      "description": "阶段 audit：reviewer（代码评审）负责。\n前置：build。\n完成后把结果写进任务输出；不要自行判定门。",
+      "dependencies": [
+        "build"
+      ],
+      "gate": null
+    },
+    {
+      "id": "tests-pass",
+      "kind": "gate",
+      "stage": null,
+      "member": "reviewer",
+      "subject": "核心评审组 · 判定 · tests-pass",
+      "description": "门 tests-pass：由 reviewer 判定，必须先跑完下面的命令。\n  $ node --test\n    期望退出码 0\n  $ node bin/cli.mjs validate --dir examples\n    期望退出码 0\n此外还要满足（人读判据，不能替代上面的命令）：\n  - 现有测试全部通过\n  - 没有新增未覆盖的分支\n判定结论写进任务输出；不通过时在 reviewer 的结论里写清哪条命令失败、失败输出前 20 行。",
+      "dependencies": [
+        "audit"
+      ],
+      "gate": {
+        "id": "tests-pass",
+        "requires": [
+          "现有测试全部通过",
+          "没有新增未覆盖的分支"
+        ],
+        "verify": [
+          {
+            "command": "node --test",
+            "expectExit": 0
+          },
+          {
+            "command": "node bin/cli.mjs validate --dir examples",
+            "expectExit": 0
+          }
+        ],
+        "by": "reviewer"
+      }
+    }
+  ],
+  "loop": {
+    "onGateFailure": {
+      "retry": "build",
+      "maxRounds": 1
+    },
+    "runRecord": "dist/core-review-1.0.0.run.json"
+  },
+  "notes": [
+    "插件不调用任何 agent_teams_* 工具：这份文件是给队长会话的施工图。",
+    "卡片真正的 id 由团队分配；这里的 id 只在施工图内部表达依赖。",
+    "门必须先跑 verify 里的命令，全部满足期望退出码才算通过；requires 是给人读的补充判据，不能替代 verify。",
+    "失败意见写进 runRecord 指向的文件，下一次编译会把它带进重试卡。",
+    "orchestration.status = declaration：施工图描述的是「打算怎么跑」，不是「已经跑过」。"
+  ]
+}

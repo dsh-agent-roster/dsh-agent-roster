@@ -251,11 +251,11 @@ executionPrompt = join("\n\n", [body, ...parts, ...member.append])
 
 `executor: "captain"` 就是关键：插件从不调用 `agent_teams_create_task`，因为写团队状态的能力属于队长会话。施工图是给队长照着建的图，不是插件替队长建。
 
-[`examples-v2/`](./examples-v2/) 里的示例库可端到端编译：
+[`examples-orchestration/`](./examples-orchestration/) 里的示例库可端到端编译：
 
 ```bash
-node bin/cli.mjs compile --roster examples-v2/rosters/core-review --write
-node bin/cli.mjs compile --roster examples-v2/rosters/core-review --json
+node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review --write
+node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review --json
 ```
 
 `orchestration` 是格式的一部分，但编译时标 `status: "declaration"`：阶段与门会被校验（门的 `after` 必须指向真实阶段，`by` 必须指向真实成员），但没有任何东西执行它。能声明不等于已被证明会运行，所以产物在 `declarations[]` 里逐条说明谁属于哪一类。完整契约——字段归宿、拼装语义、身份与唯一性、迁移规则——见 [`docs/roster-v2.md`](./docs/roster-v2.md)；schema 见 [`schema/role.v1.schema.json`](./schema/role.v1.schema.json)、[`schema/roster.v2.schema.json`](./schema/roster.v2.schema.json)、[`schema/compiled.v1.schema.json`](./schema/compiled.v1.schema.json)。
@@ -417,7 +417,7 @@ test/             单测
 
 本机已验证：
 
-- `npm test` —— 276/276 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐）。
+- `npm test` —— 286/286 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐、v1→v2 迁移、执行回执并入施工图）。
 - `npm run smoke` —— 用真实 DSH bundle 的 `defineTool` 注册六个工具，逐个调用：输出全部通过无损校验、`path` 覆盖生效、释放干净；同一条命令随后用桩模块表加载 `client.js`，断言三处槽位注册、样式只注入一次、effect 可回收。
 - CLI：`validate --dir examples` 对两座示例库退出码 0。
 - 用插件管理器真的装进了本机 profile（`plugin_manager install_bundle` 指向本仓库 → `link:` 依赖 + bundle 条目），重启后按链接读取本仓库文件。

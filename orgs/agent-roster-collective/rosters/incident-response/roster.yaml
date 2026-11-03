@@ -1,0 +1,26 @@
+kind: "dsh-agent-roster/roster@2"
+id: "incident-response"
+version: "1.0.0"
+title: "事故响应组"
+description: "线上出事时的三个人：指挥、定位、记录；先止损再找根因。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "incident"
+  - "oncall"
+  - "reliability"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "commander"
+    role: "incident-response-commander@1.0.0"
+  - as: "triage"
+    role: "incident-response-triage@1.0.0"
+  - as: "scribe"
+    role: "incident-response-scribe@1.0.0"

@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-03
+
 ### Roles, rosters and compiled artifacts (v2)
 
 - **A roster is no longer one document doing four jobs.** Personas move to `roles/<dir>/AGENT.md`
@@ -22,7 +24,7 @@
   `status: "declaration"`, and every non-executed field is listed in `declarations[]`.
 - **New CLI**: `dsh-agent-roster compile --roster <dir> [--roles <dir>] [--write] [--json]`.
 - **Schema alignment tests**: `test/v2-schema.test.js` pins field sets, enums, limits and regexes to
-  `lib/format-v2.js`, and `test/examples-v2.test.js` compiles `examples-v2/` and fails if `dist/` drifts.
+  `lib/format-v2.js`, and `test/examples-orchestration.test.js` compiles `examples-orchestration/` and fails if `dist/` drifts.
 - Design contract: [`docs/roster-v2.md`](./docs/roster-v2.md).
 - **Gates must be runnable.** Every gate carries at least one `verify` entry (`command`, `expectExit`);
   a gate without one is rejected as `gate-unverifiable`, because a gate whose only criterion is a
@@ -31,6 +33,33 @@
   `dist/<id>-<ver>.tasks.json` (`plan@1`): stages and gates flattened into cards with dependencies,
   `executor: "captain"`, and `loop.onGateFailure` naming where a failed gate goes back to and how many
   rounds it may take. The plugin never calls `agent_teams_create_task` — the plan is a drawing.
+
+### Migrating what already existed
+
+- **`migrate --dir <library> [--write]`** rewrites a v1 library in place: each member's
+  `systemPrompt` becomes the body of `roles/<roster>-<member>/AGENT.md`, the member turns into a
+  reference, the captain becomes a role file of its own, `capabilities.yaml` moves next to the
+  assembly, every roster is compiled into `dist/`, and the old flat directory is removed.
+  Without `--write` it only reports what it would do — it is the one command that deletes things.
+- **Role names carry the roster id prefix.** v2 requires role names to be unique per library; a
+  library whose 21 rosters all call their captain `lead` cannot have 21 files named `lead`. When the
+  captain collides with a member it gets a `-captain` suffix instead of being merged — they are two
+  personas and merging them would silently drop one.
+- **This repository's own archives were migrated**: `examples/` (2 rosters, 5 members, one captain)
+  and `orgs/agent-roster-collective/` (21 rosters, 63 members) now live as `roles/ + rosters/ + dist/`.
+- `maintainers` accepts handles (`STofone`) rather than the lowercase id pattern — migration must not
+  rename a person to satisfy a validator.
+- **Both layouts are readable**: the scanner, the document route and the writer accept
+  `<root>/<id>/roster.*` and `<root>/rosters/<id>/roster.*`, so a v1 library keeps working while it is
+  being migrated, and the panel shows v2 rosters through the same `rosterViewOf` shape.
+
+### An execution record feeds the next compile
+
+- **`run@1`** (`lib/run.js`): rounds → tasks → findings/commands, with unknown fields rejected.
+- **`compile --run <file>`** merges the previous round's failures into the retry card's description
+  (and stamps `round` on the plan). A failure that only lives on a red card never reaches the next
+  compile — which is how a gate becomes decoration.
+- The record is written by the captain session, not by the plugin: task ids belong to the team.
 
 ## [0.9.2] - 2026-11-03
 

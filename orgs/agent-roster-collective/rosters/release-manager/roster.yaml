@@ -1,0 +1,25 @@
+kind: "dsh-agent-roster/roster@2"
+id: "release-manager"
+version: "1.0.0"
+title: "发布管理组"
+description: "每一次发布都可复现、可回滚、可解释。"
+license: "MIT"
+maintainers:
+  - "STofone"
+tags:
+  - "release"
+  - "versioning"
+defaults:
+  route:
+    provider: "deepseek"
+    model: "deepseek-v4.1-flash"
+    reasoningEffort: "high"
+targets:
+  - "agent-teams/members"
+members:
+  - as: "lead"
+    role: "release-manager-lead@1.0.0"
+  - as: "changelog"
+    role: "release-manager-changelog@1.0.0"
+  - as: "rollback"
+    role: "release-manager-rollback@1.0.0"
