@@ -319,7 +319,9 @@ field, one row of tags, and one list that spans this machine and every subscribe
 
 Two characters in, after a 240 ms pause, the panel asks `/search` a question. Every row says **why** it
 matched (`标签：数据质量 · 成员角色：数据质量工程师`) and where it lives (`来自 agent-roster-collective`),
-and carries the next action — open it locally, or pull that collection — inside the row.
+and carries the next action inside the row: **Open** for something already on this machine, a **favourite**
+star for a roster you want to keep at hand, and a quiet **Not installed** for the rest — pulling happens per
+space, never per roster, so a single file cannot drift away from the space it belongs to.
 
 With an empty field it **browses**: `/catalog` flattens this machine and the subscribed sources in one
 response, the tag strip summarises every tag in view with its count (multiple tags are AND), and the
@@ -328,8 +330,14 @@ segmented control switches between **by source** (this machine, then one group p
 
 By source, each group's head **is the space**: its id sits in the same column as the roster ids, the
 right side states two facts you can check on the spot — how many rosters it holds, how many are already
-here — and carries one button that pulls the whole space. A roster that is already here says so in its row
-and its button reads **Open**: the panel never asks you to pull something you already have.
+here — and carries one button that pulls the whole space. A roster that is already here reads **Open** plus a star:
+the panel never asks you to pull something you already have.
+
+**Favourites decide what the first tab shows.** The Rosters tab opens on `Favourites` — pulling a 21-roster
+space should not dump 21 rows on the screen you look at every day. Star a roster (here or in the Library) and
+it appears; a segmented control in the toolbar switches to `All` when you need the full shelf. The star is
+stored in `.dsh-roster-favorites.json` at the library root, so it travels with the library instead of the
+machine, and a corrupt file degrades to "nothing starred" with one warning — it never blocks the panel.
 
 Multiple words are AND, not OR: `data kubernetes` returns nothing rather than every roster that merely
 mentions "data". Ranking is a pure function in `lib/search.js`, so it is unit-tested rather than eyeballed.
@@ -399,20 +407,20 @@ tags narrows the list — multiple selections are ANDed — and one button clear
 pool is a filtered view only; it never writes tags back to files.
 
 Header actions follow the place they act on: **Import** and **New archive** sit in the archive tab
-next to the search box, **Refresh sources** sits in the sources tab (it bypasses the one-hour cache and
-re-reads the public index), and the header keeps a single **gear button** that opens the settings dialog.
+next to the search box, **Refresh** sits in the Library tab (it bypasses the one-hour cache and re-reads
+the public index), and the header keeps a single **gear button** that opens the settings dialog.
 The dialog edits the language, the download region, the mirror address and the roster directories, and shows the resolved
 data directory, the team state directory and the version.
 
 A badge at the top summarises how many items need attention
 
-The client plugin adds an **Agent Roster** entry to the left sidebar: one row in the `sidebar.panellist` slot plus the matching key in the `main` slot. Clicking the row opens a full-width page with five tabs — the panel is not only a viewer:
+The client plugin adds an **Agent Roster** entry to the left sidebar: one row in the `sidebar.panellist` slot plus the matching key in the `main` slot. Clicking the row opens a full-width page with four tabs — the panel is not only a viewer:
 
 | Tab | What you can do |
 |---|---|
-| Rosters | browse every workspace × library, expand members, and **create / edit / duplicate / delete / import / export** rosters. The editor has a form mode and a source mode (the file as-is); the host validates before writing and keeps a `.bak` next to an overwritten file |
+| Rosters | the starred rosters by default (a segmented control shows all of them); browse every workspace × library, expand members, and **create / edit / duplicate / delete / import / export** rosters. The editor has a form mode and a source mode (the file as-is); the host validates before writing and keeps a `.bak` next to an overwritten file |
+| Library | find a roster by capability across this machine and every subscribed source: search with hit reasons, tag filtering, grouped by space or flat; open what is here, star what you want, pull a whole space |
 | Teams | read one configured state directory (`.agent-teams` by default) and see every team the runtime created: profile, member profiles and model routes, whether each persisted member really matches its roster, plus the team's tasks |
-| Sources | the subscribed registry directories; each collection has a **Pull to this machine** button, and can be expanded to inspect its rosters first |
 | Health | the "configuration points somewhere wrong" questions in one place: which directories resolved, whether the state directory exists, how many declarations are unconfirmed, and what to change |
 
 A badge at the top summarises how many items need attention; the Health tab explains each one. All write operations go through `POST /plugins/dsh-agent-roster/rosters`, which enforces same-origin (`connection`), a JSON content type, a body-size cap and a library-root whitelist — the client never writes files itself.
@@ -530,7 +538,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 315/315 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
+- `npm test` — 325/325 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, favourites (storage, snapshot wiring, route, panel filter), library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.

@@ -404,3 +404,49 @@ test("apply：已有会话但没给 sessionId 是 400 missing-session", async ()
   assert.equal(result.status, 400);
   assert.equal(result.body.code, "missing-session");
 });
+
+test("收藏：POST /favorites 写库根的点文件，下一次快照就带 favorite", async () => {
+  const workspace = mkdtempSync(nodePath.join(tmpdir(), "roster-routes-fav-"));
+  try {
+    mkdirSync(nodePath.join(workspace, "demo"), { recursive: true });
+    writeFileSync(
+      nodePath.join(workspace, "demo", "roster.yaml"),
+      "kind: dsh-agent-roster/v1\nroster: demo\nversion: 1.0.0\ntitle: Demo\nmembers:\n  - name: alpha\n    role: researcher\n    systemPrompt: hi\n",
+    );
+    const host = makeHost();
+    apply(host.ctx, { ...CONFIG, rosterDirs: [workspace] });
+
+    const before = await call(host, "/plugins/dsh-agent-roster/library", makeReq());
+    const entry = before.body.workspaces[0].rosters.find((roster) => roster.id === "demo");
+    assert.equal(entry.favorite, false, "没人收藏时是 false，不是 undefined");
+
+    const wrote = await call(
+      host,
+      "/plugins/dsh-agent-roster/favorites",
+      makeReq({
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: { rootDir: workspace, id: "demo", favorite: true },
+      }),
+    );
+    assert.equal(wrote.status, 200);
+    assert.deepEqual(wrote.body.favorites, ["demo"]);
+
+    const after = await call(host, "/plugins/dsh-agent-roster/library", makeReq());
+    assert.equal(after.body.workspaces[0].rosters.find((roster) => roster.id === "demo").favorite, true);
+
+    // 不在白名单里的库根一律拒绝：收藏不能变成"往任意目录写文件"的入口。
+    const denied = await call(
+      host,
+      "/plugins/dsh-agent-roster/favorites",
+      makeReq({
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: { rootDir: "/etc", id: "demo", favorite: true },
+      }),
+    );
+    assert.equal(denied.status, 403);
+  } finally {
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});

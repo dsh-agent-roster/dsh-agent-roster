@@ -56,7 +56,6 @@
     "bannerMany": "{count} things need attention",
     "bannerCta": "Open health",
     "workspaceFallback": "No workspace is registered yet; reading the process directory instead.",
-    "tabsSources": "Sources",
     "tagPool": "Tags",
     "tagPoolEmpty": "No tags yet — add `tags:` to an archive.",
     "tagClear": "Clear tags",
@@ -65,7 +64,13 @@
     "metaMembers": "members",
     "metaTeams": "teams",
     "metaSpace": "Space {name}",
-    "tabsCatalog": "Library"
+    "tabsCatalog": "Library",
+    "favFilter": "Roster scope",
+    "favOnly": "Favorites {count}",
+    "favAll": "All {count}",
+    "emptyFavoritesTitle": "No favorites yet",
+    "emptyFavoritesBody": "This tab lists only the rosters you favorite. Pick a few from the library and tap the star; they show up here.",
+    "emptyFavoritesCta": "Pick from the library"
   },
   "roster": {
     "members": "{count} members",
@@ -78,7 +83,7 @@
     "edit": "Edit",
     "duplicate": "Duplicate",
     "delete": "Delete",
-    "copyCreate": "Copy team payload",
+    "copyCreate": "Copy member params",
     "copied": "Copied to the clipboard",
     "copyFailed": "The clipboard is unavailable; select the text instead.",
     "noMembers": "This roster has no members.",
@@ -87,7 +92,9 @@
     "hideMembers": "Hide members",
     "warnings": "{count} warnings",
     "deployedDrifted": "In {teams} ({count} drifted)",
-    "createTeam": "Create team"
+    "createTeam": "Create team",
+    "favorite": "Favorite",
+    "unfavorite": "Unfavorite"
   },
   "member": {
     "prompt": "Prompt",
@@ -251,24 +258,6 @@
     "no": "No",
     "failed": "Failed"
   },
-  "source": {
-    "tabsSources": "Sources",
-    "pull": "Pull to this machine",
-    "pulling": "Pulling…",
-    "pulled": "Pulled {written}, unchanged {unchanged}, conflicts {conflicts}",
-    "empty": "No index source is configured.",
-    "emptyHint": "Add an https registry URL or an npm:pkg in the plugin settings.",
-    "stale": "cached (fetch failed)",
-    "fetchedAt": "Fetched {when}",
-    "registered": "{count} registered",
-    "open": "Show rosters",
-    "hide": "Hide rosters",
-    "loading": "Loading rosters…",
-    "repo": "Repository",
-    "conflictHint": "Local versions differ; nothing was overwritten.",
-    "refresh": "Refresh sources",
-    "refreshHint": "No index has been read yet — refresh to fetch the public index."
-  },
   "captain": {
     "title": "Captain",
     "hint": "The captain is the session that creates the team — it has no member row. Its model comes from the deployment (agent-default-model) and its persona from the agent preset, so a roster can only declare them and compare.",
@@ -301,9 +290,6 @@
       "unknown": "deployment unreadable"
     }
   },
-  "source.filter": "Filter this collection",
-  "source.filterPlaceholder": "Filter by id, title or member",
-  "source.filterCount": "{shown} of {total}",
   "catalog": {
     "placeholder": "What should it do? e.g. data quality, release, review",
     "searching": "Searching…",
@@ -314,7 +300,6 @@
     "local": "local",
     "remoteFrom": "from {collection}",
     "open": "Open",
-    "pull": "Pull",
     "mode": "Layout",
     "modeSource": "By source",
     "modeFlat": "Flat",
@@ -323,7 +308,10 @@
     "pullSpace": "Pull whole space",
     "pulledSpace": "Space pulled: {files} files written, {skipped} skipped",
     "facts": "{count} rosters · {installed} here",
-    "here": "Already here"
+    "here": "Already here",
+    "notInstalled": "Not installed",
+    "favorite": "Favorite",
+    "unfavorite": "Unfavorite"
   },
   "teamCreate": {
     "title": "Create a team from {roster}",

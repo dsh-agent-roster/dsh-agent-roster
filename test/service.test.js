@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it, test } from "node:test";
 
+import { setFavorite } from "../lib/favorites.js";
 import { globalRosterRoot } from "../lib/home.js";
 import {
   buildCaptainSection,
@@ -350,4 +351,27 @@ describe("面板的远端索引投影", () => {
     assert.equal(panel.collections.length, 1);
     assert.deepEqual(panel.collections[0].files, { "core-review": "dist/core-review-1.0.0.json" });
   });
+});
+
+test("快照：收藏按库根读，逐份标在档案上；坏文件只报一条 warn", () => {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "dsh-agent-roster-service-fav-"));
+  try {
+    fs.mkdirSync(path.join(workspace, "rosters", "demo"), { recursive: true });
+    fs.writeFileSync(path.join(workspace, "rosters", "demo", "roster.yaml"), ROSTER);
+    setFavorite(path.join(workspace, "rosters"), "demo", true);
+
+    const snapshot = buildPanelSnapshot(fakeCtx(workspace), CONFIG, META);
+    const entry = snapshot.workspaces[0].rosters.find((roster) => roster.id === "demo");
+    assert.equal(entry.favorite, true, "档案行要带上收藏状态，前端才知道画实心还是空心");
+    assert.deepEqual(snapshot.workspaces[0].favorites, ["demo"]);
+
+    // 坏文件：不能把收藏状态搞成 undefined，也不能一声不吭。
+    fs.writeFileSync(path.join(workspace, "rosters", ".dsh-roster-favorites.json"), "{ nope", "utf8");
+    const broken = buildPanelSnapshot(fakeCtx(workspace), CONFIG, META);
+    assert.equal(broken.workspaces[0].rosters.find((roster) => roster.id === "demo").favorite, false);
+    const warn = broken.workspaces[0].diagnostics.find((item) => item.code === "favorites-unreadable");
+    assert.equal(warn?.severity, "warn");
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
 });

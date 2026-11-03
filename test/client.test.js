@@ -204,22 +204,15 @@ test("长内容只由面板根滚动：账本与两级展开区都不许自建�
   // 展开区不是一个独立的小滚动盒：曾经给它 max-height:320px + overflow-y:auto，
   // 21 份档案的集合被关进 320px 的盒子里，用户看到的就是"展开后显示不全"。
   // 现在只有 .rstr-page 一个滚动容器，展开区只负责把高度撑开。
-  const detail = ruleOf(".rstr-source-detail");
-  assert.doesNotMatch(detail, /max-height:/, "展开清单不能再有高度上限：那会把内容关进小盒子");
-  assert.doesNotMatch(detail, /overflow/, "展开清单不该自己滚，否则滚轮会被套娃");
-
   const rowDetail = ruleOf(".rstr-row-detail");
   assert.doesNotMatch(rowDetail, /max-height:/, "成员展开区同样不能有高度上限");
   assert.doesNotMatch(rowDetail, /overflow/, "成员展开区同样不该自己滚");
 
-  // 档案源里的集合曾经还用 0.8 的卡片类名（.rstr-card / .rstr-card-head…），
-  // 那些规则在账本改版时被删掉了 —— 结果集合页签渲染出一堆没有样式的裸元素，
-  // 看上去就是"显示不全 / 排版散架"。现在集合和档案共用同一套账本行。
-  assert.doesNotMatch(source, /className: "rstr-card(-|")/, "档案源不许再用已无样式的 rstr-card 类名");
-  assert.match(source, /className: openId === collection\.id \? "rstr-row rstr-row-open" : "rstr-row"/, "集合必须渲染成账本行");
-
-  const sources = ruleOf(".rstr-sources");
-  assert.match(sources, /padding:\s*16px 28px/, "档案源页签要和档案页一样有自己的内边距，否则内容贴着窗口边");
+  // 档案源页签已删除：用户的原话是「没啥用」。订阅仍然生效，档案库照样按来源分组，
+  // 少的是那一页「订阅管理」——它能做的事，档案库的空间头已经做了。
+  assert.doesNotMatch(source, /function SourcesTab\(/, "档案源页签应当整块删掉，而不是隐藏");
+  assert.doesNotMatch(source, /t\("panel\.tabsSources"\)/, "页签表里不能再有档案源");
+  assert.doesNotMatch(source, /className: "rstr-card(-|")/, "不许再用已无样式的 rstr-card 类名");
 
   // 空库 / 空团队时页签里只剩一句空状态。它原来直接挂在页面根下（页面 padding 为 0），
   // 于是「还没有档案」四个字贴着窗口左上角——列表有留白、空状态没有，看着就是没做完。
@@ -230,15 +223,16 @@ test("长内容只由面板根滚动：账本与两级展开区都不许自建�
     "空档案与空团队两处都要包进版心，不能只包一处",
   );
 
-  const sourceRow = ruleOf(".rstr-source-roster");
-  assert.match(sourceRow, /display:\s*grid/, "展开清单是 id / 标题 / 人数 三列的账本行");
-  assert.match(sourceRow, /minmax\(0,\s*1fr\)/, "标题列必须可压缩");
+  // 删掉一页，不该把样式留成孤儿。
+  const styleText = source.match(/const CSS = `([\s\S]*?)`;/)[1];
+  assert.ok(!styleText.includes(".rstr-sources"), "档案源的样式要跟着页签一起删");
+  assert.ok(!styleText.includes(".rstr-source-detail"), "档案源展开清单的样式也要删");
 });
 
 test("档案库：独立的页签，支持搜索、标签筛选、按来源聚合与平铺", () => {
   const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
   // 首屏是本机档案；档案库是第二个页签，负责"去外面找"。
-  assert.match(source, /\["rosters", t\("panel\.tabsRosters"\), rosters\.length\],\n\s*\["catalog", t\("panel\.tabsCatalog"\), null\]/);
+  assert.match(source, /\["rosters", t\("panel\.tabsRosters"\), favorites\.length\],\n\s*\["catalog", t\("panel\.tabsCatalog"\), null\]/);
   assert.match(source, /const \[tab, setTab\] = useState\("rosters"\)/);
   assert.match(source, /function CatalogTab\(/);
   assert.match(source, /className: "rstr-catalog"/);
@@ -262,11 +256,12 @@ test("档案库：独立的页签，支持搜索、标签筛选、按来源聚�
 test("空间：档案库能整空间拉取，并标出本机已有的档案", () => {
   const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
   assert.match(source, /INSTALL_SPACE_ROUTE = "\/plugins\/dsh-agent-roster\/install-space"/);
-  assert.match(source, /function CatalogTab\(\{ onOpen, onPull, onPullSpace \}\)/);
+  assert.match(source, /function CatalogTab\(\{ onOpen, onPullSpace, onFavorite \}\)/);
   assert.match(source, /t\("catalog\.pullSpace"\)/);
   assert.match(source, /t\("catalog\.here"\)/);
-  // 已经在本机的那份，按钮必须变成「打开」——不能叫人去拉一份自己已经有的。
-  assert.match(source, /installed\.has\(entry\.rosterId\)\) \{[\s\S]{0,80}?onOpen\(entry\.rosterId\)/);
+  // 已经在本机的那份，按钮必须是「打开」；没装的只说明状态，不再给单份拉取。
+  assert.match(source, /here\n\s*\? h\("button", \{ type: "button", className: "rstr-btn rstr-btn-sm", onClick: \(\) => onOpen\(entry\.rosterId\) \}/);
+  assert.match(source, /t\("catalog\.notInstalled"\)/);
   // 空间头在窄面板上必须折成两行，否则长空间名会被挤成竖排。
   const css = source.match(/const CSS = `([\s\S]*?)`;/)[1];
   const narrow = css.slice(css.indexOf("@media (max-width: 860px)"));
@@ -300,4 +295,39 @@ test("从档案创建团队：行上有入口，对话框默认新会话，团�
   }
   assert.equal(typeof zh.roster.createTeam, "string");
   assert.equal(typeof en.roster.createTeam, "string");
+});
+
+test("收藏：档案页只列收藏，星标能切换，复制一份会回填", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  // 收藏只写库根的点文件：取消收藏不该改动任何定义，也不该碰团队状态。
+  assert.match(source, /FAVORITES_ROUTE = "\/plugins\/dsh-agent-roster\/favorites"/);
+  assert.match(source, /JSON\.stringify\(\{ rootDir: target\.rootDir, id, favorite: target\.favorite !== true \}\)/);
+  // 默认只看收藏：拉一整个空间会带来二十份，全铺在首屏等于没有首屏。
+  assert.match(source, /const \[favOnly, setFavOnly\] = useState\(true\)/);
+  assert.match(source, /if \(favOnly && roster\.favorite !== true\) return false/);
+  assert.match(source, /t\("panel\.favOnly", \{ count: String\(favorites\.length\) \}\)/);
+  assert.match(source, /t\("panel\.emptyFavoritesTitle"\)/);
+  // 行上的星标：实心/空心由收藏状态决定，且是 aria-pressed 的开关而不是普通按钮。
+  assert.match(source, /className: `rstr-star\$\{roster\.favorite === true \? " rstr-star-on" : ""\}`/);
+  assert.match(source, /"aria-pressed": roster\.favorite === true/);
+  // 档案库：没装的行不再给单份拉取，只说明状态。
+  assert.match(source, /t\("catalog\.notInstalled"\)/);
+  assert.doesNotMatch(source, /t\("catalog\.pull"\)/, "单份拉取已经取消：拉取只发生在空间这一级");
+  // 复制一份必须回填内容（否则复制出来的是空表单），只换 id。
+  assert.match(source, /const next = draftFromRoster\(result\.body\.roster\);\n\s*if \(duplicate\) next\.id = `\$\{existing\.id\}-copy`/);
+  assert.doesNotMatch(source, /result\.body\.roster && !duplicate/, "复制模式曾因这条判断跳过回填");
+
+  const zh = JSON.parse(readFileSync(new URL("../locale/zh.json", import.meta.url), "utf8"));
+  const en = JSON.parse(readFileSync(new URL("../locale/en.json", import.meta.url), "utf8"));
+  for (const key of ["favorite", "unfavorite"]) {
+    assert.equal(typeof zh.roster[key], "string", key);
+    assert.equal(typeof en.roster[key], "string", key);
+    assert.equal(typeof zh.catalog[key], "string", key);
+    assert.equal(typeof en.catalog[key], "string", key);
+  }
+  for (const key of ["favOnly", "favAll", "emptyFavoritesTitle", "emptyFavoritesBody", "emptyFavoritesCta", "favFilter"]) {
+    assert.equal(typeof zh.panel[key], "string", key);
+    assert.equal(typeof en.panel[key], "string", key);
+  }
+  assert.equal(zh.roster.copyCreate, "复制成员参数", "「复制建团队载荷」这个名字没人看得懂");
 });

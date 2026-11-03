@@ -4,6 +4,33 @@
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-03
+
+### Favourites instead of fifteen pull buttons
+
+The library offered a **Pull** button on every roster, including the ones already on the machine. Pulling
+one roster out of a space produced a copy with no path back to the space it came from, so the button was
+either redundant or actively wrong. Pulling is now a property of the space — the one button on its head —
+and the row keeps a **favourite** star instead.
+
+That star is what the first tab reads. It opens on `Favourites`: pulling a 21-roster space should not dump
+21 rows on the screen you look at every day. A segmented control in the toolbar switches to `All`; with
+nothing starred yet the tab says so and points at the library. Favourites live in `.dsh-roster-favorites.json`
+at the library root — they travel with the library, not the machine, and a corrupt file degrades to "nothing
+starred" plus one warning instead of blocking the panel. Saving or importing a roster stars it; deleting one
+unstars it.
+
+Two smaller corrections from the same pass:
+
+- **The sources tab is gone.** Subscription management was a whole tab for something you set once; the
+  library already spans every subscribed source, and each space head pulls what it needs. Refresh moved
+  into the library toolbar.
+- **Duplicating a roster fills the editor.** `duplicate` opened the form with the previous filter, which
+  read the roster back only when *not* duplicating — so a copy arrived empty. It now always loads the
+  source roster and only changes the id (`<id>-copy`). The clipboard action is renamed
+  **Copy member params**, because "copy build payload" described the wire format rather than the thing
+  you get.
+
 ## [1.2.0] - 2026-11-03
 
 ### Create a team from the row you are looking at
@@ -701,7 +728,9 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.12.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.3.0...main
+[1.3.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.1.0...v1.2.0
 [0.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.13.0...v0.13.1
 [1.0.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.13.1...v1.0.0
 [1.1.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.0.0...v1.1.0

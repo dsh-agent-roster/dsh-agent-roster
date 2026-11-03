@@ -19,6 +19,7 @@ import z from "@deepseek-ai/schemastery";
 import { configView } from "./lib/config-view.js";
 import { applyCaptain, listSessions } from "./lib/apply.js";
 import { collectLibrary } from "./lib/library.js";
+import { addFavorites, readFavorites, setFavorite } from "./lib/favorites.js";
 import { parseDocumentText } from "./lib/parse.js";
 import { ROSTER2_KIND } from "./lib/format-v2.js";
 import { validateRoster } from "./lib/validate.js";
@@ -28,7 +29,7 @@ import { buildPanelSnapshot, installCollection, installSpace, loadRemotePanel, r
 import { createTtlCache, fetchCollection } from "./lib/remote.js";
 import { searchRosters } from "./lib/search.js";
 import { registerRosterTools } from "./lib/tools.js";
-import { deleteRosterDocument, readRosterDocument, writeRosterDocument } from "./lib/write.js";
+import { deleteRosterDocument, findLibraryRoot, readRosterDocument, writeRosterDocument } from "./lib/write.js";
 
 const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
 
@@ -180,9 +181,21 @@ export function apply(ctx, config) {
       const library = collectLibrary(ctx, settings, { name: pkg.name, version: pkg.version });
       const entries = [];
       let localCount = 0;
+      // 远端条目也要知道自己"是不是已经在本机、有没有被收藏"，否则档案库只能显示一半事实。
+      const localById = new Map();
       for (const workspace of library.workspaces) {
+        const favorites = readFavorites(workspace.rootDir).ids;
         for (const roster of workspace.rosters) {
-          entries.push({ scope: "local", roster, libraryId: workspace.rootDir ?? null, file: roster.file ?? null });
+          const entry = {
+            scope: "local",
+            roster,
+            libraryId: workspace.rootDir ?? null,
+            rootDir: workspace.rootDir,
+            file: roster.file ?? null,
+            favorite: favorites.has(roster.id),
+          };
+          entries.push(entry);
+          if (!localById.has(roster.id)) localById.set(roster.id, entry);
           localCount += 1;
         }
       }
@@ -219,6 +232,7 @@ export function apply(ctx, config) {
                 collectionId: collection.id,
                 collectionTitle: collection.title ?? null,
                 file: roster.file ?? null,
+                local: localById.get(roster.id) ?? null,
               });
             }
             for (const item of fetched.diagnostics ?? []) if (item.severity === "error") diagnostics.push(item);
@@ -253,6 +267,10 @@ export function apply(ctx, config) {
         collectionId: entry.collectionId ?? null,
         collectionTitle: entry.collectionTitle ?? null,
         file: entry.file ?? null,
+        // 收藏写在哪座库、收藏状态是什么：远端条目借用本机同名档案的那份收藏。
+        rootDir: entry.rootDir ?? entry.local?.rootDir ?? null,
+        favorite: entry.favorite === true || entry.local?.favorite === true,
+        installed: entry.scope === "local" || entry.local !== null,
       };
     };
 
@@ -411,6 +429,35 @@ export function apply(ctx, config) {
       "install-space route",
     );
 
+    // 收藏：档案行上的星标与档案库里的星标都打到这里。
+    // 只写库根下的点文件，不碰档案本体，也不碰团队状态——取消收藏不该改动任何定义。
+    register(
+      "/plugins/dsh-agent-roster/favorites",
+      async (req, res) => {
+        if (guard(req, res)) return;
+        if (!requireMethod(req, res, "POST")) return;
+        const body = await readJsonBody(req);
+        if (!body.ok) {
+          sendError(res, body.status, body.code);
+          return;
+        }
+        const input = body.value !== null && typeof body.value === "object" ? body.value : {};
+        const roots = resolveRoots(ctx, settings);
+        const root = findLibraryRoot(roots, typeof input.rootDir === "string" ? input.rootDir : "");
+        if (root === null) {
+          sendError(res, 403, "unknown-root");
+          return;
+        }
+        const result = setFavorite(root.rootDir, typeof input.id === "string" ? input.id : "", input.favorite === true);
+        if (!result.ok) {
+          sendError(res, result.code === "invalid-id" ? 400 : 500, result.code);
+          return;
+        }
+        sendJson(res, 200, { ok: true, favorites: result.favorites });
+      },
+      "favorites route",
+    );
+
     register(
       "/plugins/dsh-agent-roster/apply",
       async (req, res) => {
@@ -469,6 +516,7 @@ export function apply(ctx, config) {
             sendError(res, result.code === "not-found" ? 404 : 400, result.code);
             return;
           }
+          setFavorite(input.rootDir, String(input.id ?? ""), false);
           sendJson(res, 200, { ok: true, removed: result.removed });
           return;
         }
@@ -497,6 +545,12 @@ export function apply(ctx, config) {
             diagnostics: result.diagnostics ?? [],
           });
           return;
+        }
+        // 你动手保存/导入过的档案，默认就是你想看的：否则它一存就从「档案」页里消失。
+        const favorited = addFavorites(typeof input.rootDir === "string" ? input.rootDir : "", [result.roster?.id ?? ""]);
+        if (!favorited.ok) {
+          // 收藏写不进去不该让保存失败：档案已经落盘，这里只降级成不收藏。
+          result.favoriteFailed = favorited.code;
         }
         sendJson(res, 200, result);
       },

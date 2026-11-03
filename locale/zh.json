@@ -56,7 +56,6 @@
     "bannerMany": "有 {count} 项待处理",
     "bannerCta": "查看体检",
     "workspaceFallback": "还没有注册工作区，暂时按进程所在目录读取。",
-    "tabsSources": "档案源",
     "tagPool": "标签",
     "tagPoolEmpty": "还没有标签——给档案加 `tags:`。",
     "tagClear": "清除标签",
@@ -65,7 +64,13 @@
     "metaMembers": "名成员",
     "metaTeams": "支团队",
     "metaSpace": "空间 {name}",
-    "tabsCatalog": "档案库"
+    "tabsCatalog": "档案库",
+    "favFilter": "档案范围",
+    "favOnly": "收藏 {count}",
+    "favAll": "全部 {count}",
+    "emptyFavoritesTitle": "还没有收藏的档案",
+    "emptyFavoritesBody": "档案页只列你收藏的档案。去档案库挑几份，点一下星标，它们就会出现在这里。",
+    "emptyFavoritesCta": "去档案库挑"
   },
   "roster": {
     "members": "{count} 名成员",
@@ -78,7 +83,7 @@
     "edit": "编辑",
     "duplicate": "复制一份",
     "delete": "删除",
-    "copyCreate": "复制建团队载荷",
+    "copyCreate": "复制成员参数",
     "copied": "已复制到剪贴板",
     "copyFailed": "剪贴板不可用，请手动选择文本复制。",
     "noMembers": "这份档案没有成员。",
@@ -87,7 +92,9 @@
     "hideMembers": "收起成员",
     "warnings": "{count} 条提醒",
     "deployedDrifted": "在 {teams}（{count} 处不一致）",
-    "createTeam": "创建团队"
+    "createTeam": "创建团队",
+    "favorite": "收藏",
+    "unfavorite": "取消收藏"
   },
   "member": {
     "prompt": "人设",
@@ -251,24 +258,6 @@
     "no": "否",
     "failed": "操作失败"
   },
-  "source": {
-    "tabsSources": "档案源",
-    "pull": "拉取到本机",
-    "pulling": "拉取中…",
-    "pulled": "写入 {written} 份，未变 {unchanged} 份，冲突 {conflicts} 份",
-    "empty": "还没有配置公共档案源。",
-    "emptyHint": "在插件设置里填一个 https 的 registry 地址，或 npm:pkg。",
-    "stale": "缓存（拉取失败）",
-    "fetchedAt": "上次拉取 {when}",
-    "registered": "登记 {count} 份",
-    "open": "展开查看",
-    "hide": "收起",
-    "loading": "正在读取档案…",
-    "repo": "仓库",
-    "conflictHint": "本地版本与远端不同，未覆盖。",
-    "refresh": "刷新档案源",
-    "refreshHint": "还没有读到任何索引——点刷新去拉公共索引。"
-  },
   "captain": {
     "title": "队长",
     "hint": "队长就是创建团队的那个会话，没有成员行。它的模型来自部署（agent-default-model），人格来自 agent preset，所以档案只能声明并核对。",
@@ -301,9 +290,6 @@
       "unknown": "读不到部署配置"
     }
   },
-  "source.filter": "在这份集合里查找",
-  "source.filterPlaceholder": "按 id、标题或成员名过滤",
-  "source.filterCount": "{shown} / {total}",
   "catalog": {
     "placeholder": "要找什么能力？例：数据质量、发版、代码评审",
     "searching": "正在搜索…",
@@ -314,7 +300,6 @@
     "local": "本机",
     "remoteFrom": "来自 {collection}",
     "open": "打开",
-    "pull": "拉取",
     "mode": "显示方式",
     "modeSource": "按来源",
     "modeFlat": "平铺",
@@ -323,7 +308,10 @@
     "pullSpace": "拉取整个空间",
     "pulledSpace": "空间已拉取：写入 {files} 个文件，跳过 {skipped} 个",
     "facts": "{count} 份 · 已装 {installed}",
-    "here": "已在本机"
+    "here": "已在本机",
+    "notInstalled": "未在本机",
+    "favorite": "收藏",
+    "unfavorite": "取消收藏"
   },
   "teamCreate": {
     "title": "从 {roster} 创建团队",

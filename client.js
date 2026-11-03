@@ -31,12 +31,12 @@ window.__ModuleLoader__.load({
     const LOCALE_ROUTE = "/plugins/dsh-agent-roster/locale";
     const DOCUMENT_ROUTE = "/plugins/dsh-agent-roster/document";
     const ROSTERS_ROUTE = "/plugins/dsh-agent-roster/rosters";
-    const INSTALL_ROUTE = "/plugins/dsh-agent-roster/install";
     const INSTALL_SPACE_ROUTE = "/plugins/dsh-agent-roster/install-space";
     const COLLECTION_ROUTE = "/plugins/dsh-agent-roster/collection";
     const APPLY_ROUTE = "/plugins/dsh-agent-roster/apply";
     const SEARCH_ROUTE = "/plugins/dsh-agent-roster/search";
     const CATALOG_ROUTE = "/plugins/dsh-agent-roster/catalog";
+  const FAVORITES_ROUTE = "/plugins/dsh-agent-roster/favorites";
 
     const EFFORTS = ["low", "medium", "high", "default"];
     const LANGUAGES = ["auto", "zh", "en"];
@@ -800,7 +800,7 @@ window.__ModuleLoader__.load({
      * 名册是列表不是画廊：id 立在第一列当"脊"，状态长在左沿，操作平时只露两个入口。
      * 复制/建队/删除这些低频且危险的动作收进展开区——否则 21 份档案就是 105 个按钮。
      */
-    function RosterCard({ roster, deployment, captainReport, sessions, onToast, onEdit, onDuplicate, onDelete, onCopy, onCreateTeam }) {
+    function RosterCard({ roster, deployment, captainReport, sessions, onToast, onEdit, onDuplicate, onDelete, onCopy, onCreateTeam, onFavorite }) {
       const [open, setOpen] = useState(false);
       const diagnostics = roster.diagnostics ?? [];
       const errors = diagnostics.filter((item) => item?.severity === "error").length;
@@ -851,6 +851,18 @@ window.__ModuleLoader__.load({
           h(
             "div",
             { className: "rstr-row-actions" },
+            h(
+              "button",
+              {
+                type: "button",
+                className: `rstr-star${roster.favorite === true ? " rstr-star-on" : ""}`,
+                "aria-pressed": roster.favorite === true,
+                "aria-label": roster.favorite === true ? t("roster.unfavorite") : t("roster.favorite"),
+                title: roster.favorite === true ? t("roster.unfavorite") : t("roster.favorite"),
+                onClick: () => onFavorite(roster),
+              },
+              roster.favorite === true ? "\u2605" : "\u2606",
+            ),
             h(
               "button",
               { type: "button", className: "rstr-btn rstr-btn-sm", onClick: () => onCreateTeam(roster) },
@@ -1091,8 +1103,13 @@ window.__ModuleLoader__.load({
           if (cancelled) return;
           if (result.ok && result.body) {
             setSource(result.body.text ?? "");
-            // 复制模式保留自己生成的 id，不拿原档案覆盖。
-            if (result.body.roster && !duplicate) setDraft(draftFromRoster(result.body.roster));
+            // 复制模式也要回填：内容照抄原档案，id 保持自己生成的那个。
+            // （之前这里用 `!duplicate` 跳过回填，而列表里的档案只是摘要，于是"复制一份"出来的表单是全空的。）
+            if (result.body.roster) {
+              const next = draftFromRoster(result.body.roster);
+              if (duplicate) next.id = `${existing.id}-copy`;
+              setDraft(next);
+            }
             setFormat(result.body.format ?? format);
           } else {
             setFailure({ code: "document-unreadable" });
@@ -1425,7 +1442,7 @@ window.__ModuleLoader__.load({
      * 查询走后端排序（`/search`）：前端再写一套打分，两处迟早给出不同顺序。
      * 标签筛选是「且」，与档案页签的标签池同一语义。
      */
-    function CatalogTab({ onOpen, onPull, onPullSpace }) {
+    function CatalogTab({ onOpen, onPullSpace, onFavorite }) {
       useTranslation();
       const [mode, setMode] = useState("source");
       const [query, setQuery] = useState("");
@@ -1544,7 +1561,7 @@ window.__ModuleLoader__.load({
       }
 
       function row(entry) {
-        const busy = entry.scope === "remote" && pulling !== "";
+        const here = entry.scope === "local" || entry.installed === true || installed.has(entry.rosterId);
         return h(
           "article",
           { key: `${entry.scope}:${entry.collectionId ?? ""}:${entry.rosterId}`, className: "rstr-row" },
@@ -1577,29 +1594,28 @@ window.__ModuleLoader__.load({
             h(
               "div",
               { className: "rstr-row-actions" },
-              h(
-                "button",
-                {
-                  type: "button",
-                  className: "rstr-btn rstr-btn-sm",
-                  disabled: busy,
-                  onClick: async () => {
-                    // 已经在本机的那份，按钮就该是「打开」——不能让人去拉一份自己已经有的。
-                    if (entry.scope === "local" || installed.has(entry.rosterId)) {
-                      onOpen(entry.rosterId);
-                      return;
-                    }
-                    setPulling(entry.collectionId ?? "");
-                    try {
-                      await onPull(entry.collectionId);
-                      setNonce((value) => value + 1);
-                    } finally {
-                      setPulling("");
-                    }
-                  },
-                },
-                entry.scope === "local" || installed.has(entry.rosterId) ? t("catalog.open") : t("catalog.pull"),
-              ),
+              // 拉取只能整空间拉：单独拉一份会把远端摊平成本地孤本，路径也对不上。
+              // 所以没装的行只说明状态，不提供会骗人的按钮。
+              here
+                ? h("button", { type: "button", className: "rstr-btn rstr-btn-sm", onClick: () => onOpen(entry.rosterId) }, t("catalog.open"))
+                : h("span", { className: "rstr-stat rstr-row-absent" }, t("catalog.notInstalled")),
+              here && typeof onFavorite === "function" && entry.rootDir
+                ? h(
+                    "button",
+                    {
+                      type: "button",
+                      className: `rstr-star${entry.favorite ? " rstr-star-on" : ""}`,
+                      "aria-pressed": entry.favorite === true,
+                      "aria-label": entry.favorite ? t("catalog.unfavorite") : t("catalog.favorite"),
+                      title: entry.favorite ? t("catalog.unfavorite") : t("catalog.favorite"),
+                      onClick: async () => {
+                        await onFavorite(entry);
+                        setNonce((value) => value + 1);
+                      },
+                    },
+                    entry.favorite ? "\u2605" : "\u2606",
+                  )
+                : null,
             ),
           ),
         );
@@ -1742,6 +1758,8 @@ window.__ModuleLoader__.load({
       useTranslation();
       const library = useLibrary();
       const [tab, setTab] = useState("rosters");
+      // 档案页默认只列收藏：拉一整个空间会带来二十份，全铺在首屏等于没有首屏。
+      const [favOnly, setFavOnly] = useState(true);
       const [query, setQuery] = useState("");
       const [selectedTags, setSelectedTags] = useState(() => new Set());
       const [settingsOpen, setSettingsOpen] = useState(false);
@@ -1764,6 +1782,8 @@ window.__ModuleLoader__.load({
         ) ?? [];
       }, [snapshot]);
 
+      const favorites = useMemo(() => rosters.filter((roster) => roster.favorite === true), [rosters]);
+
       // 标签池：整个库出现过的标签 + 各标签档案数，按出现次数降序（同数按字母）。
       const tagPool = useMemo(() => {
         const counts = new Map();
@@ -1776,6 +1796,7 @@ window.__ModuleLoader__.load({
       const filtered = useMemo(() => {
         const needle = query.trim().toLowerCase();
         return rosters.filter((roster) => {
+          if (favOnly && roster.favorite !== true) return false;
           if (selectedTags.size > 0) {
             const tags = roster.tags ?? [];
             // 多选是“且”：勾了 revision 和 testing，就只看同时带这两个标签的档案。
@@ -1786,7 +1807,7 @@ window.__ModuleLoader__.load({
             .filter((value) => typeof value === "string")
             .some((value) => value.toLowerCase().includes(needle));
         });
-      }, [rosters, query, selectedTags]);
+      }, [rosters, query, selectedTags, favOnly]);
 
       function toggleTag(tag) {
         setSelectedTags((current) => {
@@ -1817,6 +1838,29 @@ window.__ModuleLoader__.load({
       );
       const defaultRoot =
         snapshot?.workspaces?.find((workspace) => workspace.missing !== true)?.rootDir ?? targets[0]?.rootDir ?? "";
+
+      /**
+       * 收藏 / 取消收藏。收藏只改库根的点文件，不动档案本体，也不动团队状态。
+       * 失败就直说：星标停在原样比"看起来成功了"诚实。
+       */
+      async function toggleFavorite(target) {
+        if (!target || typeof target.rootDir !== "string" || target.rootDir === "") return;
+        const id = typeof target.id === "string" ? target.id : target.rosterId;
+        try {
+          const result = await readJson(FAVORITES_ROUTE, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ rootDir: target.rootDir, id, favorite: target.favorite !== true }),
+          });
+          if (!result.ok) {
+            setToast(`${t("misc.failed")} (${String(result.status)})`);
+            return;
+          }
+          library.reload();
+        } catch {
+          setToast(t("misc.failed"));
+        }
+      }
 
       async function copyPayload(roster) {
         const payload = {
@@ -1899,10 +1943,9 @@ window.__ModuleLoader__.load({
         "div",
         { className: "rstr-tabs", role: "tablist" },
         [
-          ["rosters", t("panel.tabsRosters"), rosters.length],
+          ["rosters", t("panel.tabsRosters"), favorites.length],
           ["catalog", t("panel.tabsCatalog"), null],
           ["teams", t("panel.tabsTeams"), teams.length],
-          ["sources", t("panel.tabsSources"), snapshot?.remote?.collections?.length ?? 0],
           // 只有真正要用户处理的问题才计数：info 只是说明，不该在页签上挂数字。
           ["health", t("panel.tabsDiagnostics"), attention],
         ].map(([value, label, count]) =>
@@ -1930,28 +1973,7 @@ window.__ModuleLoader__.load({
             setTab("rosters");
             setQuery(rosterId);
           },
-          onPull: async (collectionId) => {
-            try {
-              const result = await readJson(INSTALL_ROUTE, {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({ collection: collectionId }),
-              });
-              if (!result.ok || result.body === null) {
-                setToast(`${t("misc.failed")} (${String(result.status)})`);
-                return;
-              }
-              const summary = t("source.pulled", {
-                written: result.body.written ?? 0,
-                unchanged: result.body.unchanged ?? 0,
-                conflicts: result.body.conflicts ?? 0,
-              });
-              setToast(summary);
-              library.reload();
-            } catch {
-              setToast(t("misc.failed"));
-            }
-          },
+          onFavorite: toggleFavorite,
           onPullSpace: async (collectionId) => {
             try {
               const result = await readJson(INSTALL_SPACE_ROUTE, {
@@ -1978,7 +2000,20 @@ window.__ModuleLoader__.load({
       }
 
       if (tab === "rosters") {
-        if (rosters.length === 0) {
+        // 一份都没收藏、但库里明明有档案：这是「还没挑」，不是「还没有」——两种空态得说不同的话。
+        const noFavorites = rosters.length > 0 && favorites.length === 0 && favOnly;
+        if (noFavorites) {
+          content = h(
+            "div",
+            { className: "rstr-empty-wrap" },
+            h(EmptyState, {
+              title: t("panel.emptyFavoritesTitle"),
+              body: t("panel.emptyFavoritesBody"),
+              cta: t("panel.emptyFavoritesCta"),
+              onCta: () => setTab("catalog"),
+            }),
+          );
+        } else if (rosters.length === 0) {
           // 空状态与列表共享同一条左沿：页面本身 padding 为 0，留白由各页签自己给。
           content = h(
             "div",
@@ -2041,6 +2076,30 @@ window.__ModuleLoader__.load({
                   "div",
                   { className: "rstr-toolbar-actions" },
                   h(
+                    "div",
+                    { className: "rstr-segmented", role: "group", "aria-label": t("panel.favFilter") },
+                    h(
+                      "button",
+                      {
+                        type: "button",
+                        className: `rstr-seg${favOnly ? " rstr-seg-on" : ""}`,
+                        "aria-pressed": favOnly,
+                        onClick: () => setFavOnly(true),
+                      },
+                      t("panel.favOnly", { count: String(favorites.length) }),
+                    ),
+                    h(
+                      "button",
+                      {
+                        type: "button",
+                        className: `rstr-seg${favOnly ? "" : " rstr-seg-on"}`,
+                        "aria-pressed": !favOnly,
+                        onClick: () => setFavOnly(false),
+                      },
+                      t("panel.favAll", { count: String(rosters.length) }),
+                    ),
+                  ),
+                  h(
                     "button",
                     { type: "button", className: "rstr-btn", onClick: () => setImporting(true), disabled: targets.length === 0 },
                     t("panel.import"),
@@ -2076,6 +2135,7 @@ window.__ModuleLoader__.load({
                       onDuplicate: () => setEditor({ roster, rootDir: roster.rootDir, duplicate: true }),
                       onDelete: () => setRemoving(roster),
                       onCopy: copyPayload,
+                      onFavorite: toggleFavorite,
                       onCreateTeam: (target) => setCreatingTeam(target),
                     }),
                   ),
@@ -2090,16 +2150,6 @@ window.__ModuleLoader__.load({
           teams.length === 0
             ? h("div", { className: "rstr-empty-wrap" }, h(EmptyState, { title: t("team.emptyTitle"), body: t("team.emptyBody") }))
             : h("div", { className: "rstr-cards" }, teams.map((team) => h(TeamCard, { key: team.id, team })));
-      }
-
-      if (tab === "sources") {
-        content = h(SourcesTab, {
-          remote: snapshot?.remote ?? null,
-          onToast: setToast,
-          onPulled: () => library.reload(),
-          onRefresh: () => library.refresh(),
-          refreshing: library.status === "refreshing",
-        });
       }
 
       if (tab === "health") {
@@ -2193,237 +2243,6 @@ window.__ModuleLoader__.load({
               },
             })
           : null,
-      );
-    }
-
-    /**
-     * 公共档案源：列出订阅的 registry 目录，逐个提供「拉取到本机」。
-     *
-     * 拉取是**显式动作**：后端按内容比对，相同的跳过、不同的默认不覆盖（会把冲突数报回来）。
-     * 前端不做这份判断——它只把结果说清楚，避免"点一下按钮，本地改动就没了"。
-     */
-    // 展开过的 collection 记在模块里：再点开先画缓存，再在后台刷新。
-    // 服务端也有一份 60s 缓存，两层各管一段——这层管"切换页签不白等"，那层管"重复展开不打网络"。
-    const SOURCE_DETAIL_TTL_MS = 60_000;
-    const sourceDetailCache = new Map();
-
-    function cachedSourceDetail(key) {
-      const entry = sourceDetailCache.get(key);
-      if (entry === undefined) return null;
-      if (Date.now() - entry.at >= SOURCE_DETAIL_TTL_MS) {
-        sourceDetailCache.delete(key);
-        return null;
-      }
-      return entry.body;
-    }
-
-    function SourcesTab({ remote, onToast, onPulled, onRefresh, refreshing }) {
-      useTranslation();
-      const [pulling, setPulling] = useState("");
-      const [openId, setOpenId] = useState("");
-      const [detail, setDetail] = useState(null);
-      const [filter, setFilter] = useState("");
-
-      const collections = remote?.collections ?? [];
-      const indexes = remote?.indexes ?? [];
-      const problems = (remote?.diagnostics ?? []).filter((item) => item.severity !== "info");
-
-      async function pull(collection) {
-        setPulling(collection.id);
-        try {
-          const result = await readJson(INSTALL_ROUTE, {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ collection: collection.id }),
-          });
-          if (!result.ok || result.body === null) {
-            onToast(`${t("misc.failed")} (${String(result.status)})`);
-            return;
-          }
-          const body = result.body;
-          const summary = t("source.pulled", {
-            written: body.written ?? 0,
-            unchanged: body.unchanged ?? 0,
-            conflicts: body.conflicts ?? 0,
-          });
-          onToast(body.conflicts > 0 ? `${summary} · ${t("source.conflictHint")}` : summary);
-          onPulled();
-        } catch {
-          onToast(t("misc.failed"));
-        } finally {
-          setPulling("");
-        }
-      }
-
-      function detailKey(collection) {
-        return `${collection.origin?.source ?? ""}::${collection.id}`;
-      }
-
-      async function toggle(collection) {
-        if (openId === collection.id) {
-          setOpenId("");
-          setDetail(null);
-          return;
-        }
-        const key = detailKey(collection);
-        const remembered = cachedSourceDetail(key);
-        setOpenId(collection.id);
-        setFilter("");
-        // 有缓存就先出内容，用户看到的"等待"只剩网络那一半。
-        setDetail(remembered === null ? { id: collection.id, status: "loading", body: null } : { id: collection.id, status: "ready", body: remembered });
-        const query = new URLSearchParams({ id: collection.id });
-        if (collection.origin?.source !== undefined) query.set("source", collection.origin.source);
-        const result = await readJson(`${COLLECTION_ROUTE}?${query.toString()}`);
-        if (result.ok && result.body !== null) {
-          sourceDetailCache.set(key, { at: Date.now(), body: result.body });
-          setDetail({ id: collection.id, status: "ready", body: result.body });
-        } else if (remembered === null) {
-          setDetail({ id: collection.id, status: "error", body: null });
-        }
-      }
-
-      /**
-       * 展开区：先把「查什么」和「查到几条」放出来，再列档案。
-       * 查找只过滤视图，不改任何数据，也不触发网络。
-       */
-      function renderDetail() {
-        const all = detail?.body?.rosters ?? [];
-        const needle = filter.trim().toLowerCase();
-        const shown =
-          needle === ""
-            ? all
-            : all.filter((roster) =>
-                [roster.id, roster.title, roster.description, ...(roster.members ?? []).map((member) => member.name)]
-                  .filter((value) => typeof value === "string")
-                  .some((value) => value.toLowerCase().includes(needle)),
-              );
-        return h(
-          "div",
-          { className: "rstr-source-detail" },
-          h(
-            "div",
-            { className: "rstr-source-filter" },
-            h("input", {
-              className: "rstr-input rstr-search",
-              value: filter,
-              placeholder: t("source.filterPlaceholder"),
-              "aria-label": t("source.filter"),
-              onChange: (event) => setFilter(event.target.value),
-            }),
-            h("span", { className: "rstr-muted rstr-small" }, t("source.filterCount", { shown: shown.length, total: all.length })),
-          ),
-          shown.map((roster) =>
-            h(
-              "div",
-              { key: roster.id, className: "rstr-source-roster" },
-              h("span", { className: "rstr-mono" }, roster.id),
-              h("span", { className: "rstr-muted" }, roster.title ?? ""),
-              h(Badge, { tone: "neutral" }, `${(roster.members ?? []).length}`),
-            ),
-          ),
-          shown.length === 0 ? h("p", { className: "rstr-muted" }, t("panel.noMatch")) : null,
-          (detail.body?.diagnostics ?? []).length > 0 ? h(DiagnosticList, { items: detail.body.diagnostics }) : null,
-        );
-      }
-
-      // 刷新是档案源自己的动作：绕过 TTL 重新回源，而不是重读本地快照。
-      const head = h(
-        "div",
-        { className: "rstr-sources-head" },
-        h(
-          "p",
-          { className: "rstr-muted rstr-small" },
-          indexes.length > 0
-            ? indexes
-                .map((index) =>
-                  `${index.label} · ${index.stale ? t("source.stale") : t("source.fetchedAt", { when: index.fetchedAt ?? "-" })}`,
-                )
-                .join("   ")
-            : t("source.refreshHint"),
-        ),
-        h(
-          "button",
-          { type: "button", className: "rstr-btn", onClick: onRefresh, disabled: refreshing === true },
-          refreshing === true ? t("panel.refreshing") : t("source.refresh"),
-        ),
-      );
-
-      if (collections.length === 0) {
-        return h(
-          "div",
-          { className: "rstr-sources" },
-          head,
-          h(EmptyState, { title: t("source.empty"), body: t("source.emptyHint") }),
-          problems.length > 0 ? h(DiagnosticList, { items: problems }) : null,
-        );
-      }
-
-      return h(
-        "div",
-        { className: "rstr-sources" },
-        head,
-        h(
-          "div",
-          { className: "rstr-cards" },
-          collections.map((collection) =>
-            h(
-              "article",
-              {
-                key: `${collection.origin?.source ?? ""}::${collection.id}`,
-                className: openId === collection.id ? "rstr-row rstr-row-open" : "rstr-row",
-              },
-              h(
-                "div",
-                { className: "rstr-row-body" },
-                h("code", { className: "rstr-row-id", title: collection.id }, collection.id),
-                h(
-                  "div",
-                  { className: "rstr-row-text" },
-                  h(
-                    "h3",
-                    { className: "rstr-row-title" },
-                    collection.title || collection.id,
-                    h(Badge, { tone: "neutral" }, t("source.registered", { count: collection.rosters?.length ?? 0 })),
-                  ),
-                  collection.description ? h("p", { className: "rstr-row-desc" }, collection.description) : null,
-                  h(
-                    "p",
-                    { className: "rstr-source-meta" },
-                    `${collection.repo ?? ""}@${collection.ref ?? "main"}${collection.path ? `/${collection.path}` : ""}`,
-                  ),
-                ),
-                h("div", { className: "rstr-row-stats" }, h("span", null, `${collection.rosters?.length ?? 0}`)),
-                h(
-                  "div",
-                  { className: "rstr-row-actions" },
-                h(
-                  "button",
-                  {
-                    type: "button",
-                    className: "rstr-btn rstr-btn-primary",
-                    disabled: pulling !== "",
-                    onClick: () => pull(collection),
-                  },
-                  pulling === collection.id ? t("source.pulling") : t("source.pull"),
-                ),
-                h(
-                  "button",
-                  { type: "button", className: "rstr-btn", onClick: () => toggle(collection) },
-                  openId === collection.id ? t("source.hide") : t("source.open"),
-                  ),
-                ),
-              ),
-              openId === collection.id
-                ? detail === null || detail.status === "loading"
-                  ? h("p", { className: "rstr-muted" }, t("source.loading"))
-                  : detail.status === "error"
-                    ? h("p", { className: "rstr-muted" }, t("misc.failed"))
-                    : renderDetail()
-                : null,
-            ),
-          ),
-        ),
-        problems.length > 0 ? h(DiagnosticList, { items: problems }) : null,
       );
     }
 
@@ -3084,47 +2903,29 @@ window.__ModuleLoader__.load({
 .rstr-diag-reason { color: var(--dsw-alias-label-primary); }
 .rstr-diag code.rstr-code { font-size: 11px; }
 
-/* ---- 档案源 ----------------------------------------------------------- */
+/* ---- 收藏 ------------------------------------------------------------- */
 
-.rstr-sources { display: flex; flex-direction: column; gap: 0; min-width: 0; padding: 16px 28px 28px; border-top: 1px solid var(--dsw-alias-border-l2); }
-.rstr-sources-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-/* 展开区自己滚会把内容关进小盒子（曾经 max-height:320px 就是"显示不全"的来源）。
-   整页只有 .rstr-page 一个滚动容器，展开区只负责把高度撑开。 */
-.rstr-source-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  padding: 8px 0 12px 15px;
-  border-bottom: 1px solid var(--dsw-alias-border-l1);
-  border-left: 2px solid var(--dsw-alias-border-l2);
-  margin-left: 2px;
-}
-.rstr-source-filter {
-  display: flex;
+/* 星标是"这份我要常看"，不是一个动作按钮：默认安静，选中时才变实心。
+   用字形而不是 SVG，是为了在 12–14px 的密集行里也不糊。 */
+.rstr-star {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-width: 0;
-  padding: 2px 0 6px;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
 }
-.rstr-source-filter .rstr-search {
-  flex: 1 1 auto;
-  min-width: 0;
-  max-width: 320px;
-}
-.rstr-source-roster {
-  display: grid;
-  grid-template-columns: minmax(120px, 180px) minmax(0, 1fr) auto;
-  align-items: baseline;
-  gap: 4px 14px;
-  min-width: 0;
-  font-size: 12px;
-  padding: 4px 6px 4px 0;
-  border-bottom: 1px solid var(--dsw-alias-border-l1);
-}
-.rstr-source-roster:last-of-type { border-bottom: none; }
-.rstr-source-roster > .rstr-muted { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rstr-source-meta { margin: 2px 0 0 0; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; color: var(--dsw-alias-label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rstr-star:hover { border-color: var(--dsw-alias-border-l2); color: var(--dsw-alias-label-primary); }
+.rstr-star-on { color: var(--dsw-alias-state-business-primary); }
+.rstr-star-on:hover { color: var(--dsw-alias-state-business-primary); }
+.rstr-row-absent { color: var(--dsw-alias-label-tertiary); font-size: 12px; white-space: nowrap; }
 
 /* ---- 通用件 ----------------------------------------------------------- */
 
