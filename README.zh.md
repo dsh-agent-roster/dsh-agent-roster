@@ -369,6 +369,8 @@ node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
   留空 = 只用官方源 `dsh-agent-roster/dsh-agent-roster` 的 `index/registry.json`；显式写 `false` 才彻底不连远端。
 - **多久更新一次**：TTL **一小时**——等于未认证 GitHub 的 60 次/小时配额。`?refresh=1`（或工具的 `refresh`）
   可绕过缓存，但 60 秒内最多一次，避免把配额烧光。拉取失败时沿用上次缓存并在页面上写明「缓存（拉取失败）」。
+  缓存里记着**它存的是哪一种形状的索引**（`CACHE_VERSION`）：升级插件后如果索引形状变了，旧缓存自动失效、重取一次，
+  所以「我升级了，面板却还 404」不需要靠删目录来排查。
 - **拉取到本机**：写入是幂等的，四种结果都会报给你——
   `created`（新写入）、`updated`（显式覆盖）、`unchanged`（内容一致，不写盘）、`conflict`（本地不一样，**默认不覆盖**）。
   冲突要你自己决定：要么在编辑器里合并，要么再点一次「拉取到本机」并在请求里带 `overwrite`。
@@ -417,7 +419,7 @@ node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
 - 安全：`reserved-character`（`^`、`$`、`|`、花括号）、`forbidden-content`（提示注入特征）、`single-line-required`
 - 上限：`string-too-long`、`too-many-members`、`too-many-values`
 - 档案库级：`library-missing`、`library-unusable`、`missing-roster-file`、`multiple-roster-files`、`unexpected-file`、`unreadable-file`、`unreadable-dir`、`duplicate-roster-id`、`tool-policy-cross-check-skipped`
-- 远端源：`index-unreachable`、`index-invalid`、`index-refresh-throttled`、`index-source-invalid`、`collection-fetch-failed`、`collection-not-found`
+- 远端源：`index-unreachable`、`index-invalid`、`index-refresh-throttled`、`index-source-invalid`、`collection-fetch-failed`、`collection-not-found`、`index-may-be-stale`（没有 `files` 映射却回退到 v1 路径并失败——索引多半比档案库旧）、`collection-roster-needs-roles`（条目指向 v2 组装，而组装不能以单文件旅行）
 
 空档案库不是错误；目录不存在只算 info。`tool-policy-cross-check-skipped` **每座档案库只发一条**（不是每份档案一条）——没配 `knownToolPolicies` 是一件库级的事，按档案重复只会把一个事实放大成 n 行噪音。
 
@@ -436,8 +438,11 @@ node scripts/check-locale.mjs   # client.js 里的静态 t() 键必须两本词�
 
 ```
 index.js          宿主半边：Config、apply、六条路由
-lib/              format / parse / validate / registry / bridge / verify / render / library /
-                  config-view / json / http / write / service / teams-state / tools
+lib/              读：format / format-v2 / frontmatter / parse / validate / role / roster2 /
+                  capabilities / organization / registry / remote / library / home
+                  编译：compile2 / plan / migrate / run
+                  对运行时说话：bridge / verify / diff / digest / render / tools / service /
+                  teams-state / captain / write / apply / serialize / config-view / json / http
 client.js         客户端半边：左侧栏图标 + 主面板（档案/团队/体检）+ 设置页小节
 locale/           面板与列表词典（en/zh）
 schema/           roster v1 / role v1 / roster v2 / compiled v1 / capabilities / organization / registry
@@ -454,7 +459,7 @@ test/             单测
 
 本机已验证：
 
-- `npm test` —— 295/295 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐、v1→v2 迁移、执行回执并入施工图）。
+- `npm test` —— 297/297 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐、v1→v2 迁移、执行回执并入施工图）。
 - `npm run smoke` —— 用真实 DSH bundle 的 `defineTool` 注册六个工具，逐个调用：输出全部通过无损校验、`path` 覆盖生效、释放干净；同一条命令随后用桩模块表加载 `client.js`，断言三处槽位注册、样式只注入一次、effect 可回收。
 - CLI：`validate --dir examples` 对两座示例库退出码 0。
 - 用插件管理器真的装进了本机 profile（`plugin_manager install_bundle` 指向本仓库 → `link:` 依赖 + bundle 条目），重启后按链接读取本仓库文件。

@@ -392,6 +392,9 @@ repository's `index/registry.json`, and anyone who subscribes can see them in th
 - **How often it refreshes**: TTL **one hour** — that is the unauthenticated GitHub budget of 60 requests/hour.
   `?refresh=1` (or the tools' `refresh`) bypasses the cache, throttled to one try per 60 seconds so the quota is not
   burned. On failure the last cached index is reused and labelled "cached (fetch failed)" in the panel.
+  The cache records **which shape of index it holds** (`CACHE_VERSION`): a plugin upgrade that changes the
+  index shape invalidates old caches and refetches once, so "I upgraded but the panel still 404s" is not a
+  thing you have to debug by deleting a directory.
 - **Pulling**: writes are idempotent and report one of `created`, `updated` (explicit overwrite), `unchanged`
   (same content, nothing written) or `conflict` (the local copy differs and is **not** overwritten by default).
   Conflicts are yours to resolve: merge in the editor, or pull again with `overwrite` in the request body.
@@ -441,7 +444,7 @@ Validation reports errors, warnings and infos with `file`, `path` and `reason`. 
 - safety: `reserved-character` (`^`, `$`, `|`, braces), `forbidden-content` (prompt-injection patterns), `single-line-required`
 - limits: `string-too-long`, `too-many-members`, `too-many-values`
 - library level: `library-missing`, `library-unusable`, `missing-roster-file`, `multiple-roster-files`, `unexpected-file`, `unreadable-file`, `unreadable-dir`, `duplicate-roster-id`, `tool-policy-cross-check-skipped`
-- remote sources: `index-unreachable`, `index-invalid`, `index-refresh-throttled`, `index-source-invalid`, `collection-fetch-failed`, `collection-not-found`
+- remote sources: `index-unreachable`, `index-invalid`, `index-refresh-throttled`, `index-source-invalid`, `collection-fetch-failed`, `collection-not-found`, `index-may-be-stale` (a v1-path fetch failed on a collection that has no `files` map — the index is probably older than the library), `collection-roster-needs-roles` (the entry points at a v2 assembly, which cannot travel as one file)
 
 An empty library is not an error. A missing one is reported as info, not error. `tool-policy-cross-check-skipped` is emitted **once per library** (not once per roster) when no `knownToolPolicies` are configured — a per-roster warning would turn one fact into n lines of noise.
 
@@ -462,8 +465,11 @@ Layout:
 
 ```
 index.js          host plugin: Config, apply, six routes
-lib/              format, parse, validate, registry, bridge, verify, render, library,
-                  config-view, json, http, write, service, teams-state, tools
+lib/              reading: format, format-v2, frontmatter, parse, validate, role, roster2,
+                  capabilities, organization, registry, remote, library, home
+                  compiling: compile2, plan, migrate, run
+                  speaking to the runtime: bridge, verify, diff, digest, render, tools, service,
+                  teams-state, captain, write, apply, serialize, config-view, json, http
 client.js         client plugin: sidebar entry, main panel (rosters/teams/health), settings section
 locale/           panel + listing dictionaries (en/zh)
 schema/           roster v1 / role v1 / roster v2 / compiled v1 / capabilities / organization / registry
@@ -480,7 +486,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 295/295 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
+- `npm test` — 297/297 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.

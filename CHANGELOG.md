@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.10.7] - 2026-11-03
+
+### Documentation
+
+- README (both languages) now describes the cache that knows its own version, the two remote-source
+  diagnostics added in 0.10.6, and a `lib/` listing that matches what is actually there — the previous one
+  still named only the v1-era modules and omitted `compile2`/`plan`/`migrate`/`run`/`role`/`roster2`.
+- Test count corrected to 297/297.
+
 ## [0.10.6] - 2026-11-03
 
 ### Fixed
@@ -524,7 +533,8 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.6...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.7...main
+[0.10.7]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.6...v0.10.7
 [0.10.6]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.5...v0.10.6
 [0.10.5]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.4...v0.10.5
 [0.10.4]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.3...v0.10.4
