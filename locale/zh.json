@@ -298,5 +298,8 @@
       "undeclared": "未声明，运行时用 {actual}",
       "unknown": "读不到部署配置"
     }
-  }
+  },
+  "source.filter": "在这份集合里查找",
+  "source.filterPlaceholder": "按 id、标题或成员名过滤",
+  "source.filterCount": "{shown} / {total}"
 }

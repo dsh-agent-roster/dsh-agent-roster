@@ -298,5 +298,8 @@
       "undeclared": "not declared, runtime uses {actual}",
       "unknown": "deployment unreadable"
     }
-  }
+  },
+  "source.filter": "Filter this collection",
+  "source.filterPlaceholder": "Filter by id, title or member",
+  "source.filterCount": "{shown} of {total}"
 }

@@ -4,6 +4,21 @@
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-03
+
+### Changed
+
+- **Expanding a collection no longer walks its rosters one by one.** `fetchCollection` runs up to six
+  fetches at a time and keeps the index order for both rosters and diagnostics: the 21-roster
+  `agent-roster-collective` went from **9.4 s to 0.8 s** on this machine (serial vs parallel, real network).
+- The collection route memoises the fetched result for 60 s, and the panel keeps the last expansion in
+  memory — re-opening a collection paints immediately instead of re-fetching 21 files.
+
+### Added
+
+- A filter box inside an expanded collection: narrows by roster id, title or member name, and shows
+  `shown / total`. It only hides rows; it never writes anything.
+
 ## [0.10.7] - 2026-11-03
 
 ### Documentation
@@ -533,7 +548,8 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.7...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.11.0...main
+[0.11.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.7...v0.11.0
 [0.10.7]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.6...v0.10.7
 [0.10.6]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.5...v0.10.6
 [0.10.5]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.4...v0.10.5

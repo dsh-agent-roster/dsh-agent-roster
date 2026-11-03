@@ -1663,11 +1663,27 @@ window.__ModuleLoader__.load({
      * 拉取是**显式动作**：后端按内容比对，相同的跳过、不同的默认不覆盖（会把冲突数报回来）。
      * 前端不做这份判断——它只把结果说清楚，避免"点一下按钮，本地改动就没了"。
      */
+    // 展开过的 collection 记在模块里：再点开先画缓存，再在后台刷新。
+    // 服务端也有一份 60s 缓存，两层各管一段——这层管"切换页签不白等"，那层管"重复展开不打网络"。
+    const SOURCE_DETAIL_TTL_MS = 60_000;
+    const sourceDetailCache = new Map();
+
+    function cachedSourceDetail(key) {
+      const entry = sourceDetailCache.get(key);
+      if (entry === undefined) return null;
+      if (Date.now() - entry.at >= SOURCE_DETAIL_TTL_MS) {
+        sourceDetailCache.delete(key);
+        return null;
+      }
+      return entry.body;
+    }
+
     function SourcesTab({ remote, onToast, onPulled, onRefresh, refreshing }) {
       useTranslation();
       const [pulling, setPulling] = useState("");
       const [openId, setOpenId] = useState("");
       const [detail, setDetail] = useState(null);
+      const [filter, setFilter] = useState("");
 
       const collections = remote?.collections ?? [];
       const indexes = remote?.indexes ?? [];
@@ -1700,22 +1716,75 @@ window.__ModuleLoader__.load({
         }
       }
 
+      function detailKey(collection) {
+        return `${collection.origin?.source ?? ""}::${collection.id}`;
+      }
+
       async function toggle(collection) {
         if (openId === collection.id) {
           setOpenId("");
           setDetail(null);
           return;
         }
+        const key = detailKey(collection);
+        const remembered = cachedSourceDetail(key);
         setOpenId(collection.id);
-        setDetail({ id: collection.id, status: "loading", body: null });
+        setFilter("");
+        // 有缓存就先出内容，用户看到的"等待"只剩网络那一半。
+        setDetail(remembered === null ? { id: collection.id, status: "loading", body: null } : { id: collection.id, status: "ready", body: remembered });
         const query = new URLSearchParams({ id: collection.id });
         if (collection.origin?.source !== undefined) query.set("source", collection.origin.source);
         const result = await readJson(`${COLLECTION_ROUTE}?${query.toString()}`);
         if (result.ok && result.body !== null) {
+          sourceDetailCache.set(key, { at: Date.now(), body: result.body });
           setDetail({ id: collection.id, status: "ready", body: result.body });
-        } else {
+        } else if (remembered === null) {
           setDetail({ id: collection.id, status: "error", body: null });
         }
+      }
+
+      /**
+       * 展开区：先把「查什么」和「查到几条」放出来，再列档案。
+       * 查找只过滤视图，不改任何数据，也不触发网络。
+       */
+      function renderDetail() {
+        const all = detail?.body?.rosters ?? [];
+        const needle = filter.trim().toLowerCase();
+        const shown =
+          needle === ""
+            ? all
+            : all.filter((roster) =>
+                [roster.id, roster.title, roster.description, ...(roster.members ?? []).map((member) => member.name)]
+                  .filter((value) => typeof value === "string")
+                  .some((value) => value.toLowerCase().includes(needle)),
+              );
+        return h(
+          "div",
+          { className: "rstr-source-detail" },
+          h(
+            "div",
+            { className: "rstr-source-filter" },
+            h("input", {
+              className: "rstr-input rstr-search",
+              value: filter,
+              placeholder: t("source.filterPlaceholder"),
+              "aria-label": t("source.filter"),
+              onChange: (event) => setFilter(event.target.value),
+            }),
+            h("span", { className: "rstr-muted rstr-small" }, t("source.filterCount", { shown: shown.length, total: all.length })),
+          ),
+          shown.map((roster) =>
+            h(
+              "div",
+              { key: roster.id, className: "rstr-source-roster" },
+              h("span", { className: "rstr-mono" }, roster.id),
+              h("span", { className: "rstr-muted" }, roster.title ?? ""),
+              h(Badge, { tone: "neutral" }, `${(roster.members ?? []).length}`),
+            ),
+          ),
+          shown.length === 0 ? h("p", { className: "rstr-muted" }, t("panel.noMatch")) : null,
+          (detail.body?.diagnostics ?? []).length > 0 ? h(DiagnosticList, { items: detail.body.diagnostics }) : null,
+        );
       }
 
       // 刷新是档案源自己的动作：绕过 TTL 重新回源，而不是重读本地快照。
@@ -1810,22 +1879,7 @@ window.__ModuleLoader__.load({
                   ? h("p", { className: "rstr-muted" }, t("source.loading"))
                   : detail.status === "error"
                     ? h("p", { className: "rstr-muted" }, t("misc.failed"))
-                    : h(
-                        "div",
-                        { className: "rstr-source-detail" },
-                        (detail.body?.rosters ?? []).map((roster) =>
-                          h(
-                            "div",
-                            { key: roster.id, className: "rstr-source-roster" },
-                            h("span", { className: "rstr-mono" }, roster.id),
-                            h("span", { className: "rstr-muted" }, roster.title ?? ""),
-                            h(Badge, { tone: "neutral" }, `${(roster.members ?? []).length}`),
-                          ),
-                        ),
-                        (detail.body?.diagnostics ?? []).length > 0
-                          ? h(DiagnosticList, { items: detail.body.diagnostics })
-                          : null,
-                      )
+                    : renderDetail()
                 : null,
             ),
           ),
@@ -2446,6 +2500,18 @@ window.__ModuleLoader__.load({
   border-bottom: 1px solid var(--dsw-alias-border-l1);
   border-left: 2px solid var(--dsw-alias-border-l2);
   margin-left: 2px;
+}
+.rstr-source-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 2px 0 6px;
+}
+.rstr-source-filter .rstr-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 320px;
 }
 .rstr-source-roster {
   display: grid;

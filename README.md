@@ -398,6 +398,12 @@ repository's `index/registry.json`, and anyone who subscribes can see them in th
 - **Pulling**: writes are idempotent and report one of `created`, `updated` (explicit overwrite), `unchanged`
   (same content, nothing written) or `conflict` (the local copy differs and is **not** overwritten by default).
   Conflicts are yours to resolve: merge in the editor, or pull again with `overwrite` in the request body.
+- **Expanding is fast and filterable**: opening a collection fetches its rosters in parallel (up to six in
+  flight) instead of one after another — the 21-roster collective went from **9.4 s to 0.8 s** on this
+  machine. The route memoises the fetched result for 60 seconds, and the panel keeps the last expansion in
+  memory, so re-opening is instant and re-opening after a minute costs one round of six requests, not 21.
+  A filter box inside the expanded list narrows by id, title or member name; it only hides rows, it never
+  changes data.
 - **Where each roster lives**: a collection's `rosters[]` is just the list of ids; the optional
   `files` map says where each one is (`{"core-review": "dist/core-review-1.0.0.json"}`). It is optional —
   without it the fetcher assumes the v1 layout `<id>/roster.yaml` — but a v2 library needs it, because an
@@ -486,7 +492,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 297/297 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
+- `npm test` — 300/300 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.

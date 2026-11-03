@@ -25,7 +25,7 @@ import { validateRoster } from "./lib/validate.js";
 import { validateRoster2 } from "./lib/roster2.js";
 import { sendError, sendJson, createAuthGate, readJsonBody, requireMethod } from "./lib/http.js";
 import { buildPanelSnapshot, installCollection, loadRemotePanel, resolveRoots } from "./lib/service.js";
-import { fetchCollection } from "./lib/remote.js";
+import { createTtlCache, fetchCollection } from "./lib/remote.js";
 import { registerRosterTools } from "./lib/tools.js";
 import { deleteRosterDocument, readRosterDocument, writeRosterDocument } from "./lib/write.js";
 
@@ -129,6 +129,10 @@ export function apply(ctx, config) {
       "library route",
     );
 
+    // 同一份 collection 一分钟内被展开两次，第二次不该再打一轮请求。
+    // 缓存的是**已校验的结果**，不是响应体，所以不存在"把非法内容缓存下来"的问题。
+    const collectionCache = createTtlCache({ ttlMs: 60_000 });
+
     register(
       "/plugins/dsh-agent-roster/collection",
       async (req, res) => {
@@ -145,7 +149,9 @@ export function apply(ctx, config) {
           sendJson(res, 404, { ok: false, error: { code: "collection-not-found" }, known: remote.collections.map((item) => item.id) });
           return;
         }
-        const fetched = await fetchCollection(collection);
+        const cacheKey = `${source}::${id}`;
+        const cached = query.get("refresh") === "1" ? null : collectionCache.get(cacheKey);
+        const fetched = cached ?? collectionCache.set(cacheKey, await fetchCollection(collection));
         sendJson(res, 200, {
           ok: fetched.diagnostics.every((item) => item.severity !== "error"),
           collection: {
