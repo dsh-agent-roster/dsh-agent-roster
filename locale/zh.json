@@ -64,7 +64,7 @@
     "metaRosters": "份档案",
     "metaMembers": "名成员",
     "metaTeams": "支团队",
-    "metaOrganization": "组织 {name}",
+    "metaSpace": "空间 {name}",
     "tabsCatalog": "档案库"
   },
   "roster": {
@@ -317,6 +317,9 @@
     "mode": "显示方式",
     "modeSource": "按来源",
     "modeFlat": "平铺",
-    "refresh": "刷新"
+    "refresh": "刷新",
+    "installed": "已安装",
+    "pullSpace": "拉取整个空间",
+    "pulledSpace": "空间已拉取：写入 {files} 个文件，跳过 {skipped} 个"
   }
 }

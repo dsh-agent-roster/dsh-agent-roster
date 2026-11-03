@@ -187,13 +187,14 @@ Behaviour: under `onMissing: refuse` (default) `roster_create` emits **no** `age
 
 The sibling file has its own JSON Schema: [`schema/capabilities.v1.schema.json`](./schema/capabilities.v1.schema.json), kept aligned with `lib/capabilities.js` by `test/capabilities.test.js`.
 
-## Library organization (`organization.yaml`)
+## Spaces (`space.yaml`)
 
 A roster answers *who the members are*; it cannot answer **which rosters belong together, which one is production and which is retired**. When a library holds twenty archives from different sources, the directory listing stops being an index. An optional file at the **library root** declares that, and nothing else:
 
 ```yaml
-kind: dsh-agent-roster-organization/v1
-organization: agent-roster-collective   # must equal the directory name
+kind: dsh-agent-roster/space@1
+space: agent-roster-collective   # must equal the directory name
+layout: monorepo                 # flat = <id>/roster.yaml; monorepo = roles/ + rosters/ + dist/
 title: 团队档案合集
 maintainers: [STofone]
 rosters:
@@ -207,13 +208,13 @@ The declaration is mechanically checked against disk, and the three outcomes are
 
 | Situation | Code | Severity | Why |
 |---|---|---|---|
-| declared, directory missing | `organization-roster-missing` | **error** | the organization page is lying — worse than no page |
-| directory present, not declared | `organization-roster-undeclared` | warn | someone added a roster around the index; it still loads |
-| declared `archived`, directory still there | `organization-roster-archived` | info | archiving is a statement, not a delete |
+| declared, directory missing | `space-roster-missing` | **error** | the organization page is lying — worse than no page |
+| directory present, not declared | `space-roster-undeclared` | warn | someone added a roster around the index; it still loads |
+| declared `archived`, directory still there | `space-roster-archived` | info | archiving is a statement, not a delete |
 
-`organization` must equal the directory name, exactly like `roster` does: position is identity, and two ids for one library would make every diagnostic ambiguous. Unknown keys are rejected — a field nobody can check is another way to look green.
+`space` must equal the directory name, exactly like `roster` does: position is identity, and two ids for one library would make every diagnostic ambiguous. Unknown keys are rejected — a field nobody can check is another way to look green.
 
-This file creates nothing. It does not write `team.json`, does not create members, and never reaches `agent_teams_add_member`. Its JSON Schema is [`schema/organization.v1.schema.json`](./schema/organization.v1.schema.json), kept aligned with `lib/organization.js` by `test/organization.test.js`.
+This file creates nothing. It does not write `team.json`, does not create members, and never reaches `agent_teams_add_member`. Its JSON Schema is [`schema/space.v1.schema.json`](./schema/space.v1.schema.json), kept aligned with `lib/organization.js` by `test/space.test.js`.
 
 **A worked example ships in this repository:** [`orgs/agent-roster-collective/`](./orgs/agent-roster-collective/) holds 21 rosters (63 members) covering API review, incident response, data quality, database migration, localization, security audit, performance, frontend, docs, release, support triage, recruiting, market research, finance reconciliation, contract review, content ops, regression testing, model evaluation, SRE on-call, literature review and product discovery. Every roster is a three-person team with a captain, and each was written for this repository (no upstream text is copied). Validate it with:
 
@@ -510,7 +511,7 @@ bin/cli.mjs       validate/list/compile/migrate/registry for CI
 scripts/          host-smoke.mjs, client-smoke.mjs, check-locale.mjs (dev only, not shipped)
 examples/         a v2 library migrated from the v1 archives
 examples-orchestration/  a v2 library with orchestration, gates and a construction plan
-orgs/             a worked example library with its own organization.yaml (21 rosters)
+orgs/             a worked example library with its own space.yaml (21 rosters)
 test/             unit tests
 ```
 
@@ -518,7 +519,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 308/308 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
+- `npm test` — 313/313 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.

@@ -15,10 +15,12 @@
  *   dsh-agent-roster migrate --dir examples [--write] [--json]
  *   dsh-agent-roster migrate --dir . --from rosters --repo owner/repo --write
  */
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import nodePath from "node:path";
 
 import { resolveDirSpec } from "../lib/home.js";
+import { globalRosterRoot } from "../lib/home.js";
+import { cloneSpace } from "../lib/clone.js";
 import { scanRosterLibrary } from "../lib/registry.js";
 import { renderRosterList } from "../lib/render.js";
 import { REGISTRY_KIND } from "../lib/format.js";
@@ -40,6 +42,8 @@ const USAGE = `用法：
   dsh-agent-roster compile --roster <目录>            把 v2 组装编译成自包含产物（不写盘）
   dsh-agent-roster migrate --dir <目录> [--from <子目录>] [--repo <owner/repo>] [--write]
                                                       把 v1 档案原地迁成 v2（roles/ + rosters/ + dist/）
+  dsh-agent-roster clone --repo <owner/repo> [--ref <分支>] [--path <子目录>] [--space <id>] [--dir <目录>]
+                                                      把一个远端空间按原布局拉成本地副本（可编辑）
   dsh-agent-roster --version         输出版本号
 
 选项：
@@ -50,7 +54,10 @@ const USAGE = `用法：
   --write                   sync 把重算结果写回文件
   --roster <path>           v2 组装目录（compile 用）
   --from <path>             v1 档案所在目录（migrate 用；缺省与 --dir 相同，用于仓库根 + rosters/ 布局）
-  --repo <owner/repo>       写进 dist 产物的仓库坐标（migrate 用；缺省取本仓 remote）
+  --repo <owner/repo>       写进 dist 产物的仓库坐标（migrate 用）；clone 的源仓库
+  --ref <branch|tag>        clone 的分支/tag（缺省 main）
+  --path <subdir>           clone 的仓库内子目录（缺省仓库根）
+  --space <id>              clone 落到本地后的空间 id（缺省取仓库名）
   --run <path>              执行回执（compile 用；把上一轮失败并入重试卡）
   --roles <path>            角色库目录（compile 用；缺省按 rosters/<id> 推同级的 roles/）
   --json                    以 JSON 输出（validate / list / compile 都支持）
@@ -73,6 +80,9 @@ function parseArgs(argv) {
     roles: null,
     run: null,
     from: null,
+    ref: null,
+    path: null,
+    space: null,
     repo: null,
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -111,6 +121,21 @@ function parseArgs(argv) {
       const value = argv[index + 1];
       if (value === undefined) throw new UsageError("--run 需要一个路径");
       options.run = value;
+      index += 1;
+    } else if (arg === "--ref") {
+      const value = argv[index + 1];
+      if (value === undefined) throw new UsageError("--ref 需要一个分支名");
+      options.ref = value;
+      index += 1;
+    } else if (arg === "--path") {
+      const value = argv[index + 1];
+      if (value === undefined) throw new UsageError("--path 需要一个相对目录");
+      options.path = value;
+      index += 1;
+    } else if (arg === "--space") {
+      const value = argv[index + 1];
+      if (value === undefined) throw new UsageError("--space 需要一个 id");
+      options.space = value;
       index += 1;
     } else if (arg === "--roles") {
       const value = argv[index + 1];
@@ -159,6 +184,7 @@ async function main(argv) {
     return 0;
   }
   if (options.command === "compile") return runCompile(options);
+  if (options.command === "clone") return runClone(options);
   if (options.command === "migrate") return runMigrate(options);
   if (options.command === "registry") {
     if (options.file === null) {
@@ -195,8 +221,8 @@ async function main(argv) {
             rootDir: report.rootDir,
             missing: report.scan.missing,
             stats: report.scan.stats,
-            organization: report.scan.organization,
-            organizationCheck: report.scan.organizationCheck,
+            space: report.scan.space,
+            spaceCheck: report.scan.spaceCheck,
             rosters: report.scan.rosters.map((roster) => ({ id: roster.id, file: roster.file })),
             diagnostics: report.scan.diagnostics,
           })),
@@ -212,11 +238,11 @@ async function main(argv) {
         process.stdout.write(`${renderRosterList(report.scan)}\n`);
       } else {
         const { stats } = report.scan;
-        const organization = report.scan.organization ?? null;
-        if (organization !== null) {
-          const check = report.scan.organizationCheck;
+        const space = report.scan.space ?? null;
+        if (space !== null) {
+          const check = report.scan.spaceCheck;
           process.stdout.write(
-            `  组织 ${organization.id}  ${organization.title}（登记 ${check.declared} · 在库 ${check.present} · ` +
+            `  空间 ${space.id}  ${space.title}（登记 ${check.declared} · 在库 ${check.present} · ` +
               `缺 ${check.missing.length} · 未登记 ${check.undeclared.length}）\n`,
           );
         }
@@ -592,4 +618,57 @@ function runMigrate(options) {
     );
   }
   return rc;
+}
+
+/**
+ * `clone`：把一个远端空间按原布局拉成本地副本。
+ *
+ * 落点默认是全局档案库根（`$DSH_HOME/agent-roster`），可以用 `--dir` 指到别处。
+ * 目录里有同名空间时**不覆盖**——覆盖别人正在用的副本不该是顺手发生的事；
+ * 要重来做 `rm -rf` 或换个 `--space` 名字。
+ *
+ * @param {object} options
+ * @returns {Promise<number>}
+ */
+async function runClone(options) {
+  if (options.repo === null) {
+    process.stderr.write(`clone 需要 --repo <owner/repo>\n\n${USAGE}`);
+    return 2;
+  }
+  const rootDir = options.dirs.length > 0 ? nodePath.resolve(options.dirs[0]) : globalRosterRoot();
+  const spaceId = options.space ?? options.repo.split("/")[1];
+  const target = nodePath.join(rootDir, spaceId);
+  if (existsSync(target) && options.write !== true) {
+    process.stderr.write(
+      `目标已存在：${target}\n` +
+        "不覆盖已有副本（那可能正被使用）。要重来请先删掉它，或用 --space 换个名字。\n" +
+        "确认要就地重写就加 --write（只重写本次拉到的文件）。\n",
+    );
+    return 1;
+  }
+
+  const result = await cloneSpace({
+    rootDir,
+    spaceId,
+    repo: options.repo,
+    ref: options.ref ?? "main",
+    path: options.path ?? "",
+    fetchImpl: fetch,
+  });
+
+  if (options.json) {
+    process.stdout.write(`${JSON.stringify({ plugin: pkg.name, version: pkg.version, rootDir, ...result }, null, 2)}\n`);
+  } else {
+    const where = options.path === null ? "" : `/${options.path}`;
+    process.stdout.write(
+      `空间 ${spaceId}  <-  ${options.repo}@${options.ref ?? "main"}${where}  布局 ${result.layout}  ` +
+        `写入 ${result.written.length} 个文件${result.skipped.length > 0 ? ` · 跳过 ${result.skipped.length}` : ""}\n`,
+    );
+    process.stdout.write(`  落点 ${result.dir}\n`);
+    for (const item of result.diagnostics) process.stdout.write(`${formatDiagnostic(item)}\n`);
+    if (result.written.length > 0) {
+      process.stdout.write(`  文件 ${result.written.slice(0, 8).join(" · ")}${result.written.length > 8 ? " …" : ""}\n`);
+    }
+  }
+  return result.ok ? 0 : 1;
 }

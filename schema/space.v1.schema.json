@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/dsh-agent-roster/dsh-agent-roster/main/schema/space.v1.schema.json",
+  "title": "DSH agent roster space",
+  "description": "一个装档案的目录（通常是 git 仓库）的封面：声明布局、登记档案、记录本地副本的来源。它只做声明与核对，不创建团队。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "space", "rosters"],
+  "properties": {
+    "kind": { "const": "dsh-agent-roster/space@1" },
+    "space": { "$ref": "#/$defs/id" },
+    "title": { "type": "string", "maxLength": 120 },
+    "description": { "type": "string", "maxLength": 500 },
+    "license": { "type": "string", "maxLength": 120 },
+    "homepage": { "type": "string", "pattern": "^https?://\\S+$", "maxLength": 200 },
+    "maintainers": {
+      "type": "array",
+      "maxItems": 16,
+      "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+    },
+    "layout": { "enum": ["flat", "monorepo"] },
+    "origin": {
+      "type": "object",
+      "description": "只出现在本地拉取出来的副本上；仓库里的空间文件不该写 origin。",
+      "additionalProperties": false,
+      "required": ["repo"],
+      "properties": {
+        "repo": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*$", "maxLength": 200 },
+        "ref": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "path": { "type": "string", "maxLength": 200 }
+      }
+    },
+    "roles": {
+      "type": "array",
+      "maxItems": 200,
+      "items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$" }
+    },
+    "rosters": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id"],
+        "properties": {
+          "id": { "$ref": "#/$defs/rosterId" },
+          "title": { "type": "string", "maxLength": 120 },
+          "status": { "enum": ["active", "archived"] },
+          "origin": { "type": "string", "maxLength": 120 },
+          "note": { "type": "string", "maxLength": 300 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,63}$" },
+    "rosterId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }
+  }
+}

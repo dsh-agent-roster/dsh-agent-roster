@@ -1,0 +1,11 @@
+kind: dsh-agent-roster/space@1
+space: examples
+title: 示例档案（v2 三层）
+description: 两份从 v1 迁过来的档案，用来演示角色/组装/编译与施工图。
+license: MIT
+maintainers:
+  - STofone
+layout: monorepo
+rosters:
+  - id: core-review
+  - id: research

@@ -183,13 +183,14 @@ notes: 建队前先确认成员会话可用。
 
 兄弟文件有自己的 JSON Schema：[`schema/capabilities.v1.schema.json`](./schema/capabilities.v1.schema.json)，由 `test/capabilities.test.js` 钉住与 `lib/capabilities.js` 一致。
 
-## 档案库组织（`organization.yaml`）
+## 档案空间（`space.yaml`）
 
 档案回答的是**成员是谁**，回答不了**哪几份档案属于同一套、哪份是生产、哪份已退役**。一座库放二十份来自不同来源的档案时，目录列表就不再是索引。库**根目录**上一个可选文件只声明这件事：
 
 ```yaml
-kind: dsh-agent-roster-organization/v1
-organization: agent-roster-collective   # 必须等于目录名
+kind: dsh-agent-roster/space@1
+space: agent-roster-collective   # 必须等于目录名
+layout: monorepo                 # flat = <id>/roster.yaml；monorepo = roles/ + rosters/ + dist/
 title: 团队档案合集
 maintainers: [STofone]
 rosters:
@@ -203,13 +204,26 @@ rosters:
 
 | 情况 | 代码 | 严重度 | 理由 |
 |---|---|---|---|
-| 声明了，目录不在 | `organization-roster-missing` | **error** | 组织页在撒谎，比没有组织页更糟 |
-| 目录在，没登记 | `organization-roster-undeclared` | warn | 有人绕过索引加了档案，但它仍会被加载 |
-| 声明 `archived`，目录还在 | `organization-roster-archived` | info | 归档是声明，不是删除 |
+| 声明了，目录不在 | `space-roster-missing` | **error** | 组织页在撒谎，比没有组织页更糟 |
+| 目录在，没登记 | `space-roster-undeclared` | warn | 有人绕过索引加了档案，但它仍会被加载 |
+| 声明 `archived`，目录还在 | `space-roster-archived` | info | 归档是声明，不是删除 |
 
-`organization` 必须等于目录名，和 `roster` 同一条规则：位置即身份，一座库两个 id 会让所有诊断都变得没法定位。未知键一律拒收——没人核得了的字段，只是换一种方式发绿。
+`space` 必须等于目录名，和 `roster` 同一条规则：位置即身份，一座库两个 id 会让所有诊断都变得没法定位。未知键一律拒收——没人核得了的字段，只是换一种方式发绿。
 
-这份文件什么都不创建：不写 `team.json`、不建成员，也永远不会进入 `agent_teams_add_member` 参数。它的 JSON Schema 在 [`schema/organization.v1.schema.json`](./schema/organization.v1.schema.json)，由 `test/organization.test.js` 钉住与 `lib/organization.js` 一致。
+这份文件什么都不创建：不写 `team.json`、不建成员，也永远不会进入 `agent_teams_add_member` 参数。
+
+**它同时固定了布局。** `layout: flat` 是 `<id>/roster.yaml`（v1 时代的一仓多档案）；`layout: monorepo` 是 `roles/<role>/AGENT.md` + `rosters/<id>/roster.yaml` + `dist/`。布局进了格式，编辑器才知道该改哪个文件——不再是"拉下来摊平、改的和源文件没关系"。
+
+**本地副本靠 `origin` 认祖归宗。** 从远端拉下来的空间会在 `space.yaml` 里多一段 `origin: {repo, ref, path}`，其余字段原样保留；仓库里的空间文件**不许**写 `origin`（源就是这个仓库本身，再写一遍就是第二真源），校验器会拒收。
+
+拉一整座空间、并且保留原布局（拉完就能改，改的就是源仓库里那个文件）：
+
+```bash
+dsh-agent-roster clone --repo dsh-agent-roster/agent-teams --space agent-teams
+```
+
+面板「档案库」里每组来源都有一个「拉取整个空间」按钮，等价于这条命令；单份档案的「拉取」仍然只摊平那一份（适合"我只要这一份、不打算往回改"）。
+它的 JSON Schema 在 [`schema/space.v1.schema.json`](./schema/space.v1.schema.json)，由 `test/space.test.js` 钉住与 `lib/space.js` 一致。
 
 **仓内带了一个可跑的示例**：[`orgs/agent-roster-collective/`](./orgs/agent-roster-collective/) 里有 21 份档案（63 名成员），覆盖接口评审、事故响应、数据质量、数据库迁移、本地化、安全审计、性能、前端、文档、发布、客服分诊、招聘、市场研究、财务对账、合同审阅、内容运营、回归测试、模型评测、SRE 值守、文献综述与产品发现。每份都是"队长 + 两名专家"的三人组，全部为本项目自撰（未复制任何上游文本）。校验方式：
 
@@ -487,7 +501,7 @@ test/             单测
 
 本机已验证：
 
-- `npm test` —— 308/308 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐、v1→v2 迁移、执行回执并入施工图）。
+- `npm test` —— 313/313 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐、v1→v2 迁移、执行回执并入施工图）。
 - `npm run smoke` —— 用真实 DSH bundle 的 `defineTool` 注册六个工具，逐个调用：输出全部通过无损校验、`path` 覆盖生效、释放干净；同一条命令随后用桩模块表加载 `client.js`，断言三处槽位注册、样式只注入一次、effect 可回收。
 - CLI：`validate --dir examples` 对两座示例库退出码 0。
 - 用插件管理器真的装进了本机 profile（`plugin_manager install_bundle` 指向本仓库 → `link:` 依赖 + bundle 条目），重启后按链接读取本仓库文件。

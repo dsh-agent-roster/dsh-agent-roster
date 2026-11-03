@@ -209,7 +209,7 @@ gates:
 | 层 | 文件 | 回答的问题 |
 |---|---|---|
 | 能力 | `capabilities.yaml` | 这份档案要求部署提供什么（有证据源） |
-| 组织 | `organization.yaml` | 这座库收了哪些档案、哪些已归档 |
+| 空间 | `space.yaml` | 这座库收了哪些档案、什么布局（flat / monorepo）、本地副本从哪来 |
 | 角色/组装 | `AGENT.md` + `roster.yaml` | 谁是谁、怎么拼、编排放哪 |
 
 三者正交：`requires` 说"必须有"，`capabilities.yaml` 说"这份组装必须有"，`organization.yaml` 说"这座库有哪些"。

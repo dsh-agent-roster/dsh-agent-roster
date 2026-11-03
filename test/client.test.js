@@ -259,3 +259,16 @@ test("档案库：独立的页签，支持搜索、标签筛选、按来源聚�
     assert.ok(css.includes(rule), `缺少规则 ${rule}`);
   }
 });
+test("空间：档案库能整空间拉取，并标出本机已有的档案", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  assert.match(source, /INSTALL_SPACE_ROUTE = "\/plugins\/dsh-agent-roster\/install-space"/);
+  assert.match(source, /function CatalogTab\(\{ onOpen, onPull, onPullSpace \}\)/);
+  assert.match(source, /t\("catalog\.pullSpace"\)/);
+  assert.match(source, /t\("catalog\.installed"\)/);
+  const zh = JSON.parse(readFileSync(new URL("../locale/zh.json", import.meta.url), "utf8"));
+  const en = JSON.parse(readFileSync(new URL("../locale/en.json", import.meta.url), "utf8"));
+  for (const key of ["installed", "pullSpace", "pulledSpace"]) {
+    assert.equal(typeof zh.catalog[key], "string", key);
+    assert.equal(typeof en.catalog[key], "string", key);
+  }
+});

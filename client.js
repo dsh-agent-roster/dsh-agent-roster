@@ -32,6 +32,7 @@ window.__ModuleLoader__.load({
     const DOCUMENT_ROUTE = "/plugins/dsh-agent-roster/document";
     const ROSTERS_ROUTE = "/plugins/dsh-agent-roster/rosters";
     const INSTALL_ROUTE = "/plugins/dsh-agent-roster/install";
+    const INSTALL_SPACE_ROUTE = "/plugins/dsh-agent-roster/install-space";
     const COLLECTION_ROUTE = "/plugins/dsh-agent-roster/collection";
     const APPLY_ROUTE = "/plugins/dsh-agent-roster/apply";
     const SEARCH_ROUTE = "/plugins/dsh-agent-roster/search";
@@ -1285,7 +1286,7 @@ window.__ModuleLoader__.load({
      * 查询走后端排序（`/search`）：前端再写一套打分，两处迟早给出不同顺序。
      * 标签筛选是「且」，与档案页签的标签池同一语义。
      */
-    function CatalogTab({ onOpen, onPull }) {
+    function CatalogTab({ onOpen, onPull, onPullSpace }) {
       useTranslation();
       const [mode, setMode] = useState("source");
       const [query, setQuery] = useState("");
@@ -1346,6 +1347,13 @@ window.__ModuleLoader__.load({
           for (const tag of entry.tags ?? []) counts.set(tag, (counts.get(tag) ?? 0) + 1);
         }
         return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+      }, [catalog.entries]);
+
+      // 哪些远端档案本机已经有了：按 id 对齐（同一个空间里 id 唯一）。
+      const installed = useMemo(() => {
+        const set = new Set();
+        for (const entry of catalog.entries) if (entry.scope === "local") set.add(entry.rosterId);
+        return set;
       }, [catalog.entries]);
 
       const entries = hits !== null && hits.status === "ready" ? hits.matches : catalog.entries;
@@ -1410,6 +1418,9 @@ window.__ModuleLoader__.load({
               "div",
               { className: "rstr-row-stats" },
               h("span", { className: "rstr-stat" }, t("catalog.members", { count: String(entry.members ?? 0) })),
+              entry.scope === "remote" && installed.has(entry.rosterId)
+                ? h(Badge, { tone: "ok" }, t("catalog.installed"))
+                : null,
               h(
                 "span",
                 { className: "rstr-stat" },
@@ -1546,6 +1557,26 @@ window.__ModuleLoader__.load({
                       { className: "rstr-group-head" },
                       h("span", { className: "rstr-group-title" }, group.title),
                       h("span", { className: "rstr-group-count" }, String(group.entries.length)),
+                      group.scope === "remote" && typeof onPullSpace === "function"
+                        ? h(
+                            "button",
+                            {
+                              type: "button",
+                              className: "rstr-btn rstr-btn-sm rstr-btn-ghost",
+                              disabled: pulling === `space:${group.key}`,
+                              onClick: async () => {
+                                setPulling(`space:${group.key}`);
+                                try {
+                                  await onPullSpace(group.key.slice(2));
+                                  setNonce((value) => value + 1);
+                                } finally {
+                                  setPulling("");
+                                }
+                              },
+                            },
+                            t("catalog.pullSpace"),
+                          )
+                        : null,
                     ),
                 group.entries.map(row),
               ),
@@ -1654,7 +1685,7 @@ window.__ModuleLoader__.load({
         }
       }
 
-      const organization = (snapshot?.workspaces ?? []).map((workspace) => workspace.organization).find((item) => item && item.id)?.id ?? "";
+      const space = (snapshot?.workspaces ?? []).map((workspace) => workspace.space).find((item) => item && item.id)?.id ?? "";
 
       const header = h(
         "header",
@@ -1670,7 +1701,7 @@ window.__ModuleLoader__.load({
             h("span", null, h("b", null, String(snapshot?.summary?.rosters ?? 0)), " ", t("panel.metaRosters")),
             h("span", null, h("b", null, String(snapshot?.summary?.members ?? 0)), " ", t("panel.metaMembers")),
             h("span", null, h("b", null, String(snapshot?.summary?.teams ?? 0)), " ", t("panel.metaTeams")),
-            organization === "" ? null : h("span", null, t("panel.metaOrganization", { name: organization })),
+            space === "" ? null : h("span", null, t("panel.metaSpace", { name: space })),
           ),
         ),
         h(
@@ -1759,6 +1790,28 @@ window.__ModuleLoader__.load({
                 written: result.body.written ?? 0,
                 unchanged: result.body.unchanged ?? 0,
                 conflicts: result.body.conflicts ?? 0,
+              });
+              setToast(summary);
+              library.reload();
+            } catch {
+              setToast(t("misc.failed"));
+            }
+          },
+          onPullSpace: async (collectionId) => {
+            try {
+              const result = await readJson(INSTALL_SPACE_ROUTE, {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ collection: collectionId }),
+              });
+              if (!result.ok || result.body === null) {
+                setToast(`${t("misc.failed")} (${String(result.status)})`);
+                return;
+              }
+              const body = result.body;
+              const summary = t("catalog.pulledSpace", {
+                files: String((body.written ?? []).length),
+                skipped: String((body.skipped ?? []).length),
               });
               setToast(summary);
               library.reload();

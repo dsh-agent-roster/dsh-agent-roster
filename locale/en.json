@@ -64,7 +64,7 @@
     "metaRosters": "rosters",
     "metaMembers": "members",
     "metaTeams": "teams",
-    "metaOrganization": "Organization {name}",
+    "metaSpace": "Space {name}",
     "tabsCatalog": "Library"
   },
   "roster": {
@@ -317,6 +317,9 @@
     "mode": "Layout",
     "modeSource": "By source",
     "modeFlat": "Flat",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "installed": "Installed",
+    "pullSpace": "Pull whole space",
+    "pulledSpace": "Space pulled: {files} files written, {skipped} skipped"
   }
 }

@@ -1,0 +1,10 @@
+kind: dsh-agent-roster/space@1
+space: examples-orchestration
+title: 编排示例
+description: 一份手写的 v2 档案：阶段、质量门与可执行判据都在这里。
+license: MIT
+maintainers:
+  - STofone
+layout: monorepo
+rosters:
+  - id: core-review

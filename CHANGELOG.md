@@ -4,6 +4,45 @@
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-03
+
+### A space is the thing a repository holds
+
+Until now a pulled roster was a flattened copy: whatever the source repository looked like, it arrived as
+`<id>/roster.yaml` and the editor had no idea which file upstream it corresponded to. That is fine for "I
+only need this one", and wrong for every monorepo — which is what this project's own libraries have been
+since 0.10.0.
+
+`space.yaml` (`kind: dsh-agent-roster/space@1`) is the level that was missing. It declares what a
+directory in a repository *is*: which rosters it holds, whether the layout is `flat` (`<id>/roster.yaml`)
+or `monorepo` (`roles/` + `rosters/` + `dist/`), and — only on local copies — where it came from
+(`origin: {repo, ref, path}`). Layout is now part of the format instead of something the puller guesses.
+Clone a space and the local tree is the repository's tree: edit `rosters/<id>/roster.yaml` and you are
+editing the file upstream.
+
+### Changed (breaking)
+
+- `organization.yaml` is replaced by `space.yaml`. The old file, its `kind`
+  (`dsh-agent-roster-organization/v1`), its schema and its diagnostics codes (`organization-*`) are gone;
+  the equivalents are `space.yaml`, `dsh-agent-roster/space@1` and `space-*`. Migration: rename the file,
+  change `kind`, rename the `organization:` key to `space:`, and add `layout: flat|monorepo`.
+- A space file inside a repository may not declare `origin`; the validator rejects it. `origin` describes
+  a local copy, and a repository claiming a source is a second copy of the truth.
+
+### Added
+
+- `lib/space.js` + `schema/space.v1.schema.json`: declaration, cross-check (missing = error, undeclared =
+  warn, archived = info) and strict validation, with `layout` and `origin`.
+- `lib/clone.js` and `dsh-agent-roster clone --repo <owner/repo> [--path] [--ref] [--space]`: pull a whole
+  space with its layout intact — rosters, the roles they reference, and each role's `parts/`. The written
+  `space.yaml` is the source's cover plus `origin`.
+- `POST /plugins/dsh-agent-roster/install-space` and a "Pull whole space" button on every source group in
+  the Library tab; pulled files land in `<library>/<space>/` with the repository's paths.
+- The Library tab marks rosters that are already installed locally, so "everything is pulled" and "what
+  do I actually have" stop looking the same.
+- `examples/`, `examples-orchestration/` and `orgs/agent-roster-collective/` each ship a `space.yaml`.
+
+
 ## [0.13.1] - 2026-11-03
 
 ### The local rosters are the front page
@@ -628,6 +667,7 @@ point is now one search field above the tabs.
 
 [Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.12.0...main
 [0.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.13.0...v0.13.1
+[1.0.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.13.1...v1.0.0
 [0.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.11.0...v0.11.1

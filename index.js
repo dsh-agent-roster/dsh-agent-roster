@@ -24,7 +24,7 @@ import { ROSTER2_KIND } from "./lib/format-v2.js";
 import { validateRoster } from "./lib/validate.js";
 import { validateRoster2 } from "./lib/roster2.js";
 import { sendError, sendJson, createAuthGate, readJsonBody, requireMethod } from "./lib/http.js";
-import { buildPanelSnapshot, installCollection, loadRemotePanel, resolveRoots } from "./lib/service.js";
+import { buildPanelSnapshot, installCollection, installSpace, loadRemotePanel, resolveRoots } from "./lib/service.js";
 import { createTtlCache, fetchCollection } from "./lib/remote.js";
 import { searchRosters } from "./lib/search.js";
 import { registerRosterTools } from "./lib/tools.js";
@@ -380,6 +380,35 @@ export function apply(ctx, config) {
         sendJson(res, 200, result);
       },
       "install route",
+    );
+
+    register(
+      "/plugins/dsh-agent-roster/install-space",
+      async (req, res) => {
+        if (guard(req, res)) return;
+        if (!requireMethod(req, res, "POST")) return;
+        const body = await readJsonBody(req);
+        if (!body.ok) {
+          sendError(res, body.status, body.code);
+          return;
+        }
+        const input = body.value !== null && typeof body.value === "object" ? body.value : {};
+        if (typeof input.collection !== "string" || input.collection === "") {
+          sendError(res, 400, "missing-collection");
+          return;
+        }
+        const result = await installSpace(settings, {
+          collectionId: input.collection,
+          source: typeof input.source === "string" && input.source !== "" ? input.source : undefined,
+          spaceId: typeof input.space === "string" && input.space !== "" ? input.space : undefined,
+        });
+        if (result.code === "collection-not-found") {
+          sendJson(res, 404, { ok: false, error: { code: result.code }, known: result.known ?? [], diagnostics: result.diagnostics ?? [] });
+          return;
+        }
+        sendJson(res, 200, result);
+      },
+      "install-space route",
     );
 
     register(

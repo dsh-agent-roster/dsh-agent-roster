@@ -1,0 +1,30 @@
+kind: dsh-agent-roster/space@1
+space: agent-roster-collective
+title: 团队档案合集
+description: 二十一份自撰档案，覆盖常见的工程与运营职能。
+license: MIT
+maintainers:
+  - STofone
+layout: monorepo
+rosters:
+  - id: api-design
+  - id: content-ops
+  - id: contract-review
+  - id: data-quality
+  - id: db-migration
+  - id: docs-writer
+  - id: finance-recon
+  - id: frontend-ui
+  - id: i18n-l10n
+  - id: incident-response
+  - id: literature-review
+  - id: market-research
+  - id: ml-eval
+  - id: performance
+  - id: product-discovery
+  - id: qa-regression
+  - id: recruiting
+  - id: release-manager
+  - id: security-audit
+  - id: sre-oncall
+  - id: support-triage
