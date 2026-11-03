@@ -4,6 +4,49 @@
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-04
+
+### A persona can place a block, not only append one
+
+`prompt.parts` could only stack fragments after the body, in the order the frontmatter listed them. That
+made "the checklist for this step" impossible to put next to the step, and it made a fragment shared by
+three roles a three-way copy: `safeResolve` pins parts inside the role directory.
+
+The body can now reference a file where it belongs:
+
+```md
+## Before you ship
+{{> parts/self-check.md}}
+
+## Units
+{{> snippets/units.md}}
+```
+
+`parts/…` resolves against the role directory, `snippets/…` against the library root, so one file can be
+shared by every role and edited once. Expansion is a single level and the included text is literal: a
+reference inside an included file is an error (`include-nested`), never silently expanded and never shipped
+as a raw directive.
+
+The contract is deliberately small — no conditions, loops or variables. `executionPrompt` has to stay a
+deterministic function of the files on disk; otherwise `promptStats.sha256` stops meaning anything and
+"what did this member actually receive" becomes a runtime guess.
+
+- Errors carry `AGENT.md:line` (body lines are offset by the frontmatter, so the number matches the editor):
+  `include-syntax`, `missing-include`, `unreadable-include`, `unsafe-include`, `include-nested`,
+  `library-root-unknown`, `include-too-long`.
+- Budget applies to the expanded text: 32 references, 6000 characters per included file, and the 12000
+  `promptChars` ceiling is checked after expansion.
+- `promptStats.parts` gains `{ path, kind: "include", line, sha256 }`, so the compiled artifact points at
+  the exact line the compiler read.
+- `prompt.parts` is unchanged and can be mixed with references; it still rejects duplicates, while a
+  repeated reference expands twice because position is meaning.
+- `lib/paths.js` now owns `isSafeRelative` / `safeResolve` (role fragments, includes, captain personas and
+  examples all use one guard); `lib/includes.js` owns parsing and expansion.
+- `clone` carries the referenced `snippets/` as well, so a space pulled from a remote repository compiles
+  locally without hand-copying shared text.
+- `examples/` demonstrates it: `snippets/report-shape.md` is referenced from the review lead, and the
+  shipped `dist/` is rebuilt.
+
 ## [1.3.0] - 2026-11-03
 
 ### Favourites instead of fifteen pull buttons
@@ -728,7 +771,8 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.3.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.4.0...main
+[1.4.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.1.0...v1.2.0
 [0.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.13.0...v0.13.1

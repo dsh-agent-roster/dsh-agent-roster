@@ -222,7 +222,7 @@ rosters:
 dsh-agent-roster clone --repo dsh-agent-roster/agent-teams --space agent-teams
 ```
 
-面板「档案库」里每组来源都有一个「拉取整个空间」按钮，等价于这条命令；单份档案的「拉取」仍然只摊平那一份（适合"我只要这一份、不打算往回改"）。
+面板「档案库」里每组来源都有一个「拉取整个空间」按钮，等价于这条命令。拉取只发生在空间这一级：`rosters/`、被引用的 `roles/`（连同 `parts/`）、以及这些角色用 `{{> snippets/…}}` 引到的共享片段都会带下来，`dist/` 不拉（编译产物在本地重新生成）。单份档案用星标收藏，不会被摊成一份脱离空间的孤本。
 它的 JSON Schema 在 [`schema/space.v1.schema.json`](./schema/space.v1.schema.json)，由 `test/space.test.js` 钉住与 `lib/space.js` 一致。
 
 **仓内带了一个可跑的示例**：[`orgs/agent-roster-collective/`](./orgs/agent-roster-collective/) 里有 21 份档案（63 名成员），覆盖接口评审、事故响应、数据质量、数据库迁移、本地化、安全审计、性能、前端、文档、发布、客服分诊、招聘、市场研究、财务对账、合同审阅、内容运营、回归测试、模型评测、SRE 值守、文献综述与产品发现。每份都是"队长 + 两名专家"的三人组，全部为本项目自撰（未复制任何上游文本）。校验方式：
@@ -237,6 +237,7 @@ v1 把一切都塞进一份 `roster.yaml`：人设住在 YAML 块标量里，拼
 
 ```text
 roles/<任意目录>/AGENT.md     角色：frontmatter 是参数，正文是人设，parts/ 可选
+snippets/<名字>.md            共享文字：任何角色都可以用 {{> snippets/<名字>.md}} 引用
 rosters/<id>/roster.yaml      组装：成员是引用，队长独立成段
 dist/<id>-<ver>.json          编译产物：自包含、可哈希，消费者只看它
 ```
@@ -246,10 +247,34 @@ dist/<id>-<ver>.json          编译产物：自包含、可哈希，消费者�
 拼装写进格式，而不是藏在代码里：
 
 ```text
-executionPrompt = join("\n\n", [body, ...parts, ...member.append])
+executionPrompt = join("\n\n", [展开 {{> …}} 后的正文, ...parts, ...member.append])
 ```
 
 `lib/frontmatter.js` 的 `assemblePrompt()` 是唯一实现；编译产物为每份人设记录字符数、块清单与 SHA-256，所以「这名成员到底拿到了哪段文字」不必回头读源文件就能回答。
+
+### 正文里的引用
+
+人设可以把一段文字放在它该在的位置，而不是只能接在末尾：
+
+```md
+## 交付前
+{{> parts/self-check.md}}
+
+## 口径
+{{> snippets/units.md}}
+```
+
+- 引用必须**独占一行**；写在句子中间的 `{{>` 是 `include-syntax`——半截引用是缺陷，不是散文。
+- `snippets/…` 相对**库根**解析（跨角色共享），其余相对**角色目录**；两者都走 `parts` 的同一条路径守卫：`..`、绝对路径、符号链接逃逸一律 `unsafe-include`。
+- **只展开一层**：被引文件按字面拼入；里面再写引用是 `include-nested`，既不静默展开，也不把原始指令发出去。
+- 预算按**展开后**的文本算：最多 32 处引用、单个被引文件 6000 字符，`promptChars` 的 12000 上限在展开之后生效。
+- `missing-include`、`unreadable-include`、`library-root-unknown`、`include-too-long` 都是 error，并带 `AGENT.md:行号`——修一处是跳转，不是搜索。
+- 同一个文件引两次就展开两次（位置即语义）。`prompt.parts` 仍然拒绝重复，因为尾部重复的片段几乎总是手误。
+- `promptStats.parts` 把每处引用记成 `{ path, kind: "include", line, sha256 }`，面板和核对工具指到的正是编译器读过的那一行。
+
+`snippets/` 只属于 v2 档案库（有 `roles/` 与 `rosters/` 的那一层）；v1 的扁平库没有可解析的库根。
+
+刻意不做条件、循环、变量：`executionPrompt` 必须是「磁盘上文件的确定性函数」，否则 `promptStats.sha256` 就不再有意义，「这名成员到底收到了什么」只能靠运行时猜。
 
 门必须能被跑，而不是自己给自己盖章：每个门至少带一条 `verify`（`command` + `expectExit`），没有判据的门在校验阶段就被拒（`gate-unverifiable`）。`requires` 保留，但只是给读结论的人看的说明。
 
@@ -478,6 +503,7 @@ node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
 - 安全：`reserved-character`（`^`、`$`、`|`、花括号）、`forbidden-content`（提示注入特征）、`single-line-required`
 - 上限：`string-too-long`、`too-many-members`、`too-many-values`
 - 档案库级：`library-missing`、`library-unusable`、`missing-roster-file`、`multiple-roster-files`、`unexpected-file`、`unreadable-file`、`unreadable-dir`、`duplicate-roster-id`、`tool-policy-cross-check-skipped`
+- 正文引用：`include-syntax`、`missing-include`、`unreadable-include`、`unsafe-include`、`include-nested`、`library-root-unknown`、`include-too-long`（都带 `AGENT.md:行号`）
 - 远端源：`index-unreachable`、`index-invalid`、`index-refresh-throttled`、`index-source-invalid`、`collection-fetch-failed`、`collection-not-found`、`index-may-be-stale`（没有 `files` 映射却回退到 v1 路径并失败——索引多半比档案库旧）、`collection-roster-needs-roles`（条目指向 v2 组装，而组装不能以单文件旅行）
 
 空档案库不是错误；目录不存在只算 info。`tool-policy-cross-check-skipped` **每座档案库只发一条**（不是每份档案一条）——没配 `knownToolPolicies` 是一件库级的事，按档案重复只会把一个事实放大成 n 行噪音。
@@ -490,7 +516,7 @@ node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
 
 ```bash
 npm install
-npm test          # node --test，191 个用例
+npm test          # node --test，337 个用例
 npm run smoke     # 用真实 DSH bundle 注册工具，断言输出可无损往返
 node scripts/check-locale.mjs   # client.js 里的静态 t() 键必须两本词典都有
 ```
@@ -518,7 +544,7 @@ test/             单测
 
 本机已验证：
 
-- `npm test` —— 325/325 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、收藏（存储、快照接线、路由、面板筛选）、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐、v1→v2 迁移、执行回执并入施工图）。
+- `npm test` —— 337/337 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、收藏（存储、快照接线、路由、面板筛选）、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐、v1→v2 迁移、正文引用（独占一行、只一层、两种根、预算与行号）、执行回执并入施工图）。
 - `npm run smoke` —— 用真实 DSH bundle 的 `defineTool` 注册六个工具，逐个调用：输出全部通过无损校验、`path` 覆盖生效、释放干净；同一条命令随后用桩模块表加载 `client.js`，断言三处槽位注册、样式只注入一次、effect 可回收。
 - CLI：`validate --dir examples` 对两座示例库退出码 0。
 - 用插件管理器真的装进了本机 profile（`plugin_manager install_bundle` 指向本仓库 → `link:` 依赖 + bundle 条目），重启后按链接读取本仓库文件。

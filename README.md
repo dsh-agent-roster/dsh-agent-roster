@@ -214,7 +214,17 @@ The declaration is mechanically checked against disk, and the three outcomes are
 
 `space` must equal the directory name, exactly like `roster` does: position is identity, and two ids for one library would make every diagnostic ambiguous. Unknown keys are rejected — a field nobody can check is another way to look green.
 
-This file creates nothing. It does not write `team.json`, does not create members, and never reaches `agent_teams_add_member`. Its JSON Schema is [`schema/space.v1.schema.json`](./schema/space.v1.schema.json), kept aligned with `lib/organization.js` by `test/space.test.js`.
+This file creates nothing. It does not write `team.json`, does not create members, and never reaches `agent_teams_add_member`. Its JSON Schema is [`schema/space.v1.schema.json`](./schema/space.v1.schema.json), kept aligned with `lib/space.js` by `test/space.test.js`.
+
+Pulling a whole space keeps the layout, so editing the local copy edits the same file the repository holds:
+
+```bash
+dsh-agent-roster clone --repo dsh-agent-roster/agent-teams --space agent-teams
+```
+
+`clone` brings `rosters/`, the referenced `roles/` (with their `parts/`), and the `snippets/` those roles
+reference; `dist/` is deliberately left out because it is a build product. The panel's one button on a space
+head is the same command.
 
 **A worked example ships in this repository:** [`orgs/agent-roster-collective/`](./orgs/agent-roster-collective/) holds 21 rosters (63 members) covering API review, incident response, data quality, database migration, localization, security audit, performance, frontend, docs, release, support triage, recruiting, market research, finance reconciliation, contract review, content ops, regression testing, model evaluation, SRE on-call, literature review and product discovery. Every roster is a three-person team with a captain, and each was written for this repository (no upstream text is copied). Validate it with:
 
@@ -228,6 +238,7 @@ v1 keeps everything in one `roster.yaml`: the persona sits in a YAML block scala
 
 ```text
 roles/<any-dir>/AGENT.md     role: frontmatter is parameters, body is the persona, parts/ optional
+snippets/<name>.md           shared text any role can pull in with {{> snippets/<name>.md}}
 rosters/<id>/roster.yaml     assembly: members are references, the captain has its own section
 dist/<id>-<ver>.json         compiled: self-contained, hashable, the only thing consumers read
 ```
@@ -237,10 +248,35 @@ The discriminator decides the version — `dsh-agent-roster/role@1`, `dsh-agent-
 Assembly is written into the format rather than hidden in code:
 
 ```text
-executionPrompt = join("\n\n", [body, ...parts, ...member.append])
+executionPrompt = join("\n\n", [body with {{> …}} expanded, ...parts, ...member.append])
 ```
 
 `assemblePrompt()` in `lib/frontmatter.js` is the only implementation, and the compiled artifact records the character count, the block list and a SHA-256 for every prompt, so "which text did this member actually get" is answerable without re-reading the sources.
+
+### References inside a persona
+
+A persona can place a block exactly where it belongs instead of only appending it at the end:
+
+```md
+## Before you ship
+{{> parts/self-check.md}}
+
+## Units
+{{> snippets/units.md}}
+```
+
+- The directive must be a line of its own. A `{{>` anywhere else is `include-syntax`: a half-written reference is a bug, not prose.
+- `snippets/…` resolves against the library root (shared across roles); anything else resolves against the role directory. Both go through the same guard as `parts`: `..`, absolute paths and symlink escapes are `unsafe-include`.
+- One level only. An included file is literal text; a reference inside it is `include-nested`, never expanded silently and never shipped as a raw directive.
+- The budget counts the expanded text: at most 32 references, 6000 characters per included file, and the 12000 `promptChars` ceiling applies after expansion.
+- `missing-include`, `unreadable-include`, `library-root-unknown` and `include-too-long` are errors that carry `AGENT.md:line`, so fixing one is a jump rather than a search.
+- The same reference twice expands twice (position is meaning). `prompt.parts` still rejects duplicates, because a duplicated tail block is almost always a mistake.
+- `promptStats.parts` records every include as `{ path, kind: "include", line, sha256 }`, so the panel and any verifier point at the same line the compiler read.
+
+`snippets/` belongs to v2 libraries (a directory holding `roles/` and `rosters/`); a v1 flat library has no
+library root to resolve it against.
+
+There is deliberately no condition, loop or variable: `executionPrompt` has to stay a deterministic function of the files on disk, otherwise `promptStats.sha256` stops meaning anything and "what did this member actually receive" becomes a runtime guess.
 
 A gate must be runnable, not self-certified: every gate carries at least one `verify` entry (`command` + `expectExit`), and a gate without one is rejected at validation time (`gate-unverifiable`). `requires` stays, but only as prose for the human reading the verdict.
 
@@ -496,6 +532,7 @@ Validation reports errors, warnings and infos with `file`, `path` and `reason`. 
 - safety: `reserved-character` (`^`, `$`, `|`, braces), `forbidden-content` (prompt-injection patterns), `single-line-required`
 - limits: `string-too-long`, `too-many-members`, `too-many-values`
 - library level: `library-missing`, `library-unusable`, `missing-roster-file`, `multiple-roster-files`, `unexpected-file`, `unreadable-file`, `unreadable-dir`, `duplicate-roster-id`, `tool-policy-cross-check-skipped`
+- persona references: `include-syntax`, `missing-include`, `unreadable-include`, `unsafe-include`, `include-nested`, `library-root-unknown`, `include-too-long` (each carries `AGENT.md:line`)
 - remote sources: `index-unreachable`, `index-invalid`, `index-refresh-throttled`, `index-source-invalid`, `collection-fetch-failed`, `collection-not-found`, `index-may-be-stale` (a v1-path fetch failed on a collection that has no `files` map — the index is probably older than the library), `collection-roster-needs-roles` (the entry points at a v2 assembly, which cannot travel as one file)
 
 An empty library is not an error. A missing one is reported as info, not error. `tool-policy-cross-check-skipped` is emitted **once per library** (not once per roster) when no `knownToolPolicies` are configured — a per-roster warning would turn one fact into n lines of noise.
@@ -508,7 +545,7 @@ An empty library is not an error. A missing one is reported as info, not error. 
 
 ```bash
 npm install
-npm test          # node --test, 191 cases
+npm test          # node --test, 337 cases
 npm run smoke     # registers the tools against a real DSH bundle, asserts lossless output
 node scripts/check-locale.mjs   # static t() keys must exist in both dictionaries
 ```
@@ -538,7 +575,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 325/325 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, favourites (storage, snapshot wiring, route, panel filter), library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
+- `npm test` — 337/337 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, favourites (storage, snapshot wiring, route, panel filter), library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, persona references (own line, one level, both roots, budget, line numbers), run records feeding the plan, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.

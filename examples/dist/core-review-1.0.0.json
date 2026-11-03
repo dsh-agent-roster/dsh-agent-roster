@@ -43,24 +43,30 @@
       "model": "deepseek-v4.1-flash",
       "reasoningEffort": "high",
       "toolPolicy": "read-only",
-      "executionPrompt": "你负责这次审查的编排：先划定改动影响面，再把任务分给两名审查者，最后合并结论。\n只在两种情况下自己下结论：两人结论冲突且证据不足，或风险高到必须先止损。\n报告要能直接贴进 PR：结论在前，证据在后，不确定的地方明确写\"未验证\"。",
+      "executionPrompt": "你负责这次审查的编排：先划定改动影响面，再把任务分给两名审查者，最后合并结论。\n只在两种情况下自己下结论：两人结论冲突且证据不足，或风险高到必须先止损。\n报告要能直接贴进 PR。\n\n## 报告形状\n\n结论在前，证据在后；不确定的地方明确写「未验证」，不要用语气掩盖证据缺口。",
       "promptStats": {
-        "chars": 114,
+        "chars": 137,
         "parts": [
           {
             "path": "roles/core-review-lead/AGENT.md",
             "kind": "body+parts"
           },
           {
+            "path": "snippets/report-shape.md",
+            "kind": "include",
+            "line": 25,
+            "sha256": "e8bd1837a4b58d7638bb2ab3d84898abd3111bc30eadbcb760e81ea4e482db4b"
+          },
+          {
             "path": "body",
             "kind": "part"
           }
         ],
-        "sha256": "3ce50b3ace450af76ae43e37b9b26d69746a75d081ae44dc9268f38622e16d7f"
+        "sha256": "0bbd26bdf51a0abe021f4c693245ba2a7ff17f25be76d7aee6722abc2c9c5ccd"
       },
       "provenance": {
         "role": "core-review-lead@1.0.0",
-        "sha256": "5d67665b"
+        "sha256": "10522680"
       }
     },
     {

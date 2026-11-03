@@ -13,7 +13,7 @@ import { mkdtempSync, readFileSync, rmSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import nodePath from "node:path";
 
-import { cloneSpace, rolesOfRoster, spaceCover } from "../lib/clone.js";
+import { cloneSpace, rolesOfRoster, snippetPathsOf, spaceCover } from "../lib/clone.js";
 import { scanRosterLibrary } from "../lib/registry.js";
 
 const AGENT = (name, parts = []) =>
@@ -181,4 +181,40 @@ test("clone：角色引用与封面生成是纯函数，单独可测", () => {
   assert.match(cover, /kind: dsh-agent-roster\/space@1/);
   assert.match(cover, /path: sub/);
   assert.match(cover, /- id: core-review/);
+});
+
+test("clone：正文引用到的 snippets 一并拉下来，本地编译才不缺文件", async () => {
+  const rootDir = mkdtempSync(nodePath.join(tmpdir(), "dsh-clone-"));
+  try {
+    const files = {
+      "space.yaml": [
+        "kind: dsh-agent-roster/space@1",
+        "space: demo-space",
+        "layout: monorepo",
+        "rosters:",
+        "  - id: core-review",
+        "roles:",
+        "  - reviewer",
+        "",
+      ].join("\n"),
+      "rosters/core-review/roster.yaml": ROSTER.monorepo("core-review", "reviewer"),
+      "roles/reviewer/AGENT.md": `${AGENT("reviewer")}\n{{> snippets/units.md}}\n`,
+      "snippets/units.md": "金额一律用整数分。\n",
+    };
+    const result = await cloneSpace({ rootDir, spaceId: "demo-space", repo: "demo/space", fetchImpl: fetchStub(files) });
+    assert.equal(result.ok, true, JSON.stringify(result.diagnostics));
+    assert.ok(result.written.includes("snippets/units.md"));
+    assert.equal(readFileSync(nodePath.join(rootDir, "demo-space/snippets/units.md"), "utf8"), "金额一律用整数分。\n");
+
+    const scanned = scanRosterLibrary({ rootDir: nodePath.join(rootDir, "demo-space"), knownToolPolicies: null, allowOrigin: true });
+    assert.equal(scanned.diagnostics.filter((item) => item.severity === "error").length, 0, JSON.stringify(scanned.diagnostics));
+    const member = scanned.rosters[0].members[0];
+    assert.match(member.systemPrompt, /金额一律用整数分/);
+  } finally {
+    rmSync(rootDir, { recursive: true, force: true });
+  }
+});
+
+test("snippetPathsOf：只收独占一行、且属于 snippets/ 的引用", () => {
+  assert.deepEqual(snippetPathsOf("a\n{{> snippets/units.md}}\n{{> parts/x.md}}\n请读 {{> snippets/y.md}}\n"), ["snippets/units.md"]);
 });

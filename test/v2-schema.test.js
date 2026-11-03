@@ -132,7 +132,7 @@ test("compiled schema：产物必备字段与声明状态（编排不伪装成�
   );
   sameSet(
     keysOf(compiled.$defs.member.properties.promptStats.properties.parts.items.properties),
-    ["path", "kind"],
+    ["path", "kind", "line", "sha256"],
     "promptStats.parts[]",
   );
   assert.equal(

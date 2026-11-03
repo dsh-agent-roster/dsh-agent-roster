@@ -385,9 +385,18 @@
                     "enum": [
                       "prepend",
                       "body+parts",
+                      "include",
                       "part",
                       "append"
                     ]
+                  },
+                  "line": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
                   }
                 }
               }
