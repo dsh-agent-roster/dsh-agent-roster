@@ -364,6 +364,9 @@ node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
   冲突要你自己决定：要么在编辑器里合并，要么再点一次「拉取到本机」并在请求里带 `overwrite`。
 - **索引本身也有 schema**：[`schema/registry.v1.schema.json`](./schema/registry.v1.schema.json) 与运行时校验器对齐，
   拼错字段在编辑器里就会提示，不必等 CI。
+- **每份档案住在哪**：collection 的 `rosters[]` 只是 id 名单，实际位置由可选的 `files` 映射给出
+  （如 `{"core-review": "dist/core-review-1.0.0.json"}`）。不写就按 v1 布局 `<id>/roster.yaml` 猜——v2 的库必须写，
+  因为组装本身只引用角色，单独拉一个文件拉不到角色目录。`registry sync` 会替你填。
 - **登记自己的档案**：在 `index/registry.json` 的 `collections` 里加一条（`id`、`repo: github:owner/repo`、
   `ref`、`path`、`rosters[]`），提交 PR 即可；`.github/workflows/registry.yml` 会校验索引与仓库真实文件是否对得上。
 

@@ -4,6 +4,22 @@
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-11-03
+
+### Fixed
+
+- **Every v2 collection was unfetchable (HTTP 404).** The index assumed the v1 flat layout
+  (`<path>/<id>/roster.yaml`), which stopped existing the moment rosters moved to `rosters/<id>/`.
+  A collection may now pin one relative path per roster in an optional `files` map;
+  `registry sync` fills it in and points v2 rosters at the self-contained `dist/<id>-<ver>.json`
+  (an assembly alone cannot be pulled — its members are role references).
+- Pulling a compiled artifact flattens it into an inline v1 document (personas are the assembled
+  prompt, which is what would actually be sent); run `migrate` afterwards if you want the role split
+  on your machine. A bare `roster@2` is reported as `collection-roster-needs-roles` instead of being
+  fetched as if it were one file.
+- `flattenCompiledToRoster` no longer emits empty `title`/`description` strings — v1 rejects those,
+  so a flattened artifact used to fail its own validation.
+
 ## [0.10.1] - 2026-11-03
 
 ### Docs
@@ -456,7 +472,10 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.9.2...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.2...main
+[0.10.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.1...v0.10.2
+[0.10.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.10.0...v0.10.1
+[0.10.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.10.0
 [0.9.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.9.2
 [0.9.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.9.1
 [0.9.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.9.0

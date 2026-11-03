@@ -2,7 +2,7 @@
   "$schema": "../schema/registry.v1.schema.json",
   "kind": "dsh-agent-roster-registry/v1",
   "version": 1,
-  "generatedAt": "2026-11-02T17:00:43.713Z",
+  "generatedAt": "2026-11-03T05:50:01.540Z",
   "generator": "dsh-agent-roster/dsh-agent-roster (hand-maintained; verified by .github/workflows/registry.yml)",
   "source": "https://github.com/dsh-agent-roster/dsh-agent-roster",
   "collections": [
@@ -26,7 +26,11 @@
       "maintainers": [
         "STofone"
       ],
-      "homepage": "https://github.com/dsh-agent-roster/dsh-agent-roster#examples"
+      "homepage": "https://github.com/dsh-agent-roster/dsh-agent-roster#examples",
+      "files": {
+        "core-review": "dist/core-review-1.0.0.json",
+        "research": "dist/research-0.1.0.json"
+      }
     },
     {
       "id": "agent-roster-collective",
@@ -70,7 +74,30 @@
       "maintainers": [
         "STofone"
       ],
-      "homepage": "https://github.com/dsh-agent-roster/dsh-agent-roster/tree/main/orgs/agent-roster-collective"
+      "homepage": "https://github.com/dsh-agent-roster/dsh-agent-roster/tree/main/orgs/agent-roster-collective",
+      "files": {
+        "api-design": "dist/api-design-1.0.0.json",
+        "content-ops": "dist/content-ops-1.0.0.json",
+        "contract-review": "dist/contract-review-1.0.0.json",
+        "data-quality": "dist/data-quality-1.0.0.json",
+        "db-migration": "dist/db-migration-1.0.0.json",
+        "docs-writer": "dist/docs-writer-1.0.0.json",
+        "finance-recon": "dist/finance-recon-1.0.0.json",
+        "frontend-ui": "dist/frontend-ui-1.0.0.json",
+        "i18n-l10n": "dist/i18n-l10n-1.0.0.json",
+        "incident-response": "dist/incident-response-1.0.0.json",
+        "literature-review": "dist/literature-review-1.0.0.json",
+        "market-research": "dist/market-research-1.0.0.json",
+        "ml-eval": "dist/ml-eval-1.0.0.json",
+        "performance": "dist/performance-1.0.0.json",
+        "product-discovery": "dist/product-discovery-1.0.0.json",
+        "qa-regression": "dist/qa-regression-1.0.0.json",
+        "recruiting": "dist/recruiting-1.0.0.json",
+        "release-manager": "dist/release-manager-1.0.0.json",
+        "security-audit": "dist/security-audit-1.0.0.json",
+        "sre-oncall": "dist/sre-oncall-1.0.0.json",
+        "support-triage": "dist/support-triage-1.0.0.json"
+      }
     },
     {
       "id": "agent-teams",

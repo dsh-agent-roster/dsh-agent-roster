@@ -383,6 +383,10 @@ repository's `index/registry.json`, and anyone who subscribes can see them in th
 - **Pulling**: writes are idempotent and report one of `created`, `updated` (explicit overwrite), `unchanged`
   (same content, nothing written) or `conflict` (the local copy differs and is **not** overwritten by default).
   Conflicts are yours to resolve: merge in the editor, or pull again with `overwrite` in the request body.
+- **Where each roster lives**: a collection's `rosters[]` is just the list of ids; the optional
+  `files` map says where each one is (`{"core-review": "dist/core-review-1.0.0.json"}`). It is optional —
+  without it the fetcher assumes the v1 layout `<id>/roster.yaml` — but a v2 library needs it, because an
+  assembly only references roles and cannot be pulled on its own. `registry sync` writes this map for you.
 - **The index has a schema**: [`schema/registry.v1.schema.json`](./schema/registry.v1.schema.json) mirrors the
   runtime validator, so an editor flags a typo before CI does.
 - **Publishing your own**: add an entry to `collections` in `index/registry.json` (`id`, `repo: github:owner/repo`,

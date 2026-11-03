@@ -26,6 +26,7 @@ import { compileRosterAt } from "../lib/compile2.js";
 import { migrateLibrary } from "../lib/migrate.js";
 import { compilePlan } from "../lib/plan.js";
 import { mergeRunIntoPlan, validateRun } from "../lib/run.js";
+import { DIST_DIR } from "../lib/migrate.js";
 
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
@@ -440,6 +441,17 @@ async function runRegistry(options) {
       const ids = scanned.rosters.map((roster) => roster.id).sort();
       if (JSON.stringify(ids) !== JSON.stringify((entry.rosters ?? []).slice().sort())) {
         entry.rosters = ids;
+        changed = true;
+      }
+      const files = {};
+      for (const roster of scanned.rosters.slice().sort((a, b) => a.id.localeCompare(b.id))) {
+        files[roster.id] =
+          roster.format === "v2"
+            ? `${DIST_DIR}/${roster.id}-${roster.version}.json`
+            : `${roster.id}/${roster.file ?? "roster.yaml"}`;
+      }
+      if (JSON.stringify(files) !== JSON.stringify(entry.files ?? {})) {
+        entry.files = files;
         changed = true;
       }
     }

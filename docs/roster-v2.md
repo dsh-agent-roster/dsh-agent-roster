@@ -212,9 +212,14 @@ gates:
 
 三者正交：`requires` 说"必须有"，`capabilities.yaml` 说"这份组装必须有"，`organization.yaml` 说"这座库有哪些"。
 
+远端的 registry 索引也是同理：登记的 `rosters[]` 只是 id 名单，实际位置由 `files` 映射给出。
+v1 的库可以省略（回退成 `<id>/roster.yaml`）；v2 的库必须写，**指向 `dist/` 的编译产物**——
+组装文件本身只引用角色，单独拉一个 `roster.yaml` 拉不到角色目录，那不是"没实现"，是"拉下来也不完整"。
+拉到编译产物后，客户端把它摊成一份内联 v1 文档（人设就是拼装结果），要角色分层就在本地跑 `migrate`。
+
 ## 10. 未决与下一步
 
 1. **施工图 ↔ 团队真实卡 id 的映射**：`run@1` 已经能读、能合并（`compile --run` 会把上一轮失败写进重试卡），但「施工图内部 id ↔ 团队真实 task id」的映射表还没落成文件——目前靠执行者按 id 命名建卡。
-2. `dist` 的发布与 `registry` 只登记产物（现在 registry 登记的是档案路径）。
+2. `dist` 的发布流程（索引已能逐份指向 `dist/<id>-<ver>.json`，但"从 dist 反推角色版本、做跨库一致性检查"还没做）。
 3. `profile/agent-preset` 目标：把队长与成员的 preset 片段生成出来，仍然只产参不写入。
 4. 编辑器支持：三个 schema 已就位，LSP 级校验待做。
