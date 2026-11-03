@@ -2064,7 +2064,7 @@ window.__ModuleLoader__.load({
      * 文本色一律显式给出（不用 inherit），避免继承到与背景同色的文本。
      */
     const CSS = `
-.rstr-page { display: flex; flex-direction: column; gap: 16px; padding: 20px 24px 32px; width: 100%; box-sizing: border-box; color: var(--dsw-alias-label-primary); font-size: 14px; line-height: 1.55; }
+.rstr-page { display: flex; flex-direction: column; gap: 16px; padding: 20px 24px 32px; width: 100%; height: 100%; min-height: 0; box-sizing: border-box; overflow-y: auto; overflow-x: hidden; color: var(--dsw-alias-label-primary); font-size: 14px; line-height: 1.55; }
 .rstr-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .rstr-h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; color: var(--dsw-alias-label-primary); }
 .rstr-muted { color: var(--dsw-alias-label-secondary); margin: 0; }
@@ -2123,17 +2123,17 @@ window.__ModuleLoader__.load({
 .rstr-tag-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rstr-tag-count { font-size: 11px; color: var(--dsw-alias-label-secondary); font-variant-numeric: tabular-nums; }
 .rstr-tag-clear { align-self: flex-start; }
-.rstr-cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); align-items: start; }
-.rstr-card { border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; padding: 14px 16px; background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); display: flex; flex-direction: column; gap: 10px; }
+.rstr-cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr)); align-items: start; }
+.rstr-card { min-width: 0; border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; padding: 14px 16px; background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); display: flex; flex-direction: column; gap: 10px; }
 .rstr-card-bad { border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 50%, transparent); }
 .rstr-card-id { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .rstr-card-title { margin: 4px 0 2px; font-size: 15px; font-weight: 600; color: var(--dsw-alias-label-primary); }
 .rstr-card-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .rstr-card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .rstr-sources { display: flex; flex-direction: column; gap: 10px; }
-.rstr-source-detail { display: flex; flex-direction: column; gap: 6px; border-top: 1px dashed var(--dsw-alias-border-l1); padding-top: 8px; }
-.rstr-source-roster { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; }
-.rstr-source-roster > .rstr-muted { flex: 1 1 auto; }
+.rstr-source-detail { display: flex; flex-direction: column; gap: 6px; min-width: 0; max-height: 340px; overflow-y: auto; overflow-x: hidden; border-top: 1px dashed var(--dsw-alias-border-l1); padding-top: 8px; }
+.rstr-source-roster { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; font-size: 12px; }
+.rstr-source-roster > .rstr-muted { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rstr-ok { color: var(--dsw-alias-label-secondary); font-weight: 600; }
 
 .rstr-chip { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--dsw-alias-button-ghost-active-fill); color: var(--dsw-alias-label-secondary); }

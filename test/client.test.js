@@ -163,3 +163,29 @@ test("面板样式只用宿主语义 token（不写死颜色）", () => {
     assert.match(match[1], /^--dsw-alias-/, `只用语义层 token（静态色板随主题变）：${match[1]}`);
   }
 });
+
+test("长内容面板自己滚动：页面、卡片网格、展开清单三层都不能被裁", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  const css = source.match(/const CSS = `([\s\S]*?)`;/)[1];
+  /** 取一条单行 CSS 规则的声明体。 */
+  const ruleOf = (selector) => {
+    const line = css.split("\n").find((item) => item.startsWith(`${selector} {`));
+    assert.ok(line, `缺少 ${selector} 规则`);
+    return line.slice(line.indexOf("{") + 1, line.lastIndexOf("}"));
+  };
+
+  const page = ruleOf(".rstr-page");
+  assert.match(page, /height:\s*100%/, "面板根要占满高度：宿主 centerCol 是 overflow:hidden，不会替我们滚");
+  assert.match(page, /overflow-y:\s*auto/, "面板根必须自己滚动，否则下半截内容直接看不见");
+
+  const cards = ruleOf(".rstr-cards");
+  assert.match(
+    cards,
+    /minmax\(min\(380px,\s*100%\),\s*1fr\)/,
+    "卡片最小宽度要夹在容器宽度内，否则侧栏这种窄面板里卡片会被横向裁掉",
+  );
+
+  const detail = ruleOf(".rstr-source-detail");
+  assert.match(detail, /overflow-y:\s*auto/, "展开后的档案清单必须可滚，否则集合一大就显示不全");
+  assert.match(detail, /max-height:\s*\d+px/, "展开清单要有高度上限，靠自身滚动，而不是把卡片拉长到天际");
+});

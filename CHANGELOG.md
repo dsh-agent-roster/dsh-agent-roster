@@ -4,6 +4,22 @@
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-11-03
+
+### The panel no longer cuts long content
+
+- **The page owns its own scroll.** A global panel is mounted inside the centre column, which is
+  `overflow: hidden`; a page that never asks for scroll silently clips everything below the fold —
+  that is why the sources tab looked half-rendered as soon as a collection was expanded. `.rstr-page`
+  now sets `height: 100%; min-height: 0; overflow-y: auto; overflow-x: hidden`.
+- **Card grids no longer overflow narrow panels.** `repeat(auto-fill, minmax(380px, 1fr))` became
+  `repeat(auto-fill, minmax(min(380px, 100%), 1fr))`, so a narrow column stops clipping cards on the
+  right edge.
+- **The expanded roster list scrolls inside its card** (`max-height: 340px`) instead of stretching
+  the card without bound, and long roster titles ellipsize instead of pushing the badges out.
+- Three regression assertions pin the three layers (page / grid / expanded list) in
+  `test/client.test.js`, so a later style refactor cannot quietly bring the clipping back.
+
 ## [0.8.2] - 2026-11-03
 
 ### The whole family lives under one organization
@@ -324,7 +340,8 @@
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.8.2...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v0.8.3...main
+[0.8.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.8.3
 [0.8.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.8.2
 [0.8.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.8.1
 [0.8.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v0.8.0
