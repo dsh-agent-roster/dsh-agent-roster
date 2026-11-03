@@ -33,6 +33,11 @@ orchestration:
       after: [audit]
       by: reviewer
       requires: [现有测试全部通过, 没有新增未覆盖的分支]
+      verify:
+        - command: node --test
+          expectExit: 0
+        - command: node bin/cli.mjs validate --dir examples
+          expectExit: 0
 requires:
   toolPolicies: [member-safe]
 onMissing: refuse

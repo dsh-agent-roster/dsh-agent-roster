@@ -22,6 +22,7 @@ import { renderRosterList } from "../lib/render.js";
 import { REGISTRY_KIND } from "../lib/format.js";
 import { fetchCollection, readRegistryFile } from "../lib/remote.js";
 import { compileRosterAt } from "../lib/compile2.js";
+import { compilePlan } from "../lib/plan.js";
 
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
@@ -248,7 +249,10 @@ async function runCompile(options) {
     source: { repo: ownRepo(), ref: "main" },
   });
 
-  const diagnostics = result.diagnostics ?? [];
+  const diagnostics = [...(result.diagnostics ?? [])];
+  const planResult = result.compiled === null ? { plan: null, diagnostics: [] } : compilePlan(result.compiled);
+  const plan = planResult.plan;
+  diagnostics.push(...planResult.diagnostics);
   const errors = diagnostics.filter((item) => item.severity === "error");
 
   if (options.json) {
@@ -261,6 +265,7 @@ async function runCompile(options) {
           rosterDir,
           ok: result.ok,
           compiled: result.compiled,
+          plan: plan === null ? null : planResult.plan,
           diagnostics,
         },
         null,
@@ -291,6 +296,14 @@ async function runCompile(options) {
         `gates ${compiled.orchestration.gates.length}  status ${compiled.orchestration.status}\n`,
     );
   }
+  if (plan !== null) {
+    const gates = plan.tasks.filter((task) => task.kind === "gate").length;
+    const loop = plan.loop.onGateFailure;
+    process.stdout.write(
+      `  施工图 ${plan.tasks.length} 张卡  门 ${gates}  executor ${plan.executor}  ` +
+        `重试回到 ${loop.retry ?? "-"}（最多 ${loop.maxRounds} 轮）\n`,
+    );
+  }
   for (const member of compiled.members) {
     process.stdout.write(
       `  ${member.name.padEnd(24)} ${member.role.padEnd(24)} ${String(member.promptStats.chars).padStart(5)} 字符  ` +
@@ -305,6 +318,11 @@ async function runCompile(options) {
     const outFile = nodePath.join(outDir, `${compiled.source.roster}-${compiled.source.version}.json`);
     writeFileSync(outFile, `${JSON.stringify(compiled, null, 2)}\n`);
     process.stdout.write(`  已写出 ${nodePath.relative(process.cwd(), outFile) || outFile}\n`);
+    if (plan !== null) {
+      const planFile = nodePath.join(outDir, `${compiled.source.roster}-${compiled.source.version}.tasks.json`);
+      writeFileSync(planFile, `${JSON.stringify(plan, null, 2)}\n`);
+      process.stdout.write(`  已写出 ${nodePath.relative(process.cwd(), planFile) || planFile}\n`);
+    }
   }
 
   return 0;

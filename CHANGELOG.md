@@ -24,6 +24,13 @@
 - **Schema alignment tests**: `test/v2-schema.test.js` pins field sets, enums, limits and regexes to
   `lib/format-v2.js`, and `test/examples-v2.test.js` compiles `examples-v2/` and fails if `dist/` drifts.
 - Design contract: [`docs/roster-v2.md`](./docs/roster-v2.md).
+- **Gates must be runnable.** Every gate carries at least one `verify` entry (`command`, `expectExit`);
+  a gate without one is rejected as `gate-unverifiable`, because a gate whose only criterion is a
+  sentence is judged by the person signing it.
+- **A construction plan, not an execution.** `compile` now also writes
+  `dist/<id>-<ver>.tasks.json` (`plan@1`): stages and gates flattened into cards with dependencies,
+  `executor: "captain"`, and `loop.onGateFailure` naming where a failed gate goes back to and how many
+  rounds it may take. The plugin never calls `agent_teams_create_task` — the plan is a drawing.
 
 ## [0.9.2] - 2026-11-03
 

@@ -326,7 +326,10 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "id"
+        "id",
+        "after",
+        "verify",
+        "by"
       ],
       "properties": {
         "id": {
@@ -353,6 +356,31 @@
         "by": {
           "$ref": "#/$defs/id",
           "description": "由哪个成员判定；必须是本组装的成员名。"
+        },
+        "verify": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "description": "可执行判据：跑什么命令、期望退出码。门至少要有一条，否则只能自己给自己盖章。",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "command"
+            ],
+            "properties": {
+              "command": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "expectExit": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              }
+            }
+          }
         }
       }
     },

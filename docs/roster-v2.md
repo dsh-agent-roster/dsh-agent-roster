@@ -102,7 +102,7 @@ orchestration:
     - { id: build, parallel: [reviewer], join: audit }
     - { id: fix, role: fixer@1.0.0, maxRounds: 2 }
   gates:
-    - { id: audit, requires: [tests-pass], by: reviewer }
+    - { id: audit, after: [build], by: reviewer, verify: [{ command: node --test, expectExit: 0 }] }
 ```
 
 四条规则：
@@ -118,7 +118,26 @@ orchestration:
 - 代价是丢了 v1 用路径换来的唯一性，所以补一条更强的规则：**同一座库里 `name`（角色）与 `as`（成员）必须唯一**，重名是 error。
 - 锁文件（`.agent-roster/lock.yaml`）双轨记录：`role@x.y.z` + 角色文件 sha256。版本回答"该不该升"，哈希回答"内容是不是我以为的那份"。
 
-## 5. 编译产物：`dist/<id>-<ver>.json`
+## 5. 门必须有可执行的判据
+
+一个门如果只写一句「现有测试全部通过」，那它唯一的判定者就是签字的人自己——这正是 issue #2 修掉的那种假绿。所以 v2 的门**必须**带至少一条 `verify`：
+
+```yaml
+gates:
+  - id: tests-pass
+    after: [audit]
+    by: reviewer
+    verify:
+      - command: node --test
+        expectExit: 0
+    requires: [没有新增未覆盖的分支]   # 人读判据，不能替代 verify
+```
+
+- `verify` 是可执行判据：跑什么命令、期望哪个退出码。判定者必须先跑它，跑不过就是不过。
+- `requires` 保留，但降级为**补充说明**：它描述「命令之外还想让人看什么」，不能替代 `verify`。
+- 没有 `verify` 的门在组装校验阶段就被拒（`gate-unverifiable`），不会流进编译产物。
+
+## 6. 编译产物：`dist/<id>-<ver>.json`
 
 ```json
 {
@@ -148,13 +167,40 @@ orchestration:
 - **可 diff、可哈希**：产物序列化稳定（键顺序固定、无时间戳），`sha256` 直接当发布指纹。
 - **声明清单显式化**：凡是"写下来但不会被运行时执行"的字段，都在 `declarations[]` 里点名，避免第二次"看起来生效了"。
 
-## 6. 迁移
+## 7. 施工图：`dist/<id>-<ver>.tasks.json`
+
+编译产物回答「这份档案长什么样」，施工图回答「照它该怎么跑」。它把 stages/gates 摊成一张张卡片，每张卡带 `id / kind / member / subject / description / dependencies`，门卡额外带 `gate.verify`。
+
+```json
+{
+  "kind": "dsh-agent-roster/plan@1",
+  "roster": { "id": "core-review", "version": "1.0.0" },
+  "executor": "captain",
+  "tasks": [
+    { "id": "build", "kind": "stage", "member": "fixer", "dependencies": [] },
+    { "id": "audit", "kind": "stage", "member": "reviewer", "dependencies": ["build"] },
+    { "id": "tests-pass", "kind": "gate", "member": "reviewer", "dependencies": ["audit"],
+      "gate": { "id": "tests-pass", "verify": [{ "command": "node --test", "expectExit": 0 }] } }
+  ],
+  "loop": { "onGateFailure": { "retry": "build", "maxRounds": 2 }, "runRecord": "dist/core-review-1.0.0.run.json" }
+}
+```
+
+三件事在这份文件里被写死，不留解释空间：
+
+1. **谁执行**：`executor: "captain"`。插件不调用 `agent_teams_create_task`——写团队状态的能力只属于队长会话。施工图是**给队长的施工图**，不是插件替队长施工。
+2. **谁判门**：`gate.verify` 里的命令。判定者跑完把结论写进卡片输出；没跑就等于没判。
+3. **谁重试**：门不过就回到第一个阶段，最多 `maxRounds` 轮；失败意见写进 `runRecord` 指向的文件，下一轮重试卡把它带上。
+
+卡片真正的 id 由团队分配，施工图里的 id 只在内部表达依赖——否则「编译产物」就变成了「团队状态的第二真源」。
+
+## 8. 迁移
 
 - `roster migrate` 读 v1 档案，把 `systemPrompt` 拆成角色（`roles/<member>/AGENT.md`）+ 组装（成员改为引用），原地重写并生成 `dist/`。
 - v1 冻结：新字段只进 v2，不再回填 v1。
 - 同一目录两种格式共存是**禁止**的：判别键说了算。
 
-## 7. 与既有两层声明的关系
+## 9. 与既有两层声明的关系
 
 | 层 | 文件 | 回答的问题 |
 |---|---|---|
@@ -164,9 +210,9 @@ orchestration:
 
 三者正交：`requires` 说"必须有"，`capabilities.yaml` 说"这份组装必须有"，`organization.yaml` 说"这座库有哪些"。
 
-## 8. 未决与下一步
+## 10. 未决与下一步
 
-1. `orchestration` → `create_task` DAG 的编译（需要 AgentTeams 的卡面契约，且要能验证"确实建了"）。
+1. **施工图的执行回路**：谁读 `tasks.json`、怎么把内部 id 映射成团队真实 task id、失败意见怎么回填 `run.json`（格式已留位，写入方还没有）。
 2. `dist` 的发布与 `registry` 只登记产物（现在 registry 登记的是档案路径）。
 3. `profile/agent-preset` 目标：把队长与成员的 preset 片段生成出来，仍然只产参不写入。
 4. 编辑器支持：三个 schema 已就位，LSP 级校验待做。

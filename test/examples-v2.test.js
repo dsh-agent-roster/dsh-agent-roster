@@ -15,6 +15,7 @@ import nodePath from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { compileRosterAt } from "../lib/compile2.js";
+import { compilePlan } from "../lib/plan.js";
 import { splitFrontmatter } from "../lib/frontmatter.js";
 
 const root = nodePath.dirname(fileURLToPath(new URL("../package.json", import.meta.url)));
@@ -31,6 +32,9 @@ const compile = () =>
 
 const readDist = () =>
   JSON.parse(readFileSync(nodePath.join(example, "dist", "core-review-1.0.0.json"), "utf8"));
+
+const readTasks = () =>
+  JSON.parse(readFileSync(nodePath.join(example, "dist", "core-review-1.0.0.tasks.json"), "utf8"));
 
 /** 产物里只跟本机坐标相关的字段，比较时剔除。 */
 const stable = ({ source, ...rest }) => ({ source: { roster: source.roster, version: source.version, file: source.file }, ...rest });
@@ -100,4 +104,26 @@ test("examples-v2：编排是声明，不是已执行", () => {
 test("examples-v2：dist 与源码同步（手改产物会被打回）", () => {
   const { compiled } = compile();
   assert.deepEqual(stable(readDist()), stable(compiled), "dist 与现编译结果不一致，请跑 `dsh-agent-roster compile --roster examples-v2/rosters/core-review --write`");
+});
+
+test("examples-v2：施工图与源码同步，且不假装执行", () => {
+  const { compiled } = compile();
+  const { ok, plan } = compilePlan(compiled);
+  assert.equal(ok, true);
+  assert.deepEqual(
+    readTasks(),
+    plan,
+    "tasks.json 与现编译结果不一致，请跑 `dsh-agent-roster compile --roster examples-v2/rosters/core-review --write`",
+  );
+  assert.equal(plan.executor, "captain", "插件不执行施工图：只有队长会话能建卡");
+  assert.deepEqual(
+    plan.tasks.map((task) => task.id),
+    ["build", "audit", "tests-pass"],
+  );
+  assert.deepEqual(plan.loop.onGateFailure, { retry: "build", maxRounds: 1 });
+  const gate = plan.tasks.at(-1);
+  assert.deepEqual(gate.gate.verify, [
+    { command: "node --test", expectExit: 0 },
+    { command: "node bin/cli.mjs validate --dir examples", expectExit: 0 },
+  ]);
 });

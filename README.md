@@ -241,6 +241,20 @@ executionPrompt = join("\n\n", [body, ...parts, ...member.append])
 
 `assemblePrompt()` in `lib/frontmatter.js` is the only implementation, and the compiled artifact records the character count, the block list and a SHA-256 for every prompt, so "which text did this member actually get" is answerable without re-reading the sources.
 
+A gate must be runnable, not self-certified: every gate carries at least one `verify` entry (`command` + `expectExit`), and a gate without one is rejected at validation time (`gate-unverifiable`). `requires` stays, but only as prose for the human reading the verdict.
+
+`compile` also emits the construction plan — `dist/<id>-<ver>.tasks.json`:
+
+```json
+{ "kind": "dsh-agent-roster/plan@1", "executor": "captain",
+  "tasks": [ { "id": "build", "kind": "stage", "member": "fixer", "dependencies": [] },
+             { "id": "audit", "kind": "stage", "member": "reviewer", "dependencies": ["build"] },
+             { "id": "tests-pass", "kind": "gate", "member": "reviewer", "dependencies": ["audit"] } ],
+  "loop": { "onGateFailure": { "retry": "build", "maxRounds": 1 } } }
+```
+
+`executor: "captain"` is the whole point: the plugin never calls `agent_teams_create_task`, because writing team state belongs to the captain session. The plan is a drawing the captain builds from, not the plugin building for it.
+
 The example library in [`examples-v2/`](./examples-v2/) compiles end to end:
 
 ```bash
@@ -418,7 +432,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 268/268 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, remote registry and one-click install).
+- `npm test` — 276/276 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.

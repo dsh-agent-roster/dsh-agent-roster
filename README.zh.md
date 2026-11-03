@@ -237,6 +237,20 @@ executionPrompt = join("\n\n", [body, ...parts, ...member.append])
 
 `lib/frontmatter.js` 的 `assemblePrompt()` 是唯一实现；编译产物为每份人设记录字符数、块清单与 SHA-256，所以「这名成员到底拿到了哪段文字」不必回头读源文件就能回答。
 
+门必须能被跑，而不是自己给自己盖章：每个门至少带一条 `verify`（`command` + `expectExit`），没有判据的门在校验阶段就被拒（`gate-unverifiable`）。`requires` 保留，但只是给读结论的人看的说明。
+
+`compile` 还会产出施工图 `dist/<id>-<ver>.tasks.json`：
+
+```json
+{ "kind": "dsh-agent-roster/plan@1", "executor": "captain",
+  "tasks": [ { "id": "build", "kind": "stage", "member": "fixer", "dependencies": [] },
+             { "id": "audit", "kind": "stage", "member": "reviewer", "dependencies": ["build"] },
+             { "id": "tests-pass", "kind": "gate", "member": "reviewer", "dependencies": ["audit"] } ],
+  "loop": { "onGateFailure": { "retry": "build", "maxRounds": 1 } } }
+```
+
+`executor: "captain"` 就是关键：插件从不调用 `agent_teams_create_task`，因为写团队状态的能力属于队长会话。施工图是给队长照着建的图，不是插件替队长建。
+
 [`examples-v2/`](./examples-v2/) 里的示例库可端到端编译：
 
 ```bash
@@ -403,7 +417,7 @@ test/             单测
 
 本机已验证：
 
-- `npm test` —— 268/268 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐）。
+- `npm test` —— 276/276 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、六条路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐）。
 - `npm run smoke` —— 用真实 DSH bundle 的 `defineTool` 注册六个工具，逐个调用：输出全部通过无损校验、`path` 覆盖生效、释放干净；同一条命令随后用桩模块表加载 `client.js`，断言三处槽位注册、样式只注入一次、effect 可回收。
 - CLI：`validate --dir examples` 对两座示例库退出码 0。
 - 用插件管理器真的装进了本机 profile（`plugin_manager install_bundle` 指向本仓库 → `link:` 依赖 + bundle 条目），重启后按链接读取本仓库文件。
