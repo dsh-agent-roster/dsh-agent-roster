@@ -4,6 +4,25 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-03
+
+### Create a team from the row you are looking at
+
+Creating a team used to require expanding the roster, finding the captain panel and pressing *apply*. The
+one action the product is named after was the hardest thing to find, and a roster without a `captain` block
+offered no path at all.
+
+Every roster row now carries **Create team**. It opens a small dialog: team name (defaults to the roster id),
+a choice between a new session and an existing one — new is the default, because quick creation must not
+hijack the conversation you are in — and a one-line summary of what will be built (`N members · captain model`).
+Submitting queues the same build prompt as *apply*; the toast names the session it landed in.
+
+The boundary is unchanged, and the dialog says so on its face: the plugin never writes team state. It
+prepares a session (selects the captain model when the archive declares one, queues the prompt), and that
+session calls `agent_teams_create` / `agent_teams_add_member` / `roster_verify`. A roster without a captain
+block can still create a team; it just will not switch the model, and the dialog says that instead of failing
+silently.
+
 ## [1.1.0] - 2026-11-03
 
 ### The library reads as spaces, not groups

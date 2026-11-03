@@ -86,7 +86,8 @@
     "showMembers": "Show members",
     "hideMembers": "Hide members",
     "warnings": "{count} warnings",
-    "deployedDrifted": "In {teams} ({count} drifted)"
+    "deployedDrifted": "In {teams} ({count} drifted)",
+    "createTeam": "Create team"
   },
   "member": {
     "prompt": "Prompt",
@@ -323,5 +324,23 @@
     "pulledSpace": "Space pulled: {files} files written, {skipped} skipped",
     "facts": "{count} rosters · {installed} here",
     "here": "Already here"
+  },
+  "teamCreate": {
+    "title": "Create a team from {roster}",
+    "hint": "The plugin never writes team state: it queues a build prompt into the captain session, which then calls agent_teams_create and adds each member.",
+    "teamName": "Team name",
+    "target": "Captain session",
+    "newSession": "New session",
+    "existingSession": "Existing session",
+    "noSessions": "No session available",
+    "cwdPlaceholder": "Working directory (empty = current workspace)",
+    "summary": "{count} members · captain model {model}",
+    "noModel": "not declared, the session keeps its model",
+    "noCaptain": "This roster has no captain block: it can still build a team, but the captain model is not switched.",
+    "submit": "Create",
+    "creating": "Queueing…",
+    "cancel": "Cancel",
+    "queued": "Queued into session {session} — that session will build the team.",
+    "failed": "Could not queue ({code})"
   }
 }

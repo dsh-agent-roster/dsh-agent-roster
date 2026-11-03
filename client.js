@@ -661,12 +661,146 @@ window.__ModuleLoader__.load({
     }
 
     /**
+     * 从档案创建团队：挑一个队长会话，把建团提示排进去。
+     *
+     * 为什么不是“插件直接建”：团队只能由队长会话里的 `agent_teams_create` 建，插件没有这个权限。
+     * 所以这个对话框做的是端到端的前半段——把成员、队长模型、建团步骤一次交给一个会话，
+     * 后半段（建队、加成员、核对）在那个会话里发生；结果回团队页签与 `roster_verify` 看。
+     */
+    function TeamCreateDialog({ roster, sessions, onClose, onToast, onCreated }) {
+      useTranslation();
+      // 默认新会话：快速建团不该劫持用户正在聊的这个。
+      const [mode, setMode] = useState("new");
+      const [sessionId, setSessionId] = useState(sessions[0]?.sessionId ?? "");
+      const [cwd, setCwd] = useState(roster.rootDir ?? "");
+      const [teamName, setTeamName] = useState(roster.id);
+      const [busy, setBusy] = useState(false);
+      const [error, setError] = useState(null);
+      const captain = roster.captain ?? null;
+      const declaredModel =
+        captain !== null && captain.provider !== undefined && captain.model !== undefined && captain.provider !== "" && captain.model !== ""
+          ? `${captain.provider}/${captain.model}`
+          : null;
+      const canSubmit = !busy && (mode === "new" || sessionId !== "");
+
+      async function submit() {
+        if (!canSubmit) return;
+        setBusy(true);
+        setError(null);
+        try {
+          const payload = { rosterId: roster.id, teamName: teamName.trim(), mode };
+          if (mode === "existing") payload.sessionId = sessionId;
+          else if (cwd.trim() !== "") payload.cwd = cwd.trim();
+          const response = await readJson(APPLY_ROUTE, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (!response.ok || response.body?.ok !== true) {
+            setError(response.body?.code ?? response.body?.error?.code ?? String(response.status));
+            return;
+          }
+          onToast(t("teamCreate.queued", { session: response.body.sessionId }));
+          onCreated?.(response.body.sessionId);
+          onClose();
+        } catch {
+          setError("network");
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      return h(
+        Modal,
+        {
+          title: t("teamCreate.title", { roster: roster.id }),
+          onClose,
+          footer: h(
+            "div",
+            { className: "rstr-modal-foot-actions" },
+            h("button", { type: "button", className: "rstr-btn", onClick: onClose }, t("teamCreate.cancel")),
+            h(
+              "button",
+              { type: "button", className: "rstr-btn rstr-btn-primary", disabled: !canSubmit, onClick: submit },
+              busy ? t("teamCreate.creating") : t("teamCreate.submit"),
+            ),
+          ),
+        },
+        h("p", { className: "rstr-hint" }, t("teamCreate.hint")),
+        h(
+          Field,
+          { label: t("teamCreate.teamName") },
+          h("input", {
+            className: "rstr-input",
+            value: teamName,
+            onChange: (event) => setTeamName(event.target.value),
+            placeholder: roster.id,
+          }),
+        ),
+        h(
+          Field,
+          { label: t("teamCreate.target") },
+          h(
+            "div",
+            { className: "rstr-segmented" },
+            h(
+              "button",
+              { type: "button", className: mode === "new" ? "rstr-seg rstr-seg-on" : "rstr-seg", onClick: () => setMode("new") },
+              t("teamCreate.newSession"),
+            ),
+            h(
+              "button",
+              {
+                type: "button",
+                className: mode === "existing" ? "rstr-seg rstr-seg-on" : "rstr-seg",
+                onClick: () => setMode("existing"),
+              },
+              t("teamCreate.existingSession"),
+            ),
+          ),
+          mode === "existing"
+            ? h(
+                "select",
+                { className: "rstr-select", value: sessionId, onChange: (event) => setSessionId(event.target.value) },
+                sessions.length === 0
+                  ? h("option", { value: "" }, t("teamCreate.noSessions"))
+                  : sessions.map((session) =>
+                      h(
+                        "option",
+                        { key: session.sessionId, value: session.sessionId },
+                        `${session.sessionId.slice(0, 12)} · ${session.cwd || "?"}${
+                          session.model === null ? "" : ` · ${session.model.model}`
+                        }`,
+                      ),
+                    ),
+              )
+            : h("input", {
+                className: "rstr-input",
+                placeholder: t("teamCreate.cwdPlaceholder"),
+                value: cwd,
+                onChange: (event) => setCwd(event.target.value),
+              }),
+        ),
+        h(
+          "p",
+          { className: "rstr-hint" },
+          t("teamCreate.summary", {
+            count: roster.members.length,
+            model: declaredModel ?? t("teamCreate.noModel"),
+          }),
+        ),
+        captain === null ? h("p", { className: "rstr-hint" }, t("teamCreate.noCaptain")) : null,
+        error !== null ? h("p", { className: "rstr-bad rstr-small" }, t("teamCreate.failed", { code: error })) : null,
+      );
+    }
+
+    /**
      * 一行 = 一份档案。
      *
      * 名册是列表不是画廊：id 立在第一列当"脊"，状态长在左沿，操作平时只露两个入口。
      * 复制/建队/删除这些低频且危险的动作收进展开区——否则 21 份档案就是 105 个按钮。
      */
-    function RosterCard({ roster, deployment, captainReport, sessions, onToast, onEdit, onDuplicate, onDelete, onCopy }) {
+    function RosterCard({ roster, deployment, captainReport, sessions, onToast, onEdit, onDuplicate, onDelete, onCopy, onCreateTeam }) {
       const [open, setOpen] = useState(false);
       const diagnostics = roster.diagnostics ?? [];
       const errors = diagnostics.filter((item) => item?.severity === "error").length;
@@ -717,6 +851,11 @@ window.__ModuleLoader__.load({
           h(
             "div",
             { className: "rstr-row-actions" },
+            h(
+              "button",
+              { type: "button", className: "rstr-btn rstr-btn-sm", onClick: () => onCreateTeam(roster) },
+              t("roster.createTeam"),
+            ),
             h("button", { type: "button", className: "rstr-btn rstr-btn-sm rstr-btn-quiet", onClick: () => onEdit(roster) }, t("roster.edit")),
             h(
               "button",
@@ -1609,6 +1748,7 @@ window.__ModuleLoader__.load({
       const [editor, setEditor] = useState(null);
       const [importing, setImporting] = useState(false);
       const [removing, setRemoving] = useState(null);
+      const [creatingTeam, setCreatingTeam] = useState(null);
       const [toast, setToast] = useState(null);
 
       useEffect(() => {
@@ -1936,6 +2076,7 @@ window.__ModuleLoader__.load({
                       onDuplicate: () => setEditor({ roster, rootDir: roster.rootDir, duplicate: true }),
                       onDelete: () => setRemoving(roster),
                       onCopy: copyPayload,
+                      onCreateTeam: (target) => setCreatingTeam(target),
                     }),
                   ),
               ),
@@ -2026,6 +2167,18 @@ window.__ModuleLoader__.load({
               onDone: (file) => {
                 setImporting(false);
                 setToast(t("import.done", { file }));
+                library.reload();
+              },
+            })
+          : null,
+        creatingTeam !== null
+          ? h(TeamCreateDialog, {
+              roster: creatingTeam,
+              sessions: snapshot?.sessions?.sessions ?? [],
+              onClose: () => setCreatingTeam(null),
+              onToast: setToast,
+              onCreated: () => {
+                setCreatingTeam(null);
                 library.reload();
               },
             })
@@ -2908,6 +3061,8 @@ window.__ModuleLoader__.load({
 .rstr-apply { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .rstr-segmented { display: inline-flex; border: 1px solid var(--dsw-alias-border-l3); }
 .rstr-seg { border: none; background: transparent; padding: 5px 12px; font-size: 12px; font-family: inherit; cursor: pointer; color: var(--dsw-alias-label-secondary); }
+/* 对话框里的二选一开关：字段列默认拉伸，这里收回内容宽度，别让它长得像第二个输入框。 */
+.rstr-field > .rstr-segmented { align-self: flex-start; }
 .rstr-seg:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .rstr-seg-on { background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent); color: var(--dsw-alias-label-primary); font-weight: 600; }
 

@@ -282,3 +282,22 @@ test("空间：档案库能整空间拉取，并标出本机已有的档案", ()
     assert.equal(typeof en.catalog[key], "string", key);
   }
 });
+
+test("从档案创建团队：行上有入口，对话框默认新会话，团队名与档案 id 一起发给 apply", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  assert.match(source, /t\("roster\.createTeam"\)/);
+  assert.match(source, /onClick: \(\) => onCreateTeam\(roster\)/);
+  assert.match(source, /function TeamCreateDialog\(\{ roster, sessions, onClose, onToast, onCreated \}\)/);
+  // 快速建团不该劫持用户正在聊的会话：默认必须是新会话。
+  assert.match(source, /const \[mode, setMode\] = useState\("new"\)/);
+  assert.match(source, /const payload = \{ rosterId: roster\.id, teamName: teamName\.trim\(\), mode \}/);
+  assert.match(source, /creatingTeam !== null[\s\S]{0,200}?TeamCreateDialog/);
+  const zh = JSON.parse(readFileSync(new URL("../locale/zh.json", import.meta.url), "utf8"));
+  const en = JSON.parse(readFileSync(new URL("../locale/en.json", import.meta.url), "utf8"));
+  for (const key of ["title", "hint", "teamName", "target", "newSession", "existingSession", "submit", "queued", "failed", "noCaptain"]) {
+    assert.equal(typeof zh.teamCreate[key], "string", key);
+    assert.equal(typeof en.teamCreate[key], "string", key);
+  }
+  assert.equal(typeof zh.roster.createTeam, "string");
+  assert.equal(typeof en.roster.createTeam, "string");
+});

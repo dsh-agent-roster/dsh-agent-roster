@@ -441,6 +441,8 @@ export function apply(ctx, config) {
           mode: input.mode === "new" ? "new" : "existing",
           sessionId: typeof input.sessionId === "string" ? input.sessionId : "",
           cwd: typeof input.cwd === "string" ? input.cwd : "",
+          // 团队名只进提示词，不写任何团队状态；超长按 120 截断，与档案标题同量级。
+          teamName: typeof input.teamName === "string" ? input.teamName.trim().slice(0, 120) : "",
         });
         const status = result.ok ? 200 : result.code === "session-controller-unavailable" ? 503 : 400;
         sendJson(res, status, result);

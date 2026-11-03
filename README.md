@@ -383,6 +383,12 @@ The **apply** action is the one write the panel offers here: it switches the cho
 declared model and queues a prompt that calls `agent_teams_create`, `agent_teams_add_member` per
 member and finally `roster_verify`. Creating the team stays with the runtime.
 
+Since 1.2.0 the roster row itself carries **Create team**, so this no longer hides behind an
+expanded card. It defaults to a *new* session — quick creation must not hijack the conversation
+you are in — lets you rename the team, switches the captain model when the archive declares one,
+and queues the same build prompt. The plugin still writes no team state: the row action prepares a
+session, the session does the creating.
+
 ## Sidebar panel
 
 The roster list is a **ledger, not a wall of cards**: one row per roster — a 3px state edge (lit only when something is wrong, quiet when it is fine), a monospace id column, the title with a one-line description, right-aligned counts (members / errors / warnings / deployment), and a quiet pair of actions (edit, expand). Duplicate, copy-create and delete moved into the expanded area, which turns 105 buttons across 21 rosters into 42. Below 860px the tag pool becomes a top row and the metadata wraps. Expansions never build their own scroll box: the panel root is the only scroller, so an expanded section grows as tall as its content instead of showing "just a few rows".
@@ -524,7 +530,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 313/313 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
+- `npm test` — 315/315 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, run records feeding the plan, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.

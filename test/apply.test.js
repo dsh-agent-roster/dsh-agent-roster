@@ -98,6 +98,13 @@ test("buildCaptainPrompt 给出要建的成员，但要求人设从 roster_show 
   assert.equal(prompt.includes("你是团队负责人。"), false);
 });
 
+test("buildCaptainPrompt 用给定的团队名，缺省才退回档案 id", () => {
+  const named = buildCaptainPrompt({ roster: roster(), teamName: "ops-floor" });
+  assert.match(named, /agent_teams_create`，参数 name: "ops-floor"/);
+  const fallback = buildCaptainPrompt({ roster: roster() });
+  assert.match(fallback, /agent_teams_create`，参数 name: "agent-teams"/);
+});
+
 test("applyCaptain 走已有会话：切模型 + 排队提示词", async () => {
   const controller = fakeController();
   const result = await applyCaptain({
