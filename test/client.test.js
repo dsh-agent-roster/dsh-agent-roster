@@ -297,6 +297,17 @@ test("从档案创建团队：行上有入口，对话框默认新会话，团�
   assert.equal(typeof en.roster.createTeam, "string");
 });
 
+test("选已有会话：显示会话标题与工作区名，而不是一串 id", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  assert.match(source, /function sessionLabel\(session\)/);
+  // 标题来自宿主投影；取不到时退回工作区目录名，再退回短 id（三层兜底，不编造名字）。
+  assert.match(source, /session\.title\.trim\(\)/);
+  assert.match(source, /cwd\.split\("\/"\)\.filter\(Boolean\)\.pop\(\)/);
+  // 两个入口（应用队长 / 创建团队）都必须用它，且不再直接拼 sessionId。
+  assert.ok((source.match(/sessionLabel\(session\)/g) ?? []).length >= 2);
+  assert.doesNotMatch(source, /session\.sessionId\.slice\(0, 12\) · /);
+});
+
 test("收藏：档案页只列收藏，星标能切换，复制一份会回填", () => {
   const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
   // 收藏只写库根的点文件：取消收藏不该改动任何定义，也不该碰团队状态。

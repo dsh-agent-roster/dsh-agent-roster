@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { applyCaptain, buildCaptainPrompt, listSessions, pickSessionModel } from "../lib/apply.js";
+import { applyCaptain, buildCaptainPrompt, listSessions, pickSessionModel, sessionTitleOf } from "../lib/apply.js";
 
 /** 一份最小的队长档案：只要 id/description/成员与 captain 段。 */
 function roster(overrides = {}) {
@@ -36,7 +36,10 @@ function fakeController(overrides = {}) {
             projections: {
               kind: "cached",
               asOfSeq: 1,
-              values: { modelSelection: { lastUsed: { provider: "p", model: "m", reasoningEffort: "low" } } },
+              values: {
+                title: " 档案库改造 ",
+                modelSelection: { lastUsed: { provider: "p", model: "m", reasoningEffort: "low" } },
+              },
             },
           },
           { sessionId: "s-blank", updatedAt: 1, blank: true },
@@ -69,6 +72,13 @@ test("pickSessionModel 从 projections 里取最后使用的模型", () => {
   assert.equal(pickSessionModel({}), null);
 });
 
+test("sessionTitleOf 只认投影里的标题，取不到就是空串", () => {
+  assert.equal(sessionTitleOf({ projections: { values: { title: " 档案库改造 " } } }), "档案库改造");
+  assert.equal(sessionTitleOf({}), "");
+  assert.equal(sessionTitleOf({ projections: { values: { title: null } } }), "");
+  assert.equal(sessionTitleOf({ projections: { values: { title: 42 } } }), "");
+});
+
 test("listSessions 过滤子代理会话，并带上模型与 cwd", async () => {
   const result = await listSessions(fakeController());
   assert.equal(result.ok, true);
@@ -77,6 +87,8 @@ test("listSessions 过滤子代理会话，并带上模型与 cwd", async () => 
     ["s-existing", "s-blank"],
   );
   assert.equal(result.sessions[0].cwd, "/tmp/project");
+  assert.equal(result.sessions[0].title, "档案库改造");
+  assert.equal(result.sessions[1].title, "");
   assert.deepEqual(result.sessions[0].model, { provider: "p", model: "m", reasoningEffort: "low" });
   assert.equal(result.sessions[1].blank, true);
 });

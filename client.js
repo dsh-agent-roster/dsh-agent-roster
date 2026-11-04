@@ -521,6 +521,19 @@ window.__ModuleLoader__.load({
      * 应用只做两件事：切会话模型、往会话里排一段建团队提示词。它不会、也不能
      * 直接改部署配置——provider/model 不一致时，界面如实说“要改部署”，而不是假装成功。
      */
+    /**
+     * 会话在“选已有会话”里的显示名：标题（来自投影）→ 工作区目录名 → 短 id。
+     * 只显示 id 时人根本认不出那是哪个会话，所以标题缺失也要退回工作区。
+     */
+    function sessionLabel(session) {
+      const title = typeof session?.title === "string" ? session.title.trim() : "";
+      const cwd = typeof session?.cwd === "string" ? session.cwd.replace(/\/+$/, "") : "";
+      const base = cwd === "" ? "" : cwd.split("/").filter(Boolean).pop() ?? "";
+      if (title !== "") return base === "" ? title : `${title} · ${base}`;
+      if (base !== "") return base;
+      return String(session?.sessionId ?? "").slice(0, 12);
+    }
+
     function CaptainPanel({ roster, report, sessions, onToast }) {
       useTranslation();
       const captain = roster.captain ?? {};
@@ -633,9 +646,7 @@ window.__ModuleLoader__.load({
                       h(
                         "option",
                         { key: session.sessionId, value: session.sessionId },
-                        `${session.sessionId.slice(0, 12)} · ${session.cwd || "?"}${
-                          session.model === null ? "" : ` · ${session.model.model}`
-                        }`,
+                        sessionLabel(session),
                       ),
                     ),
               )
@@ -768,9 +779,7 @@ window.__ModuleLoader__.load({
                       h(
                         "option",
                         { key: session.sessionId, value: session.sessionId },
-                        `${session.sessionId.slice(0, 12)} · ${session.cwd || "?"}${
-                          session.model === null ? "" : ` · ${session.model.model}`
-                        }`,
+                        sessionLabel(session),
                       ),
                     ),
               )
