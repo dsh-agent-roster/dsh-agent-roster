@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-11-04
+
+### Fixed
+
+- **The origin ledger is a file on disk, so its paths are now treated as untrusted.** `checkOrigin` only counts entries whose relative path is safe, `applyFastForward` refuses to write any other, and `acceptLocal` no longer matches inherited object keys (`in` → `Object.hasOwn`). A hand-edited ledger could otherwise point outside the space directory and make a fast-forward write there.
+
 ## [1.6.0] - 2026-11-04
 
 ### The panel stops calling "not checked" clean
@@ -815,7 +821,8 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.6.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.6.1...main
+[1.6.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.3.0...v1.4.0

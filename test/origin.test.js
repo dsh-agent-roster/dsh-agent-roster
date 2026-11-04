@@ -151,3 +151,20 @@ test("可快进数与待处理数分开：冲突进 pending，不进 fastForward
   assert.equal(checked.pending, 1);
   assert.equal(checked.fastForward, 0, "冲突不能被面板当成「一键应用」");
 });
+
+test("账本里的越界路径不算数：不比对、不写盘、不认账", async () => {
+  const dir = tempDir();
+  const name = `escaped-${process.pid}-${Date.now()}.txt`;
+  const outside = path.join(dir, "..", name);
+  writeOrigin(dir, { origin: { repo: "o/r", ref: "main", path: "" }, files: { [`../${name}`]: { sha256: "x" } } });
+
+  const checked = await checkOrigin(dir, { fetchImpl: fakeFetch({}) });
+  assert.equal(checked.entries.length, 0, "越界条目不该出现在差异里");
+
+  const applied = applyFastForward(dir, [{ path: `../${name}`, state: "remote-only", remoteText: "pwn" }]);
+  assert.deepEqual(applied.applied, []);
+  assert.equal(fs.existsSync(outside), false, "绝不能照着账本写到空间目录外面");
+
+  const accepted = acceptLocal(dir, [`../${name}`]);
+  assert.deepEqual(accepted.updated, []);
+});
