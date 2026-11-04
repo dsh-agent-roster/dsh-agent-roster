@@ -270,7 +270,6 @@
     "modeExisting": "Existing session",
     "modeNew": "New session",
     "noSessions": "No sessions available",
-    "cwdPlaceholder": "Working directory (optional)",
     "apply": "Apply & create team",
     "applying": "Applying…",
     "applyFailed": "Apply failed",
@@ -288,7 +287,8 @@
       "differ": "declared {declared}, deployment has {actual}",
       "undeclared": "not declared, runtime uses {actual}",
       "unknown": "deployment unreadable"
-    }
+    },
+    "sessionName": "Session name"
   },
   "catalog": {
     "placeholder": "What should it do? e.g. data quality, release, review",
@@ -314,9 +314,11 @@
     "unfavorite": "Unfavorite",
     "checkUpdates": "Check updates",
     "upToDate": "Up to date",
-    "updatesPending": "{count} updates",
-    "applyUpdates": "Apply updates",
-    "updatesApplied": "Applied {count} files"
+    "applyUpdates": "Apply {count} updates",
+    "updatesApplied": "Applied {count} files",
+    "conflicts": "{count} conflicts",
+    "unverified": "{count} unverified",
+    "noBaseline": "No baseline"
   },
   "teamCreate": {
     "title": "Create a team from {roster}",

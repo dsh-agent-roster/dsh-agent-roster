@@ -4,6 +4,34 @@
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-11-04
+
+### The panel stops calling "not checked" clean
+
+A full pass over the code turned up a class of false green rather than missing features: places where the
+panel or a tool answered "all good" because it had not actually looked. This release fixes those, plus the
+gaps the audit found around creating sessions and reading the index.
+
+#### Added
+
+- **`update --accept`** — record the local content as the new baseline. It only accepts `local-only` files; a `diverged` file is never accepted silently, because that would throw the remote half away without saying so.
+- **`unverified` is a state of its own.** When the remote does not answer (offline, rate-limited, 5xx), the file is no longer reported as `clean`; `checkOrigin` counts it separately and the summary line says so. Seven states in total.
+- **`roster_index` keeps its promise:** every collection now carries `pulled` (whether a ledger-backed copy exists on this machine, and where), and the detail branch adds `space` and `layout` by reading that copy.
+
+#### Changed
+
+- **The panel's Check updates button tells four different things apart:** `Apply N updates` only when something can be fast-forwarded; otherwise `N conflicts`, `N unverified`, or `No baseline`. A network failure can no longer look like "up to date", and the button is disabled when there is nothing it could apply.
+- **Creating a captain session asks for a space and a name**, exactly like Create team: a workspace picker from `workspaceRegistry` plus a session name, instead of a free-text working directory. Both entry points send `rootDir`, so the same roster id in two libraries can no longer be confused for one another.
+- `remoteDigests` fetches the remote files six at a time instead of one after another; a five-hundred-file space no longer takes a minute to check.
+- `roster_search` says when it truncated the source list (`search-sources-truncated`) instead of quietly searching only the first eight.
+- `roster_compile` decides "is this v2" by `roles/` + `rosters/`, not by the presence of `space.yaml`.
+
+#### Fixed
+
+- `roster_index`'s `execute` was missing its `exec` parameter, so `pulled` could not be computed at all.
+- `roster_team` had no `path` argument although it called `resolve(exec, args.path)`, and could create a session with no workspace (`create({})`), landing wherever the host defaults to. `mode: "existing"` without a session id now fails as `missing-session` before touching the session controller.
+- `lib/tools-space.js` carried unused imports and an unused helper; `statusLine` existed twice (now in `lib/tool-output.js`).
+
 ## [1.5.0] - 2026-11-04
 
 ### Added
@@ -787,7 +815,8 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.5.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.6.0...main
+[1.6.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.2.0...v1.3.0

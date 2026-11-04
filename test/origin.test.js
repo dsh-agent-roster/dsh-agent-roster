@@ -121,3 +121,33 @@ test("没有账本时明确说「没有基线」，不假装干净", async () =>
   assert.equal(result.ok, false);
   assert.equal(result.code, "no-origin-ledger");
 });
+
+test("远端没回话：记为无法核对，不算干净，也不算可快进", async () => {
+  const dir = tempDir();
+  const relative = "rosters/demo/roster.yaml";
+  const base = fs.readFileSync(path.join(dir, ...relative.split("/")), "utf8");
+  writeOrigin(dir, { origin: { repo: "o/r", ref: "main", path: "" }, files: { [relative]: { sha256: sha256Of(base) } } });
+
+  const offline = async () => {
+    throw new Error("getaddrinfo ENOTFOUND");
+  };
+  const checked = await checkOrigin(dir, { fetchImpl: offline });
+  assert.equal(checked.ok, true);
+  assert.equal(checked.summary.unverified, 1, "网络失败必须显式记成 unverified");
+  assert.equal(checked.summary.clean, 0, "没核对上不能算干净");
+  assert.equal(checked.fastForward, 0);
+  assert.match(checked.text, /无法核对/);
+});
+
+test("可快进数与待处理数分开：冲突进 pending，不进 fastForward", async () => {
+  const dir = tempDir();
+  const relative = "rosters/demo/roster.yaml";
+  const base = fs.readFileSync(path.join(dir, ...relative.split("/")), "utf8");
+  writeOrigin(dir, { origin: { repo: "o/r", ref: "main", path: "" }, files: { [relative]: { sha256: sha256Of(base) } } });
+  fs.writeFileSync(path.join(dir, ...relative.split("/")), `${base}# local\n`);
+
+  const checked = await checkOrigin(dir, { fetchImpl: fakeFetch({ [relative]: `${base}# remote\n` }) });
+  assert.equal(checked.summary.diverged, 1);
+  assert.equal(checked.pending, 1);
+  assert.equal(checked.fastForward, 0, "冲突不能被面板当成「一键应用」");
+});

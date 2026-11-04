@@ -391,10 +391,10 @@ so finding a roster from a distance costs one file — not a clone.
 | `roster_create` | translate members into `agent_teams_add_member` arguments / `plan.members`; refuses when a declared capability is missing |
 | `roster_verify` | compare a roster against `dsh-agent-teams`' `team.json`; reports faithful / unverified / drift / missing, plus materialised tool-filter digests, policy drift, provenance and capability requirements |
 | `roster_diff` | diff two rosters (generation N vs N+1): members matched by name, effective values compared, persona compared by length + hash |
-| `roster_index` | list registry sources and their collections; given a collection, fetch it read-only for inspection |
+| `roster_index` | list registry sources and their collections, including whether a ledger-backed copy is already on this machine (`pulled`); given a collection, fetch it read-only and report its `space` and `layout` |
 | `roster_space` | describe a space: layout, declared vs present vs missing rosters, roles, `origin` and the pulled commit, diagnostics |
 | `roster_search` | search this machine and the first eight subscribed sources with the same engine as the Library tab; each hit names the field it matched |
-| `roster_changes` | compare a pulled space against its origin ledger: clean / local-only / remote-only / diverged / remote-deleted / missing, per file |
+| `roster_changes` | compare a pulled space against its origin ledger: clean / local-only / remote-only / diverged / remote-deleted / missing / unverified, per file |
 | `roster_compile` | compile a v2 roster in memory: members, prompt stats (characters, parts, includes, sha256), diagnostics — writes nothing |
 | `roster_team` | create a team from a roster: a new session (choose the space and its name) or an existing one, then select the captain model and queue the build prompt |
 
@@ -472,7 +472,7 @@ The panel is bilingual. Its language defaults to the DSH language and can be pin
 
 A space pulled with `clone` carries a ledger, `.dsh-roster-origin.json` (hidden, so the scanner ignores it): the repository, ref and path it came from, the commit it was pulled at, and the sha256 plus blob id of every file written. The ledger is the baseline — without it there is nothing to compare against, and `update` says so instead of pretending the copy is clean.
 
-`dsh-agent-roster update --dir <space>` compares each file three ways (ledger vs disk vs the remote at that ref) and reports one of six states:
+`dsh-agent-roster update --dir <space>` compares each file three ways (ledger vs disk vs the remote at that ref) and reports one of seven states:
 
 | State | Meaning | What `--write` does |
 |---|---|---|
@@ -482,8 +482,9 @@ A space pulled with `clone` carries a ledger, `.dsh-roster-origin.json` (hidden,
 | `diverged` | both moved | **nothing** — it prints both shas and a diff; a human decides |
 | `remote-deleted` | gone upstream | nothing; the local copy is kept and flagged |
 | `missing` | gone locally | nothing; reported |
+| `unverified` | the remote did not answer (network, rate limit) | nothing; **not counted as clean** |
 
-There is deliberately **no automatic merge**: these files are YAML plus prose, there is no merge base, and a three-way merge would quietly produce duplicate role names or half-renamed members. If you want real merging, use `git clone` and let git do it — that keeps credentials and pushes out of the plugin. The panel exposes the same check on the local space header (**Check updates** → `N updates` → apply), and `accept` records your local content as the new baseline when the local version is the one you want to keep.
+There is deliberately **no automatic merge**: these files are YAML plus prose, there is no merge base, and a three-way merge would quietly produce duplicate role names or half-renamed members. If you want real merging, use `git clone` and let git do it — that keeps credentials and pushes out of the plugin. The panel exposes the same check on the local space header: **Check updates** turns into `Apply N updates` only when something can be fast-forwarded, and otherwise says `N conflicts`, `N unverified`, or `No baseline` — a network failure is never shown as "up to date". `update --accept` records your local content as the new baseline (only files in `local-only`; a `diverged` file is never accepted, because that would throw the remote half away without telling you).
 
 ## Public registry and one-click pull
 
@@ -572,7 +573,7 @@ An empty library is not an error. A missing one is reported as info, not error. 
 
 ```bash
 npm install
-npm test          # node --test, 349 cases
+npm test          # node --test, 354 cases
 npm run smoke     # registers the tools against a real DSH bundle, asserts lossless output
 node scripts/check-locale.mjs   # static t() keys must exist in both dictionaries
 ```
@@ -602,7 +603,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 349/349 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, favourites (storage, snapshot wiring, route, panel filter), library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, persona references (own line, one level, both roots, budget, line numbers), origin ledgers and the six change states, run records feeding the plan, remote registry and one-click install).
+- `npm test` — 354/354 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, favourites (storage, snapshot wiring, route, panel filter), library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, persona references (own line, one level, both roots, budget, line numbers), origin ledgers and the seven change states, run records feeding the plan, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all eleven tools through a real `defineTool` from a DSH bundle; the six original tools execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.

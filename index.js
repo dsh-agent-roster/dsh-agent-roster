@@ -479,8 +479,16 @@ export function apply(ctx, config) {
         }
         // 只允许对“档案库里真实存在且校验通过”的档案动手：输入不构造路径，也不走缓存。
         const library = collectLibrary(ctx, settings, { name: pkg.name, version: pkg.version });
-        const rosters = library.workspaces.flatMap((workspace) => workspace.rosters);
-        const roster = rosters.find((item) => item.id === rosterId);
+        // 库里的 roster 不带 rootDir（它属于 workspace），这里补上——否则按库消歧永远不命中。
+        const rosters = library.workspaces.flatMap((workspace) =>
+          workspace.rosters.map((roster) => ({ ...roster, rootDir: workspace.rootDir })),
+        );
+        // 同一 id 可能同时存在于多座库；面板知道自己在看哪一座（rootDir），按它消歧，
+        // 拿不到才退回"第一个同名"——不猜用户指的是哪一份。
+        const wantedRoot = typeof input.rootDir === "string" ? input.rootDir : "";
+        const roster =
+          (wantedRoot === "" ? undefined : rosters.find((item) => item.id === rosterId && item.rootDir === wantedRoot)) ??
+          rosters.find((item) => item.id === rosterId);
         if (roster === undefined) {
           sendJson(res, 404, { ok: false, error: { code: "roster-not-found" }, known: rosters.map((item) => item.id) });
           return;
@@ -536,7 +544,16 @@ export function apply(ctx, config) {
           remote: entry.remote,
         }));
         if (action === "check") {
-          sendJson(res, 200, { ok: true, origin: checked.origin, commit: checked.commit, entries, summary: checked.summary, pending: checked.pending });
+          sendJson(res, 200, {
+            ok: true,
+            origin: checked.origin,
+            commit: checked.commit,
+            entries,
+            summary: checked.summary,
+            pending: checked.pending,
+            fastForward: checked.fastForward,
+            unverified: checked.unverified,
+          });
           return;
         }
         if (action === "accept") {

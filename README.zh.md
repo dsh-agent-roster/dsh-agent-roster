@@ -373,7 +373,7 @@ node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
 | `roster_create` | 把成员翻译成 `agent_teams_add_member` 参数 / `plan.members`；声明的能力缺失时拒绝出参数 |
 | `roster_verify` | 与 `dsh-agent-teams` 的 `team.json` 比对；分「一致 / 未核实 / 降级 / 未部署」四桶，并报物化后的工具过滤器摘要、策略漂移、团队溯源与能力要求 |
 | `roster_diff` | 比较两代档案：成员按 name 对齐、比有效值、人设只比长度与哈希 |
-| `roster_index` | 列出公共档案源（registry）的索引状态与 collection；给定 collection 时只读地拉下来看 |
+| `roster_index` | 列出公共档案源（registry）的索引状态与 collection，并标出本机是否已有带账本的副本（`pulled`）；给定 collection 时只读地拉下来看，附 `space` 与 `layout` |
 | `roster_space` | 说明一个空间：布局、登记/在库/缺失、角色数、来源与已拉取的 commit、诊断 |
 | `roster_search` | 用与档案库页签同一套引擎搜本机与前八个订阅源；每条命中都写明命中在哪 |
 | `roster_changes` | 拿拉下来的空间与来源账本比：干净 / 仅本地 / 仅远端 / 冲突 / 远端删除 / 本地缺失，逐文件 |
@@ -449,7 +449,7 @@ node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
 
 用 `clone` 拉下来的空间会带一份来源账本 `.dsh-roster-origin.json`（点文件，扫描器跳过）：来自哪个仓库、哪个 ref、哪个路径，拉取时的 commit，以及每个写入文件的 sha256 与 blob id。账本就是基线——没有它就没有可比的东西，`update` 会直说，而不是假装这份副本是干净的。
 
-`dsh-agent-roster update --dir <空间目录>` 把每个文件三方对比（账本 vs 磁盘 vs 该 ref 的远端），给出六态之一：
+`dsh-agent-roster update --dir <空间目录>` 把每个文件三方对比（账本 vs 磁盘 vs 该 ref 的远端），给出七态之一：
 
 | 状态 | 含义 | `--write` 的行为 |
 |---|---|---|
@@ -459,8 +459,9 @@ node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
 | `diverged` | 两边都改了 | **不动**——打印两边 sha 与 diff，由人决定 |
 | `remote-deleted` | 远端删了 | 不动；本地保留并标记 |
 | `missing` | 本地没了 | 不动；只报告 |
+| `unverified` | 远端没回话（网络、限频） | 不动；**不算"干净"** |
 
-这里刻意**不做自动合并**：这些文件是 YAML 加散文，没有 merge base，三方合并只会悄悄产出重名角色或改了一半的成员。要真合并就用 `git clone` 让 git 做——那会把凭据与推送带进插件，不作为默认。面板在本地空间章头上提供同一套检查（**检查更新** → `N 处更新` → 应用）；想以本地版本为准时用 `accept` 把它记成新基线。
+这里刻意**不做自动合并**：这些文件是 YAML 加散文，没有 merge base，三方合并只会悄悄产出重名角色或改了一半的成员。要真合并就用 `git clone` 让 git 做——那会把凭据与推送带进插件，不作为默认。面板在本地空间章头上提供同一套检查：**检查更新** 只有在确实有可快进的文件时才变成 `应用 N 处更新`，否则显示 `N 处冲突`、`N 处无法核对` 或 `无基线`——网络失败绝不会显示成"已是最新"。`update --accept` 把本地内容记成新基线（只认 `local-only`；`diverged` 永不认账，那等于不告诉你就丢掉远端那一半）。
 
 ## 公共档案源与一键拉取
 
@@ -543,7 +544,7 @@ node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
 
 ```bash
 npm install
-npm test          # node --test，349 个用例
+npm test          # node --test，354 个用例
 npm run smoke     # 用真实 DSH bundle 注册工具，断言输出可无损往返
 node scripts/check-locale.mjs   # client.js 里的静态 t() 键必须两本词典都有
 ```
@@ -571,7 +572,7 @@ test/             单测
 
 本机已验证：
 
-- `npm test` —— 349/349 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、收藏（存储、快照接线、路由、面板筛选）、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐、v1→v2 迁移、正文引用（独占一行、只一层、两种根、预算与行号）、执行回执并入施工图、来源账本与六态判定）。
+- `npm test` —— 354/354 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、收藏（存储、快照接线、路由、面板筛选）、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐、v1→v2 迁移、正文引用（独占一行、只一层、两种根、预算与行号）、执行回执并入施工图、来源账本与七态判定）。
 - `npm run smoke` —— 用真实 DSH bundle 的 `defineTool` 注册十一个工具，原来的六个逐个调用：输出全部通过无损校验、`path` 覆盖生效、释放干净；同一条命令随后用桩模块表加载 `client.js`，断言三处槽位注册、样式只注入一次、effect 可回收。
 - CLI：`validate --dir examples` 对两座示例库退出码 0。
 - 用插件管理器真的装进了本机 profile（`plugin_manager install_bundle` 指向本仓库 → `link:` 依赖 + bundle 条目），重启后按链接读取本仓库文件。

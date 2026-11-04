@@ -270,7 +270,6 @@
     "modeExisting": "已有会话",
     "modeNew": "新建会话",
     "noSessions": "没有可用会话",
-    "cwdPlaceholder": "工作目录（可留空）",
     "apply": "应用并创建团队",
     "applying": "应用中…",
     "applyFailed": "应用失败",
@@ -288,7 +287,8 @@
       "differ": "声明 {declared}，部署是 {actual}",
       "undeclared": "未声明，运行时用 {actual}",
       "unknown": "读不到部署配置"
-    }
+    },
+    "sessionName": "会话名字"
   },
   "catalog": {
     "placeholder": "要找什么能力？例：数据质量、发版、代码评审",
@@ -314,9 +314,11 @@
     "unfavorite": "取消收藏",
     "checkUpdates": "检查更新",
     "upToDate": "已是最新",
-    "updatesPending": "{count} 处更新",
-    "applyUpdates": "应用更新",
-    "updatesApplied": "已应用 {count} 个文件"
+    "applyUpdates": "应用 {count} 处更新",
+    "updatesApplied": "已应用 {count} 个文件",
+    "conflicts": "{count} 处冲突",
+    "unverified": "{count} 处无法核对",
+    "noBaseline": "无基线"
   },
   "teamCreate": {
     "title": "从 {roster} 创建团队",

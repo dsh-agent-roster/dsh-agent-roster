@@ -308,6 +308,31 @@ test("选已有会话：显示会话标题与工作区名，而不是一串 id",
   assert.doesNotMatch(source, /session\.sessionId\.slice\(0, 12\) · /);
 });
 
+test("新建会话：要选空间与名字，两个入口发的是同一组字段", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  // 空间（宿主工作区）是下拉框，不是自由文本目录：名字与落点都不该由用户拼路径。
+  assert.match(source, /const defaultWorkspace = useMemo\(\(\) => \{/);
+  assert.match(source, /workspaceList\.map\(\(item\) =>/);
+  assert.match(source, /t\("captain\.sessionName"\)/);
+  assert.match(source, /payload\.sessionTitle = sessionName\.trim\(\)/);
+  assert.match(source, /payload\.workspaceId = workspaceId/);
+  // 两个入口都要把"哪一份档案"带上，否则同名档案跨库时后台只能猜。
+  assert.ok((source.match(/payload\.rootDir = roster\.rootDir/g) ?? []).length >= 2);
+});
+
+test("更新按钮：冲突、无法核对、无基线各有各的说法，不一律显示「已是最新」", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  assert.match(source, /updates\.fastForward > 0/);
+  assert.match(source, /updates\.pending > 0/);
+  assert.match(source, /updates\.unverified > 0/);
+  assert.match(source, /updates\.unledgered > 0/);
+  assert.match(source, /t\("catalog\.conflicts"/);
+  assert.match(source, /t\("catalog\.unverified"/);
+  assert.match(source, /t\("catalog\.noBaseline"\)/);
+  // 没有可应用项时按钮要禁用，不能让人点了没反应。
+  assert.match(source, /disabled: updates !== null && updates\.fastForward === 0/);
+});
+
 test("收藏：档案页只列收藏，星标能切换，复制一份会回填", () => {
   const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
   // 收藏只写库根的点文件：取消收藏不该改动任何定义，也不该碰团队状态。

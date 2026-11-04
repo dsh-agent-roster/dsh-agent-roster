@@ -114,6 +114,15 @@ test("新工具：空间、搜索、编译预览、更新检查、建团队", as
   const team = await call(tools, "roster_team", { id: "core-review", path: examples });
   assert.equal(team.value.ok, false);
   assert.match(team.firstLine, /ok=false/);
+
+  // existing 模式缺 sessionId 时先拦住，不去碰 sessionController。
+  const noSession = await call(tools, "roster_team", { id: "core-review", mode: "existing", path: examples });
+  assert.equal(noSession.value.code, "missing-session");
+
+  // 索引：collection 上要能看出本机有没有对应副本（这里没拉过，就是 false）。
+  const index = await call(tools, "roster_index", {});
+  assert.equal(index.value.collections.length > 0, true);
+  assert.equal(index.value.collections[0].pulled.present, false);
 });
 
 test("找不到档案时也是同一套状态行，而不是自由文本", async () => {

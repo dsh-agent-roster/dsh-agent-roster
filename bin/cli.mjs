@@ -30,7 +30,7 @@ import { migrateLibrary } from "../lib/migrate.js";
 import { compilePlan } from "../lib/plan.js";
 import { mergeRunIntoPlan, validateRun } from "../lib/run.js";
 import { DIST_DIR } from "../lib/migrate.js";
-import { applyFastForward, checkOrigin } from "../lib/origin.js";
+import { acceptLocal, applyFastForward, checkOrigin } from "../lib/origin.js";
 
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
@@ -45,7 +45,7 @@ const USAGE = `用法：
                                                       把 v1 档案原地迁成 v2（roles/ + rosters/ + dist/）
   dsh-agent-roster clone --repo <owner/repo> [--ref <分支>] [--path <子目录>] [--space <id>] [--dir <目录>]
                                                       把一个远端空间按原布局拉成本地副本（可编辑）
-  dsh-agent-roster update --dir <空间目录> [--write] [--json]
+  dsh-agent-roster update --dir <空间目录> [--write] [--accept] [--json]
                                                       检查拉下来的空间有没有变（本地/远端/冲突六态）
   dsh-agent-roster --version         输出版本号
 
@@ -94,6 +94,9 @@ function parseArgs(argv) {
     else if (arg === "--json") options.json = true;
     else if (arg === "--local-only") options.localOnly = true;
     else if (arg === "--write") options.write = true;
+    // 冲突之后"认账"：把当前本地内容接受为新基线。它是唯一能让 diverged 消失的动作，
+    // 所以必须由人显式给，绝不在 --write 里顺手做。
+    else if (arg === "--accept") options.accept = true;
     else if (arg === "--version" || arg === "-v") options.command = "version";
     else if (arg === "--dir") {
       const value = argv[index + 1];
@@ -647,6 +650,18 @@ async function runUpdate(options) {
     process.stdout.write(`${result.text}\n`);
   }
   if (!result.ok) return 1;
+  if (options.accept === true) {
+    // 只认 local-only：diverged 两边都改过，直接认账等于悄悄丢掉远端那一半。
+    const locals = (result.entries ?? []).filter((entry) => entry.state === "local-only").map((entry) => entry.path);
+    if (locals.length === 0) {
+      process.stdout.write("没有可认账的本地改动（只认 local-only；冲突要先人看）\n");
+      return 0;
+    }
+    const accepted = acceptLocal(dir, locals);
+    process.stdout.write(`认账 ${accepted.updated.length} 个文件（本地内容成为新基线）\n`);
+    for (const item of accepted.updated) process.stdout.write(`  基线 ${item}\n`);
+    return accepted.ok ? 0 : 1;
+  }
   if (options.write !== true) return 0;
   const applied = applyFastForward(dir, result.entries ?? []);
   process.stdout.write(

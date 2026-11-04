@@ -551,7 +551,14 @@ window.__ModuleLoader__.load({
       const captain = roster.captain ?? {};
       const [mode, setMode] = useState("existing");
       const [sessionId, setSessionId] = useState("");
-      const [cwd, setCwd] = useState("");
+      // 新会话要落在某个"空间"（宿主工作区）里，并且有名字；缺省取包含这份档案的那个工作区。
+      const workspaceList = Array.isArray(workspaces) ? workspaces : [];
+      const defaultWorkspace = useMemo(() => {
+        const root = typeof roster.rootDir === "string" ? roster.rootDir : "";
+        return workspaceList.find((item) => root === item.path || root.startsWith(`${item.path}/`)) ?? workspaceList[0] ?? null;
+      }, [workspaces, roster.rootDir]);
+      const [workspaceId, setWorkspaceId] = useState(defaultWorkspace?.workspaceId ?? "");
+      const [sessionName, setSessionName] = useState(roster.id);
       const [busy, setBusy] = useState(false);
       const [result, setResult] = useState(null);
 
@@ -560,7 +567,7 @@ window.__ModuleLoader__.load({
       }, [sessions, sessionId]);
 
       const checks = report?.checks ?? [];
-      const canApply = mode === "new" || sessionId !== "";
+      const canApply = mode === "new" ? sessionName.trim() !== "" : sessionId !== "";
 
       async function apply() {
         if (!canApply || busy) return;
@@ -568,8 +575,13 @@ window.__ModuleLoader__.load({
         setResult(null);
         try {
           const payload = { rosterId: roster.id, mode };
+          if (typeof roster.rootDir === "string" && roster.rootDir !== "") payload.rootDir = roster.rootDir;
           if (mode === "existing") payload.sessionId = sessionId;
-          else if (cwd.trim() !== "") payload.cwd = cwd.trim();
+          else {
+            payload.sessionTitle = sessionName.trim();
+            if (workspaceId !== "") payload.workspaceId = workspaceId;
+            else if (defaultWorkspace !== null) payload.cwd = defaultWorkspace.path;
+          }
           const response = await readJson(APPLY_ROUTE, {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -662,12 +674,33 @@ window.__ModuleLoader__.load({
                       ),
                     ),
               )
-            : h("input", {
-                className: "rstr-input",
-                placeholder: t("captain.cwdPlaceholder"),
-                value: cwd,
-                onChange: (event) => setCwd(event.target.value),
-              }),
+            : h(
+                "div",
+                { className: "rstr-field-stack" },
+                workspaceList.length === 0
+                  ? null
+                  : h(
+                      "select",
+                      {
+                        className: "rstr-select",
+                        value: workspaceId,
+                        onChange: (event) => setWorkspaceId(event.target.value),
+                      },
+                      workspaceList.map((item) =>
+                        h(
+                          "option",
+                          { key: item.workspaceId || item.path, value: item.workspaceId },
+                          workspaceNameOf(item.path, workspaceList),
+                        ),
+                      ),
+                    ),
+                h("input", {
+                  className: "rstr-input",
+                  placeholder: t("captain.sessionName"),
+                  value: sessionName,
+                  onChange: (event) => setSessionName(event.target.value),
+                }),
+              ),
           h(
             "button",
             { type: "button", className: "rstr-btn rstr-btn-primary", disabled: !canApply || busy, onClick: apply },
@@ -711,7 +744,9 @@ window.__ModuleLoader__.load({
         captain !== null && captain.provider !== undefined && captain.model !== undefined && captain.provider !== "" && captain.model !== ""
           ? `${captain.provider}/${captain.model}`
           : null;
-      const canSubmit = !busy && (mode === "new" ? sessionName.trim() !== "" && defaultWorkspace !== null : sessionId !== "");
+      // 宿主没有工作区注册表时 defaultWorkspace 为 null：仍然允许建会话（落宿主默认目录），
+      // 但绝不因此静默换一个"空间"——payload 里既没有 workspaceId 也没有 cwd，由宿主决定。
+      const canSubmit = !busy && (mode === "new" ? sessionName.trim() !== "" : sessionId !== "");
 
       async function submit() {
         if (!canSubmit) return;
@@ -719,6 +754,7 @@ window.__ModuleLoader__.load({
         setError(null);
         try {
           const payload = { rosterId: roster.id, teamName: teamName.trim(), mode };
+          if (typeof roster.rootDir === "string" && roster.rootDir !== "") payload.rootDir = roster.rootDir;
           if (mode === "existing") payload.sessionId = sessionId;
           else {
             payload.sessionTitle = sessionName.trim();
@@ -1598,13 +1634,19 @@ window.__ModuleLoader__.load({
       }, [filtered, mode, installed, t]);
 
       // 本地空间的更新检查：账本在各自库根；一次检查把所有本地库都问一遍。
+      //
+      // 三种"不是干净"要分开报，否则会把它们都显示成"已是最新"：
+      //   fastForward —— 只有远端改了，可以直接覆盖；
+      //   pending     —— 冲突或远端删除，必须人看（本工具绝不自动合并）；
+      //   unverified  —— 远端没回话（网络/限频），根本没核对上；
+      //   unledgered  —— 这份副本没有账本（不是 clone 拉的），没有基线可比。
       async function checkUpdates() {
         const roots = [...new Set(catalog.entries.filter((entry) => entry.scope === "local" && entry.rootDir).map((entry) => entry.rootDir))];
         if (roots.length === 0) {
-          setUpdates({ pending: 0, entries: [] });
+          setUpdates({ pending: 0, fastForward: 0, unverified: 0, unledgered: 0 });
           return;
         }
-        if (updates !== null && updates.pending > 0) {
+        if (updates !== null && updates.fastForward > 0) {
           let applied = 0;
           for (const rootDir of roots) {
             const response = await readJson(SPACE_UPDATE_ROUTE, {
@@ -1620,18 +1662,26 @@ window.__ModuleLoader__.load({
           return;
         }
         let pending = 0;
-        const details = [];
+        let fastForward = 0;
+        let unverified = 0;
+        let unledgered = 0;
         for (const rootDir of roots) {
           const response = await readJson(SPACE_UPDATE_ROUTE, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ rootDir, action: "check" }),
           });
-          if (response.body?.ok !== true) continue;
+          if (response.body?.ok !== true) {
+            const code = response.body?.code;
+            if (code === "no-origin-ledger" || code === "origin-ledger-broken") unledgered += 1;
+            else unverified += 1;
+            continue;
+          }
           pending += Number(response.body.pending ?? 0);
-          details.push({ rootDir, summary: response.body.summary ?? {} });
+          fastForward += Number(response.body.fastForward ?? 0);
+          unverified += Number(response.body.unverified ?? 0);
         }
-        setUpdates({ pending, entries: details });
+        setUpdates({ pending, fastForward, unverified, unledgered });
       }
 
       function toggleTag(tag) {
@@ -1824,13 +1874,20 @@ window.__ModuleLoader__.load({
                             {
                               type: "button",
                               className: "rstr-btn rstr-btn-sm rstr-btn-ghost",
+                              disabled: updates !== null && updates.fastForward === 0 && updates.pending + updates.unverified + updates.unledgered > 0,
                               onClick: checkUpdates,
                             },
                             updates === null
                               ? t("catalog.checkUpdates")
-                              : updates.pending > 0
-                                ? t("catalog.updatesPending", { count: String(updates.pending) })
-                                : t("catalog.upToDate"),
+                              : updates.fastForward > 0
+                                ? t("catalog.applyUpdates", { count: String(updates.fastForward) })
+                                : updates.pending > 0
+                                  ? t("catalog.conflicts", { count: String(updates.pending) })
+                                  : updates.unverified > 0
+                                    ? t("catalog.unverified", { count: String(updates.unverified) })
+                                    : updates.unledgered > 0
+                                      ? t("catalog.noBaseline")
+                                      : t("catalog.upToDate"),
                           )
                         : null,
                       group.scope === "remote" && typeof onPullSpace === "function"

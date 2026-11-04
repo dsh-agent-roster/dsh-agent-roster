@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
 import { apply } from "../index.js";
+import { sha256Of, writeOrigin } from "../lib/origin.js";
 
 const root = nodePath.resolve(nodePath.dirname(fileURLToPath(import.meta.url)), "..");
 const examples = nodePath.join(root, "examples");
@@ -341,6 +342,51 @@ test("POST /space-update：没有账本如实报，越界目录 403", async () =
   );
   assert.equal(outside.status, 403);
   assert.equal(outside.body.error.code, "unknown-root");
+});
+
+test("POST /space-update：check 把可快进、冲突、无法核对分开报", async () => {
+  const host = makeHost();
+  const dir = mkdtempSync(nodePath.join(tmpdir(), "roster-update-route-"));
+  // 路由只认配置里的库根：把临时目录登记成唯一的库，白名单才放行。
+  apply(host.ctx, { ...CONFIG, rosterDirs: [dir] });
+
+  const relative = "rosters/demo/roster.yaml";
+  mkdirSync(nodePath.join(dir, "rosters", "demo"), { recursive: true });
+  const text = "id: demo\nversion: 1.0.0\n";
+  writeFileSync(nodePath.join(dir, ...relative.split("/")), text);
+  writeOrigin(dir, {
+    origin: { repo: "o/r", ref: "main", path: "" },
+    files: { [relative]: { sha256: sha256Of(text) } },
+  });
+
+  const original = globalThis.fetch;
+  // 远端读得到、但内容没变 ⇒ 干净，且两个计数都为 0。
+  globalThis.fetch = async () => ({ ok: true, status: 200, async text() { return text; } });
+  try {
+    const clean = await call(
+      host,
+      "/plugins/dsh-agent-roster/space-update",
+      makeReq({ method: "POST", body: { rootDir: dir, action: "check" } }),
+    );
+    assert.equal(clean.status, 200);
+    assert.equal(clean.body.ok, true);
+    assert.equal(clean.body.fastForward, 0);
+    assert.equal(clean.body.unverified, 0);
+
+    // 远端回 500 ⇒ 没核对上，必须计入 unverified 而不是 clean。
+    globalThis.fetch = async () => ({ ok: false, status: 500, async text() { return ""; } });
+    const offline = await call(
+      host,
+      "/plugins/dsh-agent-roster/space-update",
+      makeReq({ method: "POST", body: { rootDir: dir, action: "check" } }),
+    );
+    assert.equal(offline.body.ok, true);
+    assert.equal(offline.body.unverified, 1);
+    assert.equal(offline.body.summary.clean, 0);
+    assert.equal(offline.body.fastForward, 0);
+  } finally {
+    globalThis.fetch = original;
+  }
 });
 
 test("apply：方法不符是 405，缺 rosterId 是 400", async () => {
