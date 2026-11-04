@@ -256,7 +256,7 @@ test("档案库：独立的页签，支持搜索、标签筛选、按来源聚�
 test("空间：档案库能整空间拉取，并标出本机已有的档案", () => {
   const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
   assert.match(source, /INSTALL_SPACE_ROUTE = "\/plugins\/dsh-agent-roster\/install-space"/);
-  assert.match(source, /function CatalogTab\(\{ onOpen, onPullSpace, onFavorite \}\)/);
+  assert.match(source, /function CatalogTab\(\{ onOpen, onPullSpace, onFavorite, onToast \}\)/);
   assert.match(source, /t\("catalog\.pullSpace"\)/);
   assert.match(source, /t\("catalog\.here"\)/);
   // 已经在本机的那份，按钮必须是「打开」；没装的只说明状态，不再给单份拉取。
@@ -282,7 +282,7 @@ test("从档案创建团队：行上有入口，对话框默认新会话，团�
   const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
   assert.match(source, /t\("roster\.createTeam"\)/);
   assert.match(source, /onClick: \(\) => onCreateTeam\(roster\)/);
-  assert.match(source, /function TeamCreateDialog\(\{ roster, sessions, onClose, onToast, onCreated \}\)/);
+  assert.match(source, /function TeamCreateDialog\(\{ roster, sessions, workspaces, onClose, onToast, onCreated \}\)/);
   // 快速建团不该劫持用户正在聊的会话：默认必须是新会话。
   assert.match(source, /const \[mode, setMode\] = useState\("new"\)/);
   assert.match(source, /const payload = \{ rosterId: roster\.id, teamName: teamName\.trim\(\), mode \}/);
@@ -299,12 +299,12 @@ test("从档案创建团队：行上有入口，对话框默认新会话，团�
 
 test("选已有会话：显示会话标题与工作区名，而不是一串 id", () => {
   const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
-  assert.match(source, /function sessionLabel\(session\)/);
+  assert.match(source, /function sessionLabel\(session, workspaces\)/);
   // 标题来自宿主投影；取不到时退回工作区目录名，再退回短 id（三层兜底，不编造名字）。
   assert.match(source, /session\.title\.trim\(\)/);
-  assert.match(source, /cwd\.split\("\/"\)\.filter\(Boolean\)\.pop\(\)/);
+  assert.match(source, /path\.split\("\/"\)\.filter\(Boolean\)\.pop\(\)/);
   // 两个入口（应用队长 / 创建团队）都必须用它，且不再直接拼 sessionId。
-  assert.ok((source.match(/sessionLabel\(session\)/g) ?? []).length >= 2);
+  assert.ok((source.match(/sessionLabel\(session, workspaces\)/g) ?? []).length >= 2);
   assert.doesNotMatch(source, /session\.sessionId\.slice\(0, 12\) · /);
 });
 

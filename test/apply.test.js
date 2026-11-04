@@ -51,6 +51,10 @@ function fakeController(overrides = {}) {
       calls.push(["create", request]);
       return { sessionId: "s-created" };
     },
+    async rename(request) {
+      calls.push(["rename", request]);
+      return { sessionId: request.sessionId, title: request.title };
+    },
     async selectModel(request) {
       calls.push(["selectModel", request]);
       return { selected: { provider: request.provider, model: request.model } };
@@ -206,4 +210,43 @@ test("applyCaptain 切模型失败时如实失败，不继续发提示词", asyn
   assert.equal(result.ok, false);
   assert.equal(result.code, "model-not-applied");
   assert.equal(controller.calls.some((call) => call[0] === "prompt"), false);
+});
+
+test("applyCaptain 新建会话：落在给定空间里，并建完就改名", async () => {
+  const controller = fakeController();
+  const result = await applyCaptain({
+    sessionController: controller,
+    roster: roster(),
+    mode: "new",
+    workspaceId: "ws-7",
+    sessionTitle: "档案库改造",
+    teamName: "ops-floor",
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.sessionId, "s-created");
+  assert.equal(result.sessionTitle, "档案库改造");
+  const create = controller.calls.find((call) => call[0] === "create");
+  assert.deepEqual(create[1], { workspaceId: "ws-7" }, "workspaceId 与 cwd 互斥，只传空间");
+  const rename = controller.calls.find((call) => call[0] === "rename");
+  assert.deepEqual(rename[1], { sessionId: "s-created", title: "档案库改造" });
+  assert.equal(controller.calls.at(-1)[0], "prompt");
+});
+
+test("applyCaptain 改名失败如实报错，但会话 id 仍带回来", async () => {
+  const controller = fakeController({
+    async rename() {
+      throw new Error("title rejected");
+    },
+  });
+  const result = await applyCaptain({
+    sessionController: controller,
+    roster: roster(),
+    mode: "new",
+    workspaceId: "ws-7",
+    sessionTitle: "x",
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "session-rename-failed");
+  assert.equal(result.sessionId, "s-created");
 });

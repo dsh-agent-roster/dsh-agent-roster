@@ -26,7 +26,7 @@ From the plugin manager, point it at this repository (absolute path) or at the p
 @stofone/dsh-agent-roster
 ```
 
-The bundle ships `cordis.patch.yml`, so installing it inserts the plugin into the profile automatically. After install you should see six tools (`roster_list`, `roster_show`, `roster_create`, `roster_verify`, `roster_diff`, `roster_index`) and an **Agent Roster** entry in the left sidebar (a full main panel, not a Settings section).
+The bundle ships `cordis.patch.yml`, so installing it inserts the plugin into the profile automatically. After install you should see eleven tools (`roster_list`, `roster_show`, `roster_create`, `roster_verify`, `roster_diff`, `roster_index`, `roster_space`, `roster_search`, `roster_changes`, `roster_compile`, `roster_team`) and an **Agent Roster** entry in the left sidebar (a full main panel, not a Settings section).
 
 ## Quick start
 
@@ -392,8 +392,13 @@ so finding a roster from a distance costs one file — not a clone.
 | `roster_verify` | compare a roster against `dsh-agent-teams`' `team.json`; reports faithful / unverified / drift / missing, plus materialised tool-filter digests, policy drift, provenance and capability requirements |
 | `roster_diff` | diff two rosters (generation N vs N+1): members matched by name, effective values compared, persona compared by length + hash |
 | `roster_index` | list registry sources and their collections; given a collection, fetch it read-only for inspection |
+| `roster_space` | describe a space: layout, declared vs present vs missing rosters, roles, `origin` and the pulled commit, diagnostics |
+| `roster_search` | search this machine and the first eight subscribed sources with the same engine as the Library tab; each hit names the field it matched |
+| `roster_changes` | compare a pulled space against its origin ledger: clean / local-only / remote-only / diverged / remote-deleted / missing, per file |
+| `roster_compile` | compile a v2 roster in memory: members, prompt stats (characters, parts, includes, sha256), diagnostics — writes nothing |
+| `roster_team` | create a team from a roster: a new session (choose the space and its name) or an existing one, then select the captain model and queue the build prompt |
 
-All six are read-only with respect to team state. `roster_create` only produces arguments — the model still has to call `agent_teams_add_member` itself.
+All but `roster_team` are read-only. `roster_create` only produces arguments — the model still has to call `agent_teams_add_member` itself. `roster_team` is the one tool that touches the runtime: it creates or reuses a session, renames it when it is new, selects the captain model declared by the roster, and queues the same prompt the panel's **Create team** button uses, so the two paths cannot drift.
 
 `roster_list`, `roster_show`, `roster_create` and `roster_verify` all accept a `path` argument: when given, it is the library root, with no silent fallback to the configured directory.
 
@@ -454,14 +459,31 @@ The client plugin adds an **Agent Roster** entry to the left sidebar: one row in
 
 | Tab | What you can do |
 |---|---|
-| Rosters | the starred rosters by default (a segmented control shows all of them); browse every workspace × library, expand members, and **create / edit / duplicate / delete / import / export** rosters. The editor has a form mode and a source mode (the file as-is); the host validates before writing and keeps a `.bak` next to an overwritten file |
-| Library | find a roster by capability across this machine and every subscribed source: search with hit reasons, tag filtering, grouped by space or flat; open what is here, star what you want, pull a whole space |
+| Rosters | the starred rosters by default (a segmented control shows all of them); browse every workspace × library, expand members, **create a team** (a new session picks the space and its name; existing sessions are listed as space · session name), and **create / edit / duplicate / delete / import / export** rosters. The editor has a form mode and a source mode (the file as-is); the host validates before writing and keeps a `.bak` next to an overwritten file |
+| Library | find a roster by capability across this machine and every subscribed source: search with hit reasons, tag filtering, grouped by space or flat; open what is here, star what you want, pull a whole space, and check a local space for updates from its origin |
 | Teams | read one configured state directory (`.agent-teams` by default) and see every team the runtime created: profile, member profiles and model routes, whether each persisted member really matches its roster, plus the team's tasks |
 | Health | the "configuration points somewhere wrong" questions in one place: which directories resolved, whether the state directory exists, how many declarations are unconfirmed, and what to change |
 
 A badge at the top summarises how many items need attention; the Health tab explains each one. All write operations go through `POST /plugins/dsh-agent-roster/rosters`, which enforces same-origin (`connection`), a JSON content type, a body-size cap and a library-root whitelist — the client never writes files itself.
 
 The panel is bilingual. Its language defaults to the DSH language and can be pinned in **Settings → Plugins → Agent Roster** (the same section shows a read-only summary of the configuration). Both the panel and the host-side texts are translated; dictionaries live in `locale/` and are served by the host, so switching the DSH language re-renders the panel without a reload.
+
+## Keeping a pulled space current
+
+A space pulled with `clone` carries a ledger, `.dsh-roster-origin.json` (hidden, so the scanner ignores it): the repository, ref and path it came from, the commit it was pulled at, and the sha256 plus blob id of every file written. The ledger is the baseline — without it there is nothing to compare against, and `update` says so instead of pretending the copy is clean.
+
+`dsh-agent-roster update --dir <space>` compares each file three ways (ledger vs disk vs the remote at that ref) and reports one of six states:
+
+| State | Meaning | What `--write` does |
+|---|---|---|
+| `clean` | nobody moved | nothing |
+| `local-only` | you edited, the remote did not | nothing — your edit stays |
+| `remote-only` | the remote moved, you did not | replaces the file and updates the ledger |
+| `diverged` | both moved | **nothing** — it prints both shas and a diff; a human decides |
+| `remote-deleted` | gone upstream | nothing; the local copy is kept and flagged |
+| `missing` | gone locally | nothing; reported |
+
+There is deliberately **no automatic merge**: these files are YAML plus prose, there is no merge base, and a three-way merge would quietly produce duplicate role names or half-renamed members. If you want real merging, use `git clone` and let git do it — that keeps credentials and pushes out of the plugin. The panel exposes the same check on the local space header (**Check updates** → `N updates` → apply), and `accept` records your local content as the new baseline when the local version is the one you want to keep.
 
 ## Public registry and one-click pull
 
@@ -505,9 +527,14 @@ repository's `index/registry.json`, and anyone who subscribes can see them in th
 | `/plugins/dsh-agent-roster/apply` | POST | apply an archive's captain to an existing or new session and queue the team-building prompt |
 | `/plugins/dsh-agent-roster/collection` | GET | fetch one collection's rosters read-only (nothing is written) |
 | `/plugins/dsh-agent-roster/install` | POST | write one collection into the local library (idempotent, no overwrite by default) |
+| `/plugins/dsh-agent-roster/install-space` | POST | pull a whole space (rosters + roles + parts + snippets + `space.yaml`) into a local directory |
+| `/plugins/dsh-agent-roster/catalog` | GET | every roster this machine can see: local libraries plus every subscribed source |
+| `/plugins/dsh-agent-roster/search` | GET | `?q=` — the same engine the Library tab uses, with per-hit reasons |
+| `/plugins/dsh-agent-roster/favorites` | POST | star / unstar one roster; writes only the library's `.dsh-roster-favorites.json` |
+| `/plugins/dsh-agent-roster/space-update` | POST | `check` / `apply` / `accept` a pulled space against its origin ledger |
 | `/plugins/dsh-agent-roster/locale` | GET | `en` / `zh` dictionary for the panel |
 
-All six are `exact` routes behind the host's `connection` fence and answer `405` for other methods.
+All twelve are `exact` routes behind the host's `connection` fence and answer `405` for other methods.
 
 ## Configuration
 
@@ -521,7 +548,7 @@ All six are `exact` routes behind the host's `connection` fence and answer `405`
 | `region` | `"auto"` | download region: `china` reads npm-style index packages from the Tencent mirror; `auto` equals `global` (no probing, one less request) |
 | `registryMirror` | `""` | custom npm registry for download sources, e.g. `https://registry.npmmirror.com` or `http://nexus.corp.local/repository/npm`. Set it and it beats `region`; a registry pinned inside a source still beats both. Empty means no custom mirror |
 
-All six are `volatile`: changes apply immediately, no host restart.
+All seven are `volatile`: changes apply immediately, no host restart.
 
 ## Diagnostics
 
@@ -545,7 +572,7 @@ An empty library is not an error. A missing one is reported as info, not error. 
 
 ```bash
 npm install
-npm test          # node --test, 337 cases
+npm test          # node --test, 349 cases
 npm run smoke     # registers the tools against a real DSH bundle, asserts lossless output
 node scripts/check-locale.mjs   # static t() keys must exist in both dictionaries
 ```
@@ -553,7 +580,7 @@ node scripts/check-locale.mjs   # static t() keys must exist in both dictionarie
 Layout:
 
 ```
-index.js          host plugin: Config, apply, six routes
+index.js          host plugin: Config, apply, twelve routes
 lib/              reading: format, format-v2, frontmatter, parse, validate, role, roster2,
                   capabilities, organization, registry, remote, library, home
                   compiling: compile2, plan, migrate, run
@@ -575,12 +602,12 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 337/337 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, favourites (storage, snapshot wiring, route, panel filter), library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, persona references (own line, one level, both roots, budget, line numbers), run records feeding the plan, remote registry and one-click install).
-- `npm run smoke` — `apply()` registers all six tools through a real `defineTool` from a DSH bundle; `roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff` execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
+- `npm test` — 349/349 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, favourites (storage, snapshot wiring, route, panel filter), library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, persona references (own line, one level, both roots, budget, line numbers), origin ledgers and the six change states, run records feeding the plan, remote registry and one-click install).
+- `npm run smoke` — `apply()` registers all eleven tools through a real `defineTool` from a DSH bundle; the six original tools execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.
 - The read-only route answered from the running host: `GET /plugins/dsh-agent-roster/library` → 200 with the plugin version and resolved rosters.
-- A second agent session saw all six tools in its tool list and called them.
+- A second agent session saw all eleven tools in its tool list and called them.
 - The sidebar panel was confirmed visible with real roster data.
 
 Not verified in this pass: the 0.2.0 management UI (tabs, editors, Teams view, language switch, `document` / `rosters` routes) inside a live page — those need a host restart to load the new modules, and are verified after it.

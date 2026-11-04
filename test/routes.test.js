@@ -300,13 +300,47 @@ test("collection：没有远端源时明确 404 并列出已知项", async () =>
   assert.deepEqual(result.body.known, []);
 });
 
-test("工具：apply() 之后六个工具都在注册表里", () => {
+test("工具：apply() 之后十一个工具都在注册表里", () => {
   const host = makeHost();
   apply(host.ctx, CONFIG);
   assert.deepEqual(
     [...host.tools.keys()].sort(),
-    ["roster_create", "roster_diff", "roster_index", "roster_list", "roster_show", "roster_verify"],
+    [
+      "roster_changes",
+      "roster_compile",
+      "roster_create",
+      "roster_diff",
+      "roster_index",
+      "roster_list",
+      "roster_search",
+      "roster_show",
+      "roster_space",
+      "roster_team",
+      "roster_verify",
+    ],
   );
+});
+
+test("POST /space-update：没有账本如实报，越界目录 403", async () => {
+  const host = makeHost();
+  apply(host.ctx, CONFIG);
+
+  const noLedger = await call(
+    host,
+    "/plugins/dsh-agent-roster/space-update",
+    makeReq({ method: "POST", body: { rootDir: examples, action: "check" } }),
+  );
+  assert.equal(noLedger.status, 200);
+  assert.equal(noLedger.body.ok, false);
+  assert.equal(noLedger.body.code, "no-origin-ledger");
+
+  const outside = await call(
+    host,
+    "/plugins/dsh-agent-roster/space-update",
+    makeReq({ method: "POST", body: { rootDir: "/etc", action: "check" } }),
+  );
+  assert.equal(outside.status, 403);
+  assert.equal(outside.body.error.code, "unknown-root");
 });
 
 test("apply：方法不符是 405，缺 rosterId 是 400", async () => {

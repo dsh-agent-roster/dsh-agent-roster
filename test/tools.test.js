@@ -58,14 +58,19 @@ async function call(tools, name, args) {
   return { value, firstLine, text: blocks[0].text };
 }
 
-test("注册六个工具，前五个能在 examples 上执行", async () => {
+test("注册十一个工具，旧的六个能在 examples 上执行", async () => {
   const { tools } = register();
   assert.deepEqual([...tools.keys()].sort(), [
+    "roster_changes",
+    "roster_compile",
     "roster_create",
     "roster_diff",
     "roster_index",
     "roster_list",
+    "roster_search",
     "roster_show",
+    "roster_space",
+    "roster_team",
     "roster_verify",
   ]);
 
@@ -84,6 +89,31 @@ test("注册六个工具，前五个能在 examples 上执行", async () => {
   const verify = await call(tools, "roster_verify", { path: examples, stateDir: path.join(root, "test", "no-such-state") });
   assert.match(verify.firstLine, /state=unavailable/);
   assert.match(verify.firstLine, /missing=5/);
+});
+
+test("新工具：空间、搜索、编译预览、更新检查、建团队", async () => {
+  const { tools } = register();
+
+  const space = await call(tools, "roster_space", { path: examples });
+  assert.match(space.firstLine, /space=examples/);
+  assert.match(space.firstLine, /layout=monorepo/);
+  assert.equal(space.value.missing.length, 0);
+
+  const found = await call(tools, "roster_search", { query: "review", path: examples, remote: false });
+  assert.match(found.firstLine, /hits=\d+/);
+  assert.ok(Array.isArray(found.value.results));
+
+  const preview = await call(tools, "roster_compile", { ref: "core-review", path: examples });
+  assert.match(preview.firstLine, /id=core-review/);
+  assert.equal(preview.value.ok, true);
+
+  const changes = await call(tools, "roster_changes", { path: examples, refresh: false });
+  assert.match(changes.firstLine, /ok=false|ok=true/);
+
+  // 没有 sessionController 时如实报 unavailable，而不是假装建了团队。
+  const team = await call(tools, "roster_team", { id: "core-review", path: examples });
+  assert.equal(team.value.ok, false);
+  assert.match(team.firstLine, /ok=false/);
 });
 
 test("找不到档案时也是同一套状态行，而不是自由文本", async () => {
@@ -109,7 +139,7 @@ test("显式 path 覆盖配置目录（真机回归点）", async () => {
 
 test("释放后不残留工具", () => {
   const { tools, disposers } = register();
-  assert.equal(tools.size, 6);
+  assert.equal(tools.size, 11);
   for (const dispose of disposers) dispose();
   assert.equal(tools.size, 0);
 });

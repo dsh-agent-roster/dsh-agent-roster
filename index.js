@@ -17,9 +17,10 @@ import { readFileSync } from "node:fs";
 import z from "@deepseek-ai/schemastery";
 
 import { configView } from "./lib/config-view.js";
-import { applyCaptain, listSessions } from "./lib/apply.js";
+import { applyCaptain, listHostWorkspaces, listSessions } from "./lib/apply.js";
 import { collectLibrary } from "./lib/library.js";
 import { addFavorites, readFavorites, setFavorite } from "./lib/favorites.js";
+import { acceptLocal, applyFastForward, checkOrigin } from "./lib/origin.js";
 import { parseDocumentText } from "./lib/parse.js";
 import { ROSTER2_KIND } from "./lib/format-v2.js";
 import { validateRoster } from "./lib/validate.js";
@@ -106,7 +107,7 @@ export function apply(ctx, config) {
   const settings = configView(config);
 
   registerRosterTools(ctx, settings, { version: pkg.version });
-  ctx.logger?.info?.(`dsh-agent-roster ${pkg.version}: registered 6 tools`);
+  ctx.logger?.info?.(`dsh-agent-roster ${pkg.version}: registered 11 tools`);
 
   // 面板路由：读快照 / 读单份档案原文 / 保存 / 删除 / 导入。
   // 没有 webServer 也不影响工具可用性。
@@ -126,7 +127,9 @@ export function apply(ctx, config) {
         const remote = await loadRemotePanel(settings, { refresh: query.get("refresh") === "1" });
         // 会话列表也是“附属信息”：没有 sessionController（或它报错）时面板仍要能用。
         const sessions = await listSessions(ctx.get?.("sessionController"));
-        sendJson(res, 200, { ...snapshot, remote, sessions });
+        // 新建团队会话要选"空间"：这是宿主的工作区注册表，不是档案空间（space.yaml）。
+        const hostWorkspaces = listHostWorkspaces(ctx.get?.("workspaceRegistry"));
+        sendJson(res, 200, { ...snapshot, remote, sessions, hostWorkspaces });
       },
       "library route",
     );
@@ -488,6 +491,9 @@ export function apply(ctx, config) {
           mode: input.mode === "new" ? "new" : "existing",
           sessionId: typeof input.sessionId === "string" ? input.sessionId : "",
           cwd: typeof input.cwd === "string" ? input.cwd : "",
+          // 新会话落在哪个空间（工作区）与叫什么名字；两者都只用于建会话，不写团队状态。
+          workspaceId: typeof input.workspaceId === "string" ? input.workspaceId : "",
+          sessionTitle: typeof input.sessionTitle === "string" ? input.sessionTitle.trim().slice(0, 120) : "",
           // 团队名只进提示词，不写任何团队状态；超长按 120 截断，与档案标题同量级。
           teamName: typeof input.teamName === "string" ? input.teamName.trim().slice(0, 120) : "",
         });
@@ -495,6 +501,54 @@ export function apply(ctx, config) {
         sendJson(res, status, result);
       },
       "apply route",
+    );
+
+    // 更新检查：账本在空间根目录；冲突不自动合并，只把两边摘要摆出来。
+    register(
+      "/plugins/dsh-agent-roster/space-update",
+      async (req, res) => {
+        if (guard(req, res)) return;
+        if (!requireMethod(req, res, "POST")) return;
+        const body = await readJsonBody(req);
+        if (!body.ok) {
+          sendError(res, body.status, body.code);
+          return;
+        }
+        const input = body.value !== null && typeof body.value === "object" ? body.value : {};
+        const rootDir = findLibraryRoot(resolveRoots(ctx, settings), input.rootDir);
+        if (rootDir === null) {
+          sendError(res, 403, "unknown-root");
+          return;
+        }
+        const action = input.action === "apply" || input.action === "accept" ? input.action : "check";
+        const checked = await checkOrigin(rootDir.rootDir, {
+          fetchImpl: typeof globalThis.fetch === "function" ? globalThis.fetch : null,
+          refresh: true,
+        });
+        if (!checked.ok) {
+          sendJson(res, 200, { ok: false, code: checked.code ?? "check-failed", text: checked.text ?? "" });
+          return;
+        }
+        const entries = checked.entries.map((entry) => ({
+          path: entry.path,
+          state: entry.state,
+          local: entry.local,
+          remote: entry.remote,
+        }));
+        if (action === "check") {
+          sendJson(res, 200, { ok: true, origin: checked.origin, commit: checked.commit, entries, summary: checked.summary, pending: checked.pending });
+          return;
+        }
+        if (action === "accept") {
+          const paths = Array.isArray(input.paths) ? input.paths.filter((item) => typeof item === "string") : [];
+          const accepted = acceptLocal(rootDir.rootDir, paths);
+          sendJson(res, 200, { ok: accepted.ok, accepted: accepted.updated });
+          return;
+        }
+        const applied = applyFastForward(rootDir.rootDir, checked.entries);
+        sendJson(res, 200, { ok: applied.ok, applied: applied.applied, skipped: applied.skipped });
+      },
+      "space update route",
     );
 
     register(

@@ -30,6 +30,7 @@ import { migrateLibrary } from "../lib/migrate.js";
 import { compilePlan } from "../lib/plan.js";
 import { mergeRunIntoPlan, validateRun } from "../lib/run.js";
 import { DIST_DIR } from "../lib/migrate.js";
+import { applyFastForward, checkOrigin } from "../lib/origin.js";
 
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
@@ -44,6 +45,8 @@ const USAGE = `用法：
                                                       把 v1 档案原地迁成 v2（roles/ + rosters/ + dist/）
   dsh-agent-roster clone --repo <owner/repo> [--ref <分支>] [--path <子目录>] [--space <id>] [--dir <目录>]
                                                       把一个远端空间按原布局拉成本地副本（可编辑）
+  dsh-agent-roster update --dir <空间目录> [--write] [--json]
+                                                      检查拉下来的空间有没有变（本地/远端/冲突六态）
   dsh-agent-roster --version         输出版本号
 
 选项：
@@ -185,6 +188,7 @@ async function main(argv) {
   }
   if (options.command === "compile") return runCompile(options);
   if (options.command === "clone") return runClone(options);
+  if (options.command === "update") return runUpdate(options);
   if (options.command === "migrate") return runMigrate(options);
   if (options.command === "registry") {
     if (options.file === null) {
@@ -630,6 +634,28 @@ function runMigrate(options) {
  * @param {object} options
  * @returns {Promise<number>}
  */
+async function runUpdate(options) {
+  const dir = options.dirs.length > 0 ? nodePath.resolve(options.dirs[0]) : null;
+  if (dir === null) {
+    process.stderr.write(`update 需要 --dir <空间目录>\n\n${USAGE}`);
+    return 2;
+  }
+  const result = await checkOrigin(dir, { fetchImpl: fetch, refresh: true });
+  if (options.json) {
+    process.stdout.write(`${JSON.stringify({ plugin: pkg.name, version: pkg.version, dir, ...result, entries: (result.entries ?? []).map(({ remoteText, ...rest }) => rest) }, null, 2)}\n`);
+  } else {
+    process.stdout.write(`${result.text}\n`);
+  }
+  if (!result.ok) return 1;
+  if (options.write !== true) return 0;
+  const applied = applyFastForward(dir, result.entries ?? []);
+  process.stdout.write(
+    `快进 ${applied.applied.length} 个文件${applied.skipped.length > 0 ? ` · 未动 ${applied.skipped.length}（冲突或本地改动）` : ""}\n`,
+  );
+  for (const item of applied.applied) process.stdout.write(`  写入 ${item}\n`);
+  return applied.ok ? 0 : 1;
+}
+
 async function runClone(options) {
   if (options.repo === null) {
     process.stderr.write(`clone 需要 --repo <owner/repo>\n\n${USAGE}`);

@@ -36,6 +36,7 @@ window.__ModuleLoader__.load({
     const APPLY_ROUTE = "/plugins/dsh-agent-roster/apply";
     const SEARCH_ROUTE = "/plugins/dsh-agent-roster/search";
     const CATALOG_ROUTE = "/plugins/dsh-agent-roster/catalog";
+    const SPACE_UPDATE_ROUTE = "/plugins/dsh-agent-roster/space-update";
   const FAVORITES_ROUTE = "/plugins/dsh-agent-roster/favorites";
 
     const EFFORTS = ["low", "medium", "high", "default"];
@@ -525,16 +526,27 @@ window.__ModuleLoader__.load({
      * 会话在“选已有会话”里的显示名：标题（来自投影）→ 工作区目录名 → 短 id。
      * 只显示 id 时人根本认不出那是哪个会话，所以标题缺失也要退回工作区。
      */
-    function sessionLabel(session) {
-      const title = typeof session?.title === "string" ? session.title.trim() : "";
-      const cwd = typeof session?.cwd === "string" ? session.cwd.replace(/\/+$/, "") : "";
-      const base = cwd === "" ? "" : cwd.split("/").filter(Boolean).pop() ?? "";
-      if (title !== "") return base === "" ? title : `${title} · ${base}`;
-      if (base !== "") return base;
-      return String(session?.sessionId ?? "").slice(0, 12);
+    function workspaceNameOf(cwd, workspaces) {
+      const path = typeof cwd === "string" ? cwd.replace(/\/+$/, "") : "";
+      const list = Array.isArray(workspaces) ? workspaces : [];
+      const exact = path === "" ? undefined : list.find((item) => item.path === path);
+      const owner = exact ?? (path === "" ? undefined : list.find((item) => path.startsWith(`${item.path}/`)));
+      if (owner !== undefined) return owner.title || owner.path.split("/").filter(Boolean).pop() || "";
+      return path === "" ? "" : path.split("/").filter(Boolean).pop() ?? "";
     }
 
-    function CaptainPanel({ roster, report, sessions, onToast }) {
+    /**
+     * 会话在"选已有会话"里的显示名：空间 · 会话名。
+     * 空间取宿主工作区的标题（退回目录名），会话名取投影标题（退回短 id）。
+     */
+    function sessionLabel(session, workspaces) {
+      const space = workspaceNameOf(session?.cwd, workspaces);
+      const title = typeof session?.title === "string" ? session.title.trim() : "";
+      const name = title !== "" ? title : String(session?.sessionId ?? "").slice(0, 12);
+      return space === "" ? name : `${space} · ${name}`;
+    }
+
+    function CaptainPanel({ roster, report, sessions, workspaces, onToast }) {
       useTranslation();
       const captain = roster.captain ?? {};
       const [mode, setMode] = useState("existing");
@@ -646,7 +658,7 @@ window.__ModuleLoader__.load({
                       h(
                         "option",
                         { key: session.sessionId, value: session.sessionId },
-                        sessionLabel(session),
+                        sessionLabel(session, workspaces),
                       ),
                     ),
               )
@@ -678,13 +690,20 @@ window.__ModuleLoader__.load({
      * 所以这个对话框做的是端到端的前半段——把成员、队长模型、建团步骤一次交给一个会话，
      * 后半段（建队、加成员、核对）在那个会话里发生；结果回团队页签与 `roster_verify` 看。
      */
-    function TeamCreateDialog({ roster, sessions, onClose, onToast, onCreated }) {
+    function TeamCreateDialog({ roster, sessions, workspaces, onClose, onToast, onCreated }) {
       useTranslation();
       // 默认新会话：快速建团不该劫持用户正在聊的这个。
       const [mode, setMode] = useState("new");
       const [sessionId, setSessionId] = useState(sessions[0]?.sessionId ?? "");
-      const [cwd, setCwd] = useState(roster.rootDir ?? "");
       const [teamName, setTeamName] = useState(roster.id);
+      const [sessionName, setSessionName] = useState(roster.id);
+      // 新建会话要落在一个"空间"（宿主工作区）里：默认取包含这份档案的那个。
+      const defaultWorkspace = useMemo(() => {
+        const list = Array.isArray(workspaces) ? workspaces : [];
+        const root = typeof roster.rootDir === "string" ? roster.rootDir : "";
+        return list.find((item) => root === item.path || root.startsWith(`${item.path}/`)) ?? list[0] ?? null;
+      }, [workspaces, roster.rootDir]);
+      const [workspaceId, setWorkspaceId] = useState(defaultWorkspace?.workspaceId ?? "");
       const [busy, setBusy] = useState(false);
       const [error, setError] = useState(null);
       const captain = roster.captain ?? null;
@@ -692,7 +711,7 @@ window.__ModuleLoader__.load({
         captain !== null && captain.provider !== undefined && captain.model !== undefined && captain.provider !== "" && captain.model !== ""
           ? `${captain.provider}/${captain.model}`
           : null;
-      const canSubmit = !busy && (mode === "new" || sessionId !== "");
+      const canSubmit = !busy && (mode === "new" ? sessionName.trim() !== "" && defaultWorkspace !== null : sessionId !== "");
 
       async function submit() {
         if (!canSubmit) return;
@@ -701,7 +720,11 @@ window.__ModuleLoader__.load({
         try {
           const payload = { rosterId: roster.id, teamName: teamName.trim(), mode };
           if (mode === "existing") payload.sessionId = sessionId;
-          else if (cwd.trim() !== "") payload.cwd = cwd.trim();
+          else {
+            payload.sessionTitle = sessionName.trim();
+            if (workspaceId !== "") payload.workspaceId = workspaceId;
+            else if (defaultWorkspace !== null) payload.cwd = defaultWorkspace.path;
+          }
           const response = await readJson(APPLY_ROUTE, {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -783,12 +806,33 @@ window.__ModuleLoader__.load({
                       ),
                     ),
               )
-            : h("input", {
-                className: "rstr-input",
-                placeholder: t("teamCreate.cwdPlaceholder"),
-                value: cwd,
-                onChange: (event) => setCwd(event.target.value),
-              }),
+            : h(
+                "div",
+                { className: "rstr-field-stack" },
+                h(
+                  "select",
+                  {
+                    className: "rstr-select",
+                    value: workspaceId,
+                    "aria-label": t("teamCreate.workspace"),
+                    onChange: (event) => setWorkspaceId(event.target.value),
+                  },
+                  (Array.isArray(workspaces) ? workspaces : []).map((item) =>
+                    h(
+                      "option",
+                      { key: item.workspaceId || item.path, value: item.workspaceId },
+                      `${item.title || item.path.split("/").filter(Boolean).pop() || item.path} · ${item.path}`,
+                    ),
+                  ),
+                ),
+                h("input", {
+                  className: "rstr-input",
+                  placeholder: t("teamCreate.sessionNamePlaceholder"),
+                  "aria-label": t("teamCreate.sessionName"),
+                  value: sessionName,
+                  onChange: (event) => setSessionName(event.target.value),
+                }),
+              ),
         ),
         h(
           "p",
@@ -809,7 +853,7 @@ window.__ModuleLoader__.load({
      * 名册是列表不是画廊：id 立在第一列当"脊"，状态长在左沿，操作平时只露两个入口。
      * 复制/建队/删除这些低频且危险的动作收进展开区——否则 21 份档案就是 105 个按钮。
      */
-    function RosterCard({ roster, deployment, captainReport, sessions, onToast, onEdit, onDuplicate, onDelete, onCopy, onCreateTeam, onFavorite }) {
+    function RosterCard({ roster, deployment, captainReport, sessions, workspaces, onToast, onEdit, onDuplicate, onDelete, onCopy, onCreateTeam, onFavorite }) {
       const [open, setOpen] = useState(false);
       const diagnostics = roster.diagnostics ?? [];
       const errors = diagnostics.filter((item) => item?.severity === "error").length;
@@ -904,7 +948,7 @@ window.__ModuleLoader__.load({
                   ),
               roster.captain === null || roster.captain === undefined
                 ? null
-                : h(CaptainPanel, { roster, report: captainReport, sessions: sessions ?? [], onToast }),
+                : h(CaptainPanel, { roster, report: captainReport, sessions: sessions ?? [], workspaces, onToast }),
               h(DiagnosticList, { items: diagnostics }),
               h("p", { className: "rstr-hint" }, `roster.file: ${roster.file}`),
               h(
@@ -1451,7 +1495,7 @@ window.__ModuleLoader__.load({
      * 查询走后端排序（`/search`）：前端再写一套打分，两处迟早给出不同顺序。
      * 标签筛选是「且」，与档案页签的标签池同一语义。
      */
-    function CatalogTab({ onOpen, onPullSpace, onFavorite }) {
+    function CatalogTab({ onOpen, onPullSpace, onFavorite, onToast }) {
       useTranslation();
       const [mode, setMode] = useState("source");
       const [query, setQuery] = useState("");
@@ -1459,6 +1503,7 @@ window.__ModuleLoader__.load({
       const [catalog, setCatalog] = useState({ status: "loading", entries: [], counts: null });
       const [hits, setHits] = useState(null);
       const [pulling, setPulling] = useState("");
+      const [updates, setUpdates] = useState(null);
       const [nonce, setNonce] = useState(0);
 
       useEffect(() => {
@@ -1551,6 +1596,43 @@ window.__ModuleLoader__.load({
           installed: group.entries.filter((entry) => installed.has(entry.rosterId)).length,
         }));
       }, [filtered, mode, installed, t]);
+
+      // 本地空间的更新检查：账本在各自库根；一次检查把所有本地库都问一遍。
+      async function checkUpdates() {
+        const roots = [...new Set(catalog.entries.filter((entry) => entry.scope === "local" && entry.rootDir).map((entry) => entry.rootDir))];
+        if (roots.length === 0) {
+          setUpdates({ pending: 0, entries: [] });
+          return;
+        }
+        if (updates !== null && updates.pending > 0) {
+          let applied = 0;
+          for (const rootDir of roots) {
+            const response = await readJson(SPACE_UPDATE_ROUTE, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ rootDir, action: "apply" }),
+            });
+            applied += Array.isArray(response.body?.applied) ? response.body.applied.length : 0;
+          }
+          setUpdates(null);
+          setNonce((value) => value + 1);
+          onToast?.(t("catalog.updatesApplied", { count: String(applied) }));
+          return;
+        }
+        let pending = 0;
+        const details = [];
+        for (const rootDir of roots) {
+          const response = await readJson(SPACE_UPDATE_ROUTE, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ rootDir, action: "check" }),
+          });
+          if (response.body?.ok !== true) continue;
+          pending += Number(response.body.pending ?? 0);
+          details.push({ rootDir, summary: response.body.summary ?? {} });
+        }
+        setUpdates({ pending, entries: details });
+      }
 
       function toggleTag(tag) {
         setSelected((current) => {
@@ -1736,6 +1818,21 @@ window.__ModuleLoader__.load({
                           installed: String(group.installed),
                         }),
                       ),
+                      group.scope === "local"
+                        ? h(
+                            "button",
+                            {
+                              type: "button",
+                              className: "rstr-btn rstr-btn-sm rstr-btn-ghost",
+                              onClick: checkUpdates,
+                            },
+                            updates === null
+                              ? t("catalog.checkUpdates")
+                              : updates.pending > 0
+                                ? t("catalog.updatesPending", { count: String(updates.pending) })
+                                : t("catalog.upToDate"),
+                          )
+                        : null,
                       group.scope === "remote" && typeof onPullSpace === "function"
                         ? h(
                             "button",
@@ -1978,6 +2075,7 @@ window.__ModuleLoader__.load({
 
       if (tab === "catalog") {
         content = h(CatalogTab, {
+          onToast: setToast,
           onOpen: (rosterId) => {
             setTab("rosters");
             setQuery(rosterId);
@@ -2139,6 +2237,7 @@ window.__ModuleLoader__.load({
                         (item) => item.rosterId === roster.id && item.rootDir === roster.rootDir,
                       ),
                       sessions: snapshot?.sessions?.sessions ?? [],
+                      workspaces: snapshot?.hostWorkspaces ?? [],
                       onToast: setToast,
                       onEdit: () => setEditor({ roster, rootDir: roster.rootDir }),
                       onDuplicate: () => setEditor({ roster, rootDir: roster.rootDir, duplicate: true }),
@@ -2234,6 +2333,7 @@ window.__ModuleLoader__.load({
           ? h(TeamCreateDialog, {
               roster: creatingTeam,
               sessions: snapshot?.sessions?.sessions ?? [],
+              workspaces: snapshot?.hostWorkspaces ?? [],
               onClose: () => setCreatingTeam(null),
               onToast: setToast,
               onCreated: () => {
@@ -2911,6 +3011,13 @@ window.__ModuleLoader__.load({
 .rstr-diag-warn { border-left-color: var(--dsw-alias-state-warn-primary); }
 .rstr-diag-reason { color: var(--dsw-alias-label-primary); }
 .rstr-diag code.rstr-code { font-size: 11px; }
+
+/* ---- 新建会话：空间 + 名字 --------------------------------------------- */
+.rstr-field-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
 /* ---- 收藏 ------------------------------------------------------------- */
 

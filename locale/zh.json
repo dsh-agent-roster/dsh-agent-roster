@@ -311,7 +311,12 @@
     "here": "已在本机",
     "notInstalled": "未在本机",
     "favorite": "收藏",
-    "unfavorite": "取消收藏"
+    "unfavorite": "取消收藏",
+    "checkUpdates": "检查更新",
+    "upToDate": "已是最新",
+    "updatesPending": "{count} 处更新",
+    "applyUpdates": "应用更新",
+    "updatesApplied": "已应用 {count} 个文件"
   },
   "teamCreate": {
     "title": "从 {roster} 创建团队",
@@ -321,7 +326,6 @@
     "newSession": "新会话",
     "existingSession": "已有会话",
     "noSessions": "没有可选的会话",
-    "cwdPlaceholder": "工作目录（留空用当前工作区）",
     "summary": "将建 {count} 名成员 · 队长模型 {model}",
     "noModel": "未声明，沿用会话当前模型",
     "noCaptain": "这份档案没有 captain 段：仍可建团，但不会切换队长模型。",
@@ -329,6 +333,9 @@
     "creating": "排队中…",
     "cancel": "取消",
     "queued": "已排入会话 {session}——那个会话会开始建队。",
-    "failed": "排队失败（{code}）"
+    "failed": "排队失败（{code}）",
+    "workspace": "空间",
+    "sessionName": "会话名",
+    "sessionNamePlaceholder": "缺省用团队名"
   }
 }

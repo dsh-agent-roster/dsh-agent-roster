@@ -4,6 +4,22 @@
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-04
+
+### Added
+
+- **An origin ledger for every pulled space.** `clone` now writes `.dsh-roster-origin.json` — the repository, ref, path, the commit it was pulled at, and the sha256 + blob id of each file it wrote. Without a baseline there is nothing to compare, so `update` says so instead of calling the copy clean.
+- **`dsh-agent-roster update --dir <space> [--write]`** — compares ledger, disk and the remote at that ref, and reports one of six states: `clean`, `local-only`, `remote-only`, `diverged`, `remote-deleted`, `missing`. `--write` fast-forwards only `remote-only`; a conflict prints both shas and a diff and stops. There is no automatic merge: YAML plus prose has no merge base, and a three-way merge would quietly produce duplicate role names. Use `git clone` when you want real merging.
+- **Five more read-only tools** (eleven in total): `roster_space` describes a space (layout, declared vs present, roles, origin commit), `roster_search` searches this machine and the first eight subscribed sources with the same engine as the Library tab, `roster_changes` reports the six states per file, `roster_compile` compiles a v2 roster in memory without writing `dist/`, and `roster_index` entries now carry `space`, `layout` and `pulled`.
+- **`roster_team`** — create a team from a roster: a new session (choose the space and the session name) or an existing one, select the captain model declared by the roster, then queue the build prompt. It shares `applyCaptain` with the panel, so the two paths cannot drift.
+- **Create team from the row you are looking at** now asks for a space and a session name when it opens a new session, and lists existing sessions as `space · session name` (title from the session projection, falling back to the workspace directory, then the short id). The host workspaces come from `workspaceRegistry`, so the picker speaks the same names as the rest of DSH.
+- **Check updates** on a local space header in the Library tab: check every local library once, show `N updates`, apply the fast-forward set, toast the number of files written.
+
+### Changed
+
+- `applyCaptain` accepts `workspaceId` and `sessionTitle`; a new session is created in that workspace and renamed right after creation (the host's create request has no title field). A failed rename reports `session-rename-failed` with the session id, instead of pretending the name stuck.
+- The panel's roster tab defaults to starred rosters only, and the Library tab no longer offers a per-roster pull — pulls are per space.
+
 ## [1.4.0] - 2026-11-04
 
 ### A persona can place a block, not only append one
@@ -771,7 +787,8 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.4.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.5.0...main
+[1.5.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.1.0...v1.2.0
