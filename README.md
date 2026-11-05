@@ -587,7 +587,7 @@ lib/              reading: format, format-v2, frontmatter, parse, validate, role
                   compiling: compile2, plan, migrate, run
                   speaking to the runtime: bridge, verify, diff, digest, render, tools, service,
                   teams-state, captain, write, apply, serialize, config-view, json, http
-client.js         client plugin: sidebar entry, main panel (rosters/teams/health), settings section
+client.js         client plugin: sidebar entry, main panel (rosters/teams/health), settings dialog
 locale/           panel + listing dictionaries (en/zh)
 schema/           roster v1 / role v1 / roster v2 / compiled v1 / capabilities / organization / registry
                   schemas (editor completion; kept aligned by tests)

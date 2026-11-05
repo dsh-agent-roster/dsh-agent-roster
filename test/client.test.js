@@ -86,8 +86,8 @@ test("模块 id 是包名，只注入 slots", async () => {
 
 test("apply 在 locale / configForms 缺失时不抛，槽位仍全部登记", async () => {
   const { registrations, slots } = await loadClient();
-  assert.deepEqual(slots.slice().sort(), ["main", "settings.section", "sidebar.panellist"]);
-  assert.equal(registrations.length, 3);
+  assert.deepEqual(slots.slice().sort(), ["main", "sidebar.panellist"]);
+  assert.equal(registrations.length, 2);
 });
 
 test("main 槽用键控登记，key 是面板 id", async () => {
@@ -111,13 +111,15 @@ test("sidebar.panellist 的 id 与 main 的 key 是同一个面板身份", async
   assert.equal(typeof entry.component, "function");
 });
 
-test("设置节用独立 id 注册，且与面板身份不同（避免同名冲突）", async () => {
+test("设置只在面板里：不再注册 DSH 设置页的 settings.section", async () => {
   const { registrations } = await loadClient();
-  const section = registrations.find(({ meta }) => meta.name === "settings.section");
-  assert.ok(section, "缺少 settings.section 登记");
-  assert.equal(typeof section.meta.id, "string");
-  assert.equal(typeof section.meta.order, "number");
-  assert.equal(typeof section.component, "function");
+  // 同一个设置表单不该出现在两处：面板的齿轮弹窗就是唯一入口。
+  assert.equal(registrations.some(({ meta }) => meta.name === "settings.section"), false);
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /settings\.section/);
+  // 设置控件本身仍在（语言/区域/档案目录），只是挂到面板弹窗里。
+  assert.match(source, /function SettingsSection\(/);
+  assert.match(source, /t\("settings\.language"\)/);
 });
 
 test("label() 走词典而不是硬编码文案", async () => {

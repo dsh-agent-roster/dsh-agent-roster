@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-11-05
+
+### Removed
+
+- **The DSH settings section is gone.** The plugin has had a full main panel since 0.9, and that panel's gear dialog already renders the exact same form (language, region, roster directories, registry mirror). Keeping a second registration of the same component in the settings page meant two entry points that could drift, and a settings tab whose only unique content was "open the panel". The `settings.section` slot is no longer registered; `SettingsSection` stays as the panel's settings dialog. There is exactly one place to change language or roster directories now.
+
+### Changed
+
+- The client registers two slots instead of three (`sidebar.panellist`, `main`); `client smoke` asserts that.
+
 ## [1.6.1] - 2026-11-04
 
 ### Fixed
@@ -821,7 +831,8 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.6.1...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.0...main
+[1.7.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.6.1...v1.7.0
 [1.6.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.4.0...v1.5.0

@@ -108,21 +108,19 @@ const slotCtx = {
 
 module.apply(slotCtx);
 
-assert.deepEqual(injected.sort(), ["main", "settings.section", "sidebar.panellist"], "必须注册三处槽位");
+assert.deepEqual(injected.sort(), ["main", "sidebar.panellist"], "只注册面板与左栏入口；设置不再单开一节");
 const names = registrations.map((item) => item.entry.name).sort();
-assert.deepEqual(names, ["main", "settings.section", "sidebar.panellist"]);
+assert.deepEqual(names, ["main", "sidebar.panellist"]);
 
 const main = registrations.find((item) => item.entry.name === "main");
 const sidebar = registrations.find((item) => item.entry.name === "sidebar.panellist");
-const section = registrations.find((item) => item.entry.name === "settings.section");
 assert.equal(main.entry.key, "agent-roster", "main 槽必须用键控槽");
 assert.equal(sidebar.entry.id, "agent-roster", "左栏行 id 必须与 main 的 key 一致");
-assert.equal(section.entry.id, "agent-roster", "设置小节同一身份");
-for (const item of [main, sidebar, section]) {
+for (const item of [main, sidebar]) {
   assert.equal(typeof item.component, "function", `${item.entry.name} 必须挂组件`);
 }
 
 assert.equal(styleNodes.length, 1, "样式只注入一次");
 for (const off of offs) off();
 
-console.log("client smoke: module loaded, three slots registered, styles injected, effects disposable");
+console.log("client smoke: module loaded, two slots registered, styles injected, effects disposable");

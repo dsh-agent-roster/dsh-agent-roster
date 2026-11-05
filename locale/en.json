@@ -20,7 +20,6 @@
     "policiesNone": "Not configured — policy ids in rosters stay declarations only.",
     "policiesCount": "{count} declared",
     "version": "Version",
-    "openPanel": "Open panel",
     "region": "Download region",
     "regionAuto": "Follow default",
     "regionGlobal": "Global",

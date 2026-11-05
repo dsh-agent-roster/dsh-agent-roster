@@ -12,7 +12,8 @@
  * 真正的校验仍在 Host 侧，失败时把诊断原样摆出来。
  *
  * 位置：`main` 键控槽 + `sidebar.panellist` 列表槽，同一个 PANEL_ID 关联；
- * 设置页另注册一个 `settings.section`，只放语言与只读的配置摘要。
+ * 语言与偏好只放在面板自己的设置弹窗里：不再往 DSH 设置页另注册一节，
+ * 免得同一个表单出现在两处、两边还可能不同步。
  */
 window.__ModuleLoader__.load({
   id: "@stofone/dsh-agent-roster",
@@ -1518,7 +1519,7 @@ window.__ModuleLoader__.load({
     /* ------------------------------------------------------------------ */
 
     // 面板本身拿不到 ctx：这里由 apply() 把宿主服务放进来，供设置弹窗使用。
-    const HOST = { form: null, openPanel: null };
+    const HOST = { form: null };
 
 
     /**
@@ -2351,16 +2352,7 @@ window.__ModuleLoader__.load({
           ? h(
               Modal,
               { title: t("panel.settings"), onClose: () => setSettingsOpen(false), width: "560px" },
-              h(SettingsSection, {
-                form: HOST.form,
-                library,
-                onSaved: () => library.reload(),
-                inModal: true,
-                onOpenPanel: () => {
-                  setSettingsOpen(false);
-                  HOST.openPanel?.();
-                },
-              }),
+              h(SettingsSection, { form: HOST.form, library, onSaved: () => library.reload() }),
             )
           : null,
         editor !== null
@@ -2488,7 +2480,7 @@ window.__ModuleLoader__.load({
      * 语言之外的配置项只读展示——档案目录与状态目录属于"部署事实"，
      * 让它们出现在两个地方反而会让人分不清哪个生效。
      */
-    function SettingsSection({ form, library, onOpenPanel, onSaved, inModal }) {
+    function SettingsSection({ form, library, onSaved }) {
       useTranslation();
       const [language, setLanguage] = useState(() => readLanguage(form));
       const [region, setRegion] = useState(() => readFormValue(form, "region", "auto"));
@@ -2661,7 +2653,6 @@ window.__ModuleLoader__.load({
           { className: "rstr-settings-row" },
           h("span", { className: "rstr-label" }, t("settings.version")),
           h("code", { className: "rstr-code" }, version),
-          inModal === true ? null : h("button", { type: "button", className: "rstr-btn rstr-btn-sm", onClick: onOpenPanel }, t("settings.openPanel")),
         ),
         saved === "" ? null : h("p", { className: "rstr-muted rstr-small" }, saved),
       );
@@ -3308,7 +3299,6 @@ window.__ModuleLoader__.load({
       const locale = ctx.get?.("locale") ?? ctx.locale;
       const configForms = ctx.get?.("configForms") ?? ctx.configForms;
       const form = configForms?.get?.(NS) ?? null;
-      const layout = ctx.get?.("layout") ?? ctx.layout;
 
       const readActive = () => {
         try {
@@ -3366,13 +3356,6 @@ window.__ModuleLoader__.load({
       );
 
       HOST.form = form;
-      HOST.openPanel = () => {
-        try {
-          layout?.selectPanel?.(PANEL_ID);
-        } catch {
-          /* 面板注册晚于点击时 selectPanel 会抛错，忽略即可。 */
-        }
-      };
 
       ctx.slots.inject("sidebar.panellist", () =>
         ctx.slots.register(
@@ -3410,15 +3393,6 @@ window.__ModuleLoader__.load({
         ctx.slots.register({ name: "main", key: PANEL_ID, locale: NS }, Panel),
       );
 
-      ctx.slots.inject("settings.section", () =>
-        ctx.slots.register(
-          { name: "settings.section", id: PANEL_ID, order: 55, locale: NS, label: () => t("settings.nav") },
-          function AgentRosterSettings() {
-            const library = useLibrary();
-            return h(SettingsSection, { form, library, onOpenPanel: HOST.openPanel, inModal: false });
-          },
-        ),
-      );
     }
 
     return defineClient();

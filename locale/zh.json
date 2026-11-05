@@ -20,7 +20,6 @@
     "policiesNone": "未配置——档案里写的策略 id 只是声明，运行时不生效。",
     "policiesCount": "已声明 {count} 个",
     "version": "版本",
-    "openPanel": "打开面板",
     "region": "下载区",
     "regionAuto": "跟随默认",
     "regionGlobal": "海外",

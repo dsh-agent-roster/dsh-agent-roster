@@ -403,7 +403,7 @@ node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
 
 档案里的 `captain` 段是声明。队长就是创建团队的那个会话——它没有成员行，模型来自部署
 （`agent-default-model`），人格来自 agent preset。所以面板做的是**核对**，不是假装能写：
-设置页显示每个 profile 里实际部署的 provider / model，每份带 captain 段的档案按字段报
+面板显示每个 profile 里实际部署的 provider / model，每份带 captain 段的档案按字段报
 「一致 / 不一致 / 未声明 / 无法核对」。读不到部署配置时是「无法核对」，永远不会写成“通过”。
 
 面板在这里唯一会写的一步是**应用**：把选中的会话切到声明的模型，再排入一条提示词，
@@ -556,7 +556,7 @@ lib/              读：format / format-v2 / frontmatter / parse / validate / ro
                   编译：compile2 / plan / migrate / run
                   对运行时说话：bridge / verify / diff / digest / render / tools / service /
                   teams-state / captain / write / apply / serialize / config-view / json / http
-client.js         客户端半边：左侧栏图标 + 主面板（档案/团队/体检）+ 设置页小节
+client.js         客户端半边：左侧栏图标 + 主面板（档案/团队/体检）+ 面板内的设置弹窗
 locale/           面板与列表词典（en/zh）
 schema/           roster v1 / role v1 / roster v2 / compiled v1 / capabilities / organization / registry
                   schema（编辑器补全用，与校验器由测试对齐）
