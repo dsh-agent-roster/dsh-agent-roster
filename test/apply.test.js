@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { applyCaptain, buildCaptainPrompt, listSessions, pickSessionModel, sessionTitleOf } from "../lib/apply.js";
+import {
+  applyCaptain,
+  buildCaptainPrompt,
+  listHostWorkspaces,
+  listSessions,
+  pickSessionModel,
+  sessionTitleOf,
+  workspaceIdForPath,
+} from "../lib/apply.js";
 
 /** 一份最小的队长档案：只要 id/description/成员与 captain 段。 */
 function roster(overrides = {}) {
@@ -285,4 +293,48 @@ test("applyCaptain 改名失败如实报错，但会话 id 仍带回来", async 
   assert.equal(result.ok, false);
   assert.equal(result.code, "session-rename-failed");
   assert.equal(result.sessionId, "s-created");
+});
+
+test("工作区列表读宿主的 id 字段（不是 workspaceId）", () => {
+  const list = listHostWorkspaces({
+    list: () => [
+      { id: "ws-a", title: "A", path: "/tmp/a" },
+      { workspaceId: "ws-b", title: "B", path: "/tmp/b" },
+      { id: "ws-empty", title: "no path", path: "" },
+    ],
+  });
+  assert.deepEqual(list, [
+    { workspaceId: "ws-a", title: "A", path: "/tmp/a" },
+    { workspaceId: "ws-b", title: "B", path: "/tmp/b" },
+  ]);
+});
+
+test("workspaceIdForPath 取最长的那个前缀，越界返回空串", () => {
+  const registry = {
+    list: () => [
+      { id: "ws-root", path: "/tmp" },
+      { id: "ws-a", path: "/tmp/a" },
+    ],
+  };
+  assert.equal(workspaceIdForPath(registry, "/tmp/a/rosters/demo"), "ws-a");
+  assert.equal(workspaceIdForPath(registry, "/tmp/a"), "ws-a");
+  assert.equal(workspaceIdForPath(registry, "/tmp/other"), "ws-root");
+  assert.equal(workspaceIdForPath(registry, "/elsewhere"), "");
+  assert.equal(workspaceIdForPath(null, "/tmp/a"), "");
+});
+
+test("applyCaptain 只给目录时也把会话登记进对应工作区", async () => {
+  const controller = fakeController();
+  const result = await applyCaptain({
+    sessionController: controller,
+    roster: roster(),
+    mode: "new",
+    cwd: "/tmp/a/rosters/demo",
+    workspaceRegistry: { list: () => [{ id: "ws-a", path: "/tmp/a" }] },
+    sessionTitle: "probe",
+  });
+
+  assert.equal(result.ok, true);
+  const create = controller.calls.find((call) => call[0] === "create");
+  assert.deepEqual(create[1], { workspaceId: "ws-a" }, "目录能对上工作区时改发 workspaceId");
 });

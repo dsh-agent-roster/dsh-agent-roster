@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+## [1.8.3] - 2026-11-06
+
+### Fixed
+
+- **Picking a workspace did not put the new session in it.** The panel read host workspaces through `workspaceId`, but the registry entity exposes `id` — every entry mapped to `""`, so the picker fell back to creating the session with a bare `cwd`. The host creates that session in the directory but never records it in any workspace's `sessionIds`, so it did not show up under the chosen space. Workspaces are now read from `id`; when only a directory is known, `workspaceIdForPath` resolves it to the owning workspace first and the request carries `workspaceId`, so the host attaches the session. Both the create-team dialog and `roster_team` go through the same resolution.
+
 ## [1.8.2] - 2026-11-06
 
 ### Fixed
@@ -879,6 +885,7 @@ point is now one search field above the tabs.
   且所有返回值先过 `lib/json.js#lossless`。
 
 [Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.2...main
+[1.8.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.2...v1.8.3
 [1.8.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.1...v1.8.2
 [1.8.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.2...v1.8.0

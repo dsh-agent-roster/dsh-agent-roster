@@ -334,7 +334,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 
 档案行上的「创建团队」与 `roster_team` 工具走同一段 `applyCaptain`：
 
-- **新建会话**：选工作区（下拉，重名时补一级目录）+ 会话名；建好后自动改名。
+- **新建会话**：选工作区（下拉，重名时补一级目录）+ 会话名；建好后自动改名。选中项以宿主的 `workspaceId` 发出（不是只给目录），会话因此会登记到该空间；只给目录时也会先按路径解析成工作区 id。
 - **已有会话**：只显示「空间 · 会话名」，不显示 id 与路径。
 - 队长人设若在档案里声明，会原样注入提示词；模型仍来自部署，插件不写运行时。
 - 队长应用（`/apply`）与工具都只**排队**提示词，建队由会话里的模型调用 `agent_teams_*` 完成。
@@ -343,7 +343,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 
 收藏写在库根的 `.dsh-roster-favorites.json`（`dsh-agent-roster/favorites@1`，最多 500 条，原子替换）。保存/导入会自动收藏新档案；删除会取消收藏；坏文件只报一条 warn，面板照常可用。收藏**只影响视图**，不会移动文件。
 
-## 工具（十一个，全部只读）
+## 工具（十一个：十个只读，`roster_team` 会建会话）
 
 | 工具 | 作用 | 主要参数 |
 |---|---|---|
@@ -434,7 +434,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 ## 开发
 
 ```bash
-node --test                 # 359 个测试
+node --test                 # 362 个测试
 npm run smoke               # 宿主侧 11 个工具 + 客户端两槽位
 npm run check:locale        # 中英词典键对齐
 npx dsh-agent-roster validate --dir examples
@@ -443,7 +443,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## 验证状态
 
-- 全仓 **359/359**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
+- 全仓 **362/362**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
 - CI `registry`（Node 22）重算索引、重编示例，并在 `dist/` 与源码不一致时失败。
 - 实机 e2e（独立 `DSH_HOME` + 端口 3099）：`agent-teams`（4 人）、`metagpt-company`（4 人）、`openmanus`（3 人）三套档案分别真的建出团队，`roster_verify` 均 `faithful` 全中、`drift 0`；溯源行含内容哈希。
 - 已知边界：`dist/` 不随 clone 拉取；按合集安装（`/install`）会把档案摊平成 v1 文档，整空间拉取（`clone` / `/install-space`）才保留 v2 布局与账本；`toolFilter` 无法从 team.json 核对；升级后需重启 `dsh web`。

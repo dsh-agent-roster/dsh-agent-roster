@@ -333,7 +333,7 @@ Settings live only in the panel’s gear dialog (language, download region, mirr
 
 The row button and the `roster_team` tool share one `applyCaptain` path:
 
-- **New session**: pick a workspace (dropdown; duplicates are disambiguated with one parent directory) and type a session name; the session is renamed after creation.
+- **New session**: pick a workspace (dropdown; duplicates are disambiguated with one parent directory) and type a session name; the session is renamed after creation. The choice is sent as the host `workspaceId` (not just a directory), so the session is accounted in that workspace; a bare directory is resolved to a workspace id first.
 - **Existing session**: shown as “workspace · session name”, never an id or a path.
 - If the roster declares a captain persona, it is injected into the kick-off prompt verbatim; the model still comes from the deployment, and the plugin writes no runtime state.
 - Both the panel and the tool only **queue** the prompt; the model in that session calls `agent_teams_*` to build the team.
@@ -342,7 +342,7 @@ The row button and the `roster_team` tool share one `applyCaptain` path:
 
 Favourites live in `.dsh-roster-favorites.json` at the library root (`dsh-agent-roster/favorites@1`, at most 500 entries, atomic replace). Saving or importing auto-favourites the new roster; deleting unfavourites it; a broken file yields one warning and the panel still works. Favourites **affect the view only** and never move files.
 
-## Tools (eleven, all read-only)
+## Tools (eleven: ten read-only, `roster_team` creates a session)
 
 | Tool | Purpose | Key parameters |
 |---|---|---|
@@ -433,7 +433,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 ## Development
 
 ```bash
-node --test                 # 359 tests
+node --test                 # 362 tests
 npm run smoke               # host: 11 tools; client: two slots
 npm run check:locale        # zh/en dictionary key parity
 npx dsh-agent-roster validate --dir examples
@@ -442,7 +442,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## Verification status
 
-- **359/359** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
+- **362/362** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
 - CI `registry` (Node 22) recomputes the index, recompiles the examples, and fails when `dist/` drifts from source.
 - Live e2e on an isolated `DSH_HOME` (port 3099): the `agent-teams` (4 members), `metagpt-company` (4) and `openmanus` (3) rosters each actually built a team; `roster_verify` reported every member faithful, `drift 0`, and the provenance line carried the content hash.
 - Known boundaries: `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.

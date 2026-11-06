@@ -501,6 +501,8 @@ export function apply(ctx, config) {
           cwd: typeof input.cwd === "string" ? input.cwd : "",
           // 新会话落在哪个空间（工作区）与叫什么名字；两者都只用于建会话，不写团队状态。
           workspaceId: typeof input.workspaceId === "string" ? input.workspaceId : "",
+          // 只给了目录时也把会话登记进对应工作区（否则界面上看不到它落在那）。
+          workspaceRegistry: ctx.get?.("workspaceRegistry"),
           sessionTitle: typeof input.sessionTitle === "string" ? input.sessionTitle.trim().slice(0, 120) : "",
           // 团队名只进提示词，不写任何团队状态；超长按 120 截断，与档案标题同量级。
           teamName: typeof input.teamName === "string" ? input.teamName.trim().slice(0, 120) : "",
