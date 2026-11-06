@@ -4,6 +4,18 @@
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-11-06
+
+### Added
+
+- **The captain's persona now travels with the roster.** `captain.systemPrompt` is injected verbatim into the kick-off prompt when a roster is applied (panel, `roster_team`, or the `/apply` route); the session acts on it. The model still comes from the deployment (`agent-default-model`) and the plugin still writes no runtime state. With no persona declared, the note says so instead of silently falling back.
+- `roster_verify` and the panel report keep comparing the **deployment** persona prefix with the declared one; the injected persona is a per-session instruction, not a deployment change.
+
+### Fixed
+
+- **The provenance line had no content hash in v2 libraries.** `shaOf` only looked under `<root>/<id>/`, so every v2 roster (`<root>/rosters/<id>/`) produced `roster:<id>@<version>` without `#<sha8>`, and `roster_verify` could only report `id-only`. It now reads the roster document in either layout.
+- **The kick-off prompt told the captain to pass `provenance` to `agent_teams_add_member`, a parameter the tool does not have.** Live runs showed the model reading the tool schema and refusing the instruction. Step 3 now appends the provenance line returned by `roster_create` (`roster:<id>@<version>#<sha8>`) to the team description instead, and step 4 passes the member parameters as-is.
+
 ## [1.7.2] - 2026-11-06
 
 ### Fixed

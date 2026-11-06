@@ -13,7 +13,12 @@ function roster(overrides = {}) {
       { name: "team-lead", role: "lead", systemPrompt: "你是团队负责人。" },
       { name: "team-reviewer", role: "review", systemPrompt: "你只做审查。" },
     ],
-    captain: { provider: "tsingmicro", model: "deepseek-v4.1-flash", reasoningEffort: "high" },
+    captain: {
+      provider: "tsingmicro",
+      model: "deepseek-v4.1-flash",
+      reasoningEffort: "high",
+      systemPrompt: "你是这支团队的队长：先划清边界，再要结论。",
+    },
     ...overrides,
   };
 }
@@ -108,14 +113,27 @@ test("listSessions 没有 sessionController 时明确报不可用", async () => 
   assert.deepEqual(result.sessions, []);
 });
 
-test("buildCaptainPrompt 给出要建的成员，但要求人设从 roster_show 取", () => {
+test("buildCaptainPrompt 带上队长人设，但成员人设仍从 roster_show 取", () => {
   const prompt = buildCaptainPrompt({ roster: roster() });
   assert.match(prompt, /agent_teams_create/);
   assert.match(prompt, /roster_show/);
   assert.match(prompt, /team-lead \| role: lead/);
-  assert.match(prompt, /provenance 写 "roster:agent-teams"/);
-  // 人设原文不进提示词，避免把整份档案塞进上下文。
+  assert.match(prompt, /roster_create`，参数 id/);
+  assert.match(prompt, /第 2 步的溯源行追加在最后/);
+  assert.match(prompt, /这个工具没有 provenance 参数/);
+  assert.match(prompt, /参数按第 2 步给出的原样传/);
+  // 队长人设是“对队长本人”的声明，必须进提示词，否则档案的 captain 段没有落点。
+  assert.equal(prompt.includes("你是这支团队的队长：先划清边界，再要结论。"), true);
+  assert.match(prompt, /队长人设（来自档案 captain 段，本次会话按它行动）/);
+  assert.match(prompt, /建团队与后续工作都以它为准/);
+  // 成员人设原文仍不进提示词，避免把整份档案塞进上下文。
   assert.equal(prompt.includes("你是团队负责人。"), false);
+});
+
+test("buildCaptainPrompt 在队长没有写人设时如实退回部署的人设", () => {
+  const prompt = buildCaptainPrompt({ roster: roster({ captain: { provider: "tsingmicro", model: "m" } }) });
+  assert.equal(prompt.includes("队长人设（来自档案 captain 段"), false);
+  assert.match(prompt, /captain 段没有人设，本次会话的行为以部署的 preset persona 为准/);
 });
 
 test("buildCaptainPrompt 用给定的团队名，缺省才退回档案 id", () => {

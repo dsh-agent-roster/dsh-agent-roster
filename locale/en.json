@@ -259,7 +259,7 @@
   },
   "captain": {
     "title": "Captain",
-    "hint": "The captain is the session that creates the team — it has no member row. Its model comes from the deployment (agent-default-model) and its persona from the agent preset, so a roster can only declare them and compare.",
+    "hint": "The captain is the session that creates the team — it has no member row. Its persona comes from the roster's captain section (injected into the session when applied); its model comes from the deployment (agent-default-model), which the plugin does not write.",
     "declared": "Declared",
     "effortDefault": "default",
     "noPersona": "no persona prefix declared",

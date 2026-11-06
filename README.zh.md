@@ -147,10 +147,10 @@ npx dsh-agent-roster list
 `captain` 段记录队长——它**不是成员**。`dsh-agent-teams` 里队长就是创建团队的那个会话：`team.json` 没有 captain 成员行，也没有任何参数能改写它的模型。所以档案对队长只做三件事：
 
 1. 描述它应该是什么样（`name`、`description`、`systemPrompt`）；
-2. 声明它的路由与人格前缀，并在 `roster_show` 里给出可复制的 profile 片段（`agent-default-model`、`@deepseek-ai/dsh-persona`）；
+2. 声明它的路由与人格（`systemPrompt`）：**应用/建团队时，队长人设会原样注入那条起始提示词**，新会话按它行动；路由仍要在 `roster_show` 里给出可复制的 profile 片段（`agent-default-model`、`@deepseek-ai/dsh-persona`）；
 3. 校验这些声明是否成对（`provider` 与 `model` 必须同时出现）。
 
-真正生效要改 profile 的 `cordis.patch.yml` 与 agent preset。面板里编辑队长段只是在记录意图——插件不会、也不能替你改会话。
+模型的生效仍要改 profile 的 `cordis.patch.yml`（插件不会、也不能替你切部署）；但**人设不必再改 preset**——它随档案走，应用时注入。在预设里也保留一份并不冲突：提示词里的这段优先。
 
 ## 能力要求（`capabilities.yaml`）
 
@@ -402,12 +402,13 @@ node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
 ### 队长核对
 
 档案里的 `captain` 段是声明。队长就是创建团队的那个会话——它没有成员行，模型来自部署
-（`agent-default-model`），人格来自 agent preset。所以面板做的是**核对**，不是假装能写：
+（`agent-default-model`），人设来自档案的 `captain.systemPrompt`（应用时注入起始提示词）。所以面板做的是**核对 + 注入**，不是假装能写：
 面板显示每个 profile 里实际部署的 provider / model，每份带 captain 段的档案按字段报
 「一致 / 不一致 / 未声明 / 无法核对」。读不到部署配置时是「无法核对」，永远不会写成“通过”。
 
-面板在这里唯一会写的一步是**应用**：把选中的会话切到声明的模型，再排入一条提示词，
-让它依次调用 `agent_teams_create`、逐成员 `agent_teams_add_member`，最后 `roster_verify`。
+面板在这里唯一会写的一步是**应用**：把选中的会话切到声明的模型，再排入一条提示词——
+提示词里带着队长人设原文，并要求它依次调用 `agent_teams_create`、逐成员
+`agent_teams_add_member`，最后 `roster_verify`。
 建团队本身仍由运行时完成。
 
 1.2.0 起，档案行上直接有**创建团队**，不必先展开卡片：默认开**新会话**（快速建团不该劫持
@@ -544,7 +545,7 @@ node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
 
 ```bash
 npm install
-npm test          # node --test，356 个用例
+npm test          # node --test，357 个用例
 npm run smoke     # 用真实 DSH bundle 注册工具，断言输出可无损往返
 node scripts/check-locale.mjs   # client.js 里的静态 t() 键必须两本词典都有
 ```
@@ -572,7 +573,7 @@ test/             单测
 
 本机已验证：
 
-- `npm test` —— 356/356 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、收藏（存储、快照接线、路由、面板筛选）、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐、v1→v2 迁移、正文引用（独占一行、只一层、两种根、预算与行号）、执行回执并入施工图、来源账本与七态判定）。
+- `npm test` —— 357/357 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、收藏（存储、快照接线、路由、面板筛选）、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐、v1→v2 迁移、正文引用（独占一行、只一层、两种根、预算与行号）、执行回执并入施工图、来源账本与七态判定）。
 - `npm run smoke` —— 用真实 DSH bundle 的 `defineTool` 注册十一个工具，原来的六个逐个调用：输出全部通过无损校验、`path` 覆盖生效、释放干净；同一条命令随后用桩模块表加载 `client.js`，断言三处槽位注册、样式只注入一次、effect 可回收。
 - CLI：`validate --dir examples` 对两座示例库退出码 0。
 - 用插件管理器真的装进了本机 profile（`plugin_manager install_bundle` 指向本仓库 → `link:` 依赖 + bundle 条目），重启后按链接读取本仓库文件。

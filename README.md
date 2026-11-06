@@ -151,7 +151,7 @@ These four declared fields carry information the runtime does not act on, and ea
 The `captain` block records the captain, which is **not a member**. In `dsh-agent-teams` the captain is the session that creates the team: `team.json` has no captain member row and no argument can change its model. So a roster only does three things for it:
 
 1. describe what it should be (`name`, `description`, `systemPrompt`);
-2. declare its route and persona prefix, and print a copy-pasteable profile snippet (`agent-default-model`, `@deepseek-ai/dsh-persona`) from `roster_show`;
+2. declare its route and persona: **when applying a roster, the captain's `systemPrompt` is injected verbatim into the kick-off prompt**, so the new session acts on it; the route still prints a copy-pasteable profile snippet (`agent-default-model`, `@deepseek-ai/dsh-persona`) from `roster_show`;
 3. validate that the declarations pair up (`provider` and `model` come together).
 
 Making it real means editing the profile's `cordis.patch.yml` and the agent preset. Editing the captain block in the panel records intent; the plugin neither can nor will change your session.
@@ -421,15 +421,18 @@ edited after the team was created shows up as `differ` instead of silently passi
 
 ### Captain verification
 
-An archive's `captain` block is a declaration. The captain is the session that creates the team — it
-has no member row, its model comes from the deployment (`agent-default-model`) and its persona from
-the agent preset. The panel therefore **compares** instead of pretending to write: the Settings row
+An archive's `captain` block is a declaration, and the persona in it is carried into the session when
+the roster is applied. The captain is the session that creates the team — it has no member row; its
+model comes from the deployment (`agent-default-model`), its persona from `captain.systemPrompt`
+(injected into the kick-off prompt). The panel therefore **compares and injects** instead of
+pretending to write the deployment: the Settings row
 shows the deployed provider / model per profile, and every archive with a captain block reports
 `match` / `differ` / `undeclared` / `unknown` per field. When the deployment cannot be read the
 state is `unknown`, never "passed".
 
 The **apply** action is the one write the panel offers here: it switches the chosen session to the
-declared model and queues a prompt that calls `agent_teams_create`, `agent_teams_add_member` per
+declared model and queues a prompt that carries the captain persona and calls `agent_teams_create`,
+`agent_teams_add_member` per
 member and finally `roster_verify`. Creating the team stays with the runtime.
 
 Since 1.2.0 the roster row itself carries **Create team**, so this no longer hides behind an
@@ -573,7 +576,7 @@ An empty library is not an error. A missing one is reported as info, not error. 
 
 ```bash
 npm install
-npm test          # node --test, 356 cases
+npm test          # node --test, 357 cases
 npm run smoke     # registers the tools against a real DSH bundle, asserts lossless output
 node scripts/check-locale.mjs   # static t() keys must exist in both dictionaries
 ```
@@ -603,7 +606,7 @@ test/             unit tests
 
 Verified on this machine:
 
-- `npm test` — 356/356 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, favourites (storage, snapshot wiring, route, panel filter), library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, persona references (own line, one level, both roots, budget, line numbers), origin ledgers and the seven change states, run records feeding the plan, remote registry and one-click install).
+- `npm test` — 357/357 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, favourites (storage, snapshot wiring, route, panel filter), library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, persona references (own line, one level, both roots, budget, line numbers), origin ledgers and the seven change states, run records feeding the plan, remote registry and one-click install).
 - `npm run smoke` — `apply()` registers all eleven tools through a real `defineTool` from a DSH bundle; the six original tools execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
 - CLI: `validate --dir examples` returns exit 0 over both example libraries.
 - Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.

@@ -85,6 +85,8 @@ test("注册十一个工具，旧的六个能在 examples 上执行", async () =
   const create = await call(tools, "roster_create", { ref: "research", path: examples });
   assert.match(create.firstLine, /ok=true/);
   assert.match(create.firstLine, /calls=2/);
+  // v2 库里的档案也要拿得到内容哈希：少了 #sha，团队溯源只能对到"哪一版"，对不到"哪一份"。
+  assert.match(create.value.text, /roster:research@\d+\.\d+\.\d+#[0-9a-f]{8}/);
 
   const verify = await call(tools, "roster_verify", { path: examples, stateDir: path.join(root, "test", "no-such-state") });
   assert.match(verify.firstLine, /state=unavailable/);
