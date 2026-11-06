@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+## [1.7.2] - 2026-11-06
+
+### Fixed
+
+- **Workspace options in "create team → new session" showed the filesystem path.** The label was `title · /full/path`, which squeezes out the only part a person can choose by. It now shows the workspace name alone (title, falling back to the directory name).
+- **Existing-session options fell back to the directory name for every session.** `TeamCreateDialog` called `sessionLabel(session)` without the workspace list, so the label could not resolve a workspace title. Both pickers now pass it, and both show `workspace · session`.
+
 ## [1.7.1] - 2026-11-06
 
 ### Fixed
@@ -842,7 +849,8 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.1...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.2...main
+[1.7.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.6.1...v1.7.0
 [1.6.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.6.0...v1.6.1

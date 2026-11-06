@@ -318,6 +318,9 @@ test("新建会话：要选空间与名字，两个入口发的是同一组字�
   assert.match(source, /t\("captain\.sessionName"\)/);
   assert.match(source, /payload\.sessionTitle = sessionName\.trim\(\)/);
   assert.match(source, /payload\.workspaceId = workspaceId/);
+  // 空间选项只写工作区名字，不附路径：路径对“选哪个空间”没有帮助，还会把名字挤掉。
+  assert.match(source, /\$\{item\.title \|\| item\.path\.split\("\/"\)\.filter\(Boolean\)\.pop\(\) \|\| item\.path\}/);
+  assert.doesNotMatch(source, /\} · \$\{item\.path\}/, "空间选项不要再拼路径");
   // 两个入口都要把"哪一份档案"带上，否则同名档案跨库时后台只能猜。
   assert.ok((source.match(/payload\.rootDir = roster\.rootDir/g) ?? []).length >= 2);
 });

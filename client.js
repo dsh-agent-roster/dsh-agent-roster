@@ -851,7 +851,7 @@ window.__ModuleLoader__.load({
                       h(
                         "option",
                         { key: session.sessionId, value: session.sessionId },
-                        sessionLabel(session),
+                        sessionLabel(session, workspaces),
                       ),
                     ),
               )
@@ -870,7 +870,7 @@ window.__ModuleLoader__.load({
                     h(
                       "option",
                       { key: item.workspaceId || item.path, value: item.workspaceId },
-                      `${item.title || item.path.split("/").filter(Boolean).pop() || item.path} · ${item.path}`,
+                      `${item.title || item.path.split("/").filter(Boolean).pop() || item.path}`,
                     ),
                   ),
                 ),
