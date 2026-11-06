@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-11-06
+
+### Fixed
+
+- **The workspace picker could not select a second workspace.** Options used `workspaceId` as their value; workspaces without an id (older registries, or the fallback entry) all collapsed to `""`, so choosing one looked like choosing nothing. The picker now keys options by the workspace path (falling back to the id), resolves the chosen entry back to `workspaceId` or `cwd`, and refills a default when the list arrives after the first render. Both entry points (create team, apply captain) share the same rule.
+- **Two workspaces with the same name read as one option.** When titles collide, the label now appends the parent directory (`workspace · money`); a unique name stays a bare name.
+
 ## [1.8.0] - 2026-11-06
 
 ### Added

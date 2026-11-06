@@ -314,15 +314,28 @@ test("新建会话：要选空间与名字，两个入口发的是同一组字�
   const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
   // 空间（宿主工作区）是下拉框，不是自由文本目录：名字与落点都不该由用户拼路径。
   assert.match(source, /const defaultWorkspace = useMemo\(\(\) => \{/);
-  assert.match(source, /workspaceList\.map\(\(item\) =>/);
+  assert.match(source, /workspaceList\.map\(\(item, index\) =>/);
   assert.match(source, /t\("captain\.sessionName"\)/);
   assert.match(source, /payload\.sessionTitle = sessionName\.trim\(\)/);
-  assert.match(source, /payload\.workspaceId = workspaceId/);
+  assert.match(source, /workspaceKeyOf\(defaultWorkspace\)/);
+  assert.match(source, /value: workspaceKeyOf\(item\)/);
+  assert.match(source, /chosen\.workspaceId !== ""/);
   // 空间选项只写工作区名字，不附路径：路径对“选哪个空间”没有帮助，还会把名字挤掉。
-  assert.match(source, /\$\{item\.title \|\| item\.path\.split\("\/"\)\.filter\(Boolean\)\.pop\(\) \|\| item\.path\}/);
+  assert.match(source, /function workspaceLabels\(workspaces\)/);
+  assert.match(source, /workspaceLabels\(workspaces\)\[index\]/, "空间名重名时要能分开");
   assert.doesNotMatch(source, /\} · \$\{item\.path\}/, "空间选项不要再拼路径");
   // 两个入口都要把"哪一份档案"带上，否则同名档案跨库时后台只能猜。
   assert.ok((source.match(/payload\.rootDir = roster\.rootDir/g) ?? []).length >= 2);
+});
+
+test("空间下拉：没有 host id 的工作区也能选中（用路径当值）", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  // 旧注册表/退回项没有 workspaceId。若 <option value="">，两个工作区就是同一个值——
+  // 选了等于没选，界面上表现为"另一个选不上"。
+  assert.match(source, /function workspaceKeyOf\(workspace\)/);
+  assert.match(source, /value: workspaceKeyOf\(item\)/);
+  assert.doesNotMatch(source, /value: item\.workspaceId/);
+  assert.match(source, /chosen\.path !== ""\) payload\.cwd = chosen\.path/);
 });
 
 test("更新按钮：冲突、无法核对、无基线各有各的说法，不一律显示「已是最新」", () => {

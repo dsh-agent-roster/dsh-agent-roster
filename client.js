@@ -540,6 +540,38 @@ window.__ModuleLoader__.load({
      * 会话在"选已有会话"里的显示名：空间 · 会话名。
      * 空间取宿主工作区的标题（退回目录名），会话名取投影标题（退回短 id）。
      */
+    // 工作区名可能重名（两个都叫 "workspace"）。重名时补一级父目录，否则两个选项看起来一模一样，
+    // 用户会以为"选了没反应"。只有一个同名项时保持纯名字，不把路径塞回来。
+    function workspaceLabels(workspaces) {
+      const list = Array.isArray(workspaces) ? workspaces : [];
+      const base = list.map((item) => {
+        const title = typeof item?.title === "string" ? item.title.trim() : "";
+        if (title !== "") return title;
+        const path = typeof item?.path === "string" ? item.path : "";
+        return path.split("/").filter(Boolean).pop() ?? path;
+      });
+      const counts = new Map();
+      for (const name of base) counts.set(name, (counts.get(name) ?? 0) + 1);
+      return list.map((item, index) => {
+        const name = base[index];
+        if ((counts.get(name) ?? 0) <= 1) return name;
+        const segments = typeof item?.path === "string" ? item.path.split("/").filter(Boolean) : [];
+        const parent = segments.length >= 2 ? segments[segments.length - 2] : "";
+        return parent === "" ? name : `${name} · ${parent}`;
+      });
+    }
+
+    // 工作区的选择值：优先宿主 id，没有 id（旧注册表或退回项）就用路径。
+    // 只用 id 会让没有 id 的工作区都变成 ""——两个工作区在 <select> 里就成了同一个值，选了等于没选。
+    function workspaceKeyOf(workspace) {
+      if (workspace === null || typeof workspace !== "object") return "";
+      // 路径是工作区真正的身份；id 只是它的一种地址。用 id 当值会踩两种坑：
+      // 没有 id 的项全变成 ""（选了等于没选），两个工作区若共用同一个 id 也分不开。
+      const path = typeof workspace.path === "string" ? workspace.path : "";
+      if (path !== "") return path;
+      return typeof workspace.workspaceId === "string" ? workspace.workspaceId : "";
+    }
+
     function sessionLabel(session, workspaces) {
       const space = workspaceNameOf(session?.cwd, workspaces);
       const title = typeof session?.title === "string" ? session.title.trim() : "";
@@ -558,7 +590,11 @@ window.__ModuleLoader__.load({
         const root = typeof roster.rootDir === "string" ? roster.rootDir : "";
         return workspaceList.find((item) => root === item.path || root.startsWith(`${item.path}/`)) ?? workspaceList[0] ?? null;
       }, [workspaces, roster.rootDir]);
-      const [workspaceId, setWorkspaceId] = useState(defaultWorkspace?.workspaceId ?? "");
+      const [workspaceKey, setWorkspaceKey] = useState(workspaceKeyOf(defaultWorkspace));
+      // 工作区列表可能在首帧之后才到（快照刷新）——空的选中值补回默认项，别让人对着空下拉框。
+      useEffect(() => {
+        if (workspaceKey === "") setWorkspaceKey(workspaceKeyOf(defaultWorkspace));
+      }, [workspaceKey, defaultWorkspace]);
       const [sessionName, setSessionName] = useState(roster.id);
       const [busy, setBusy] = useState(false);
       const [result, setResult] = useState(null);
@@ -580,8 +616,10 @@ window.__ModuleLoader__.load({
           if (mode === "existing") payload.sessionId = sessionId;
           else {
             payload.sessionTitle = sessionName.trim();
-            if (workspaceId !== "") payload.workspaceId = workspaceId;
-            else if (defaultWorkspace !== null) payload.cwd = defaultWorkspace.path;
+            const chosen =
+              workspaceList.find((item) => workspaceKeyOf(item) === workspaceKey) ?? defaultWorkspace;
+            if (chosen !== null && chosen !== undefined && chosen.workspaceId !== "") payload.workspaceId = chosen.workspaceId;
+            else if (chosen !== null && chosen !== undefined && chosen.path !== "") payload.cwd = chosen.path;
           }
           const response = await readJson(APPLY_ROUTE, {
             method: "POST",
@@ -690,14 +728,14 @@ window.__ModuleLoader__.load({
                       "select",
                       {
                         className: "rstr-select",
-                        value: workspaceId,
-                        onChange: (event) => setWorkspaceId(event.target.value),
+                        value: workspaceKey,
+                        onChange: (event) => setWorkspaceKey(event.target.value),
                       },
-                      workspaceList.map((item) =>
+                      workspaceList.map((item, index) =>
                         h(
                           "option",
-                          { key: item.workspaceId || item.path, value: item.workspaceId },
-                          workspaceNameOf(item.path, workspaceList),
+                          { key: workspaceKeyOf(item), value: workspaceKeyOf(item) },
+                          workspaceLabels(workspaceList)[index] ?? workspaceNameOf(item.path, workspaceList),
                         ),
                       ),
                     ),
@@ -749,7 +787,10 @@ window.__ModuleLoader__.load({
         const root = typeof roster.rootDir === "string" ? roster.rootDir : "";
         return list.find((item) => root === item.path || root.startsWith(`${item.path}/`)) ?? list[0] ?? null;
       }, [workspaces, roster.rootDir]);
-      const [workspaceId, setWorkspaceId] = useState(defaultWorkspace?.workspaceId ?? "");
+      const [workspaceKey, setWorkspaceKey] = useState(workspaceKeyOf(defaultWorkspace));
+      useEffect(() => {
+        if (workspaceKey === "") setWorkspaceKey(workspaceKeyOf(defaultWorkspace));
+      }, [workspaceKey, defaultWorkspace]);
       const [busy, setBusy] = useState(false);
       const [error, setError] = useState(null);
       const captain = roster.captain ?? null;
@@ -771,8 +812,11 @@ window.__ModuleLoader__.load({
           if (mode === "existing") payload.sessionId = sessionId;
           else {
             payload.sessionTitle = sessionName.trim();
-            if (workspaceId !== "") payload.workspaceId = workspaceId;
-            else if (defaultWorkspace !== null) payload.cwd = defaultWorkspace.path;
+            const chosen =
+              (Array.isArray(workspaces) ? workspaces : []).find((item) => workspaceKeyOf(item) === workspaceKey) ??
+              defaultWorkspace;
+            if (chosen !== null && chosen !== undefined && chosen.workspaceId !== "") payload.workspaceId = chosen.workspaceId;
+            else if (chosen !== null && chosen !== undefined && chosen.path !== "") payload.cwd = chosen.path;
           }
           const response = await readJson(APPLY_ROUTE, {
             method: "POST",
@@ -862,15 +906,15 @@ window.__ModuleLoader__.load({
                   "select",
                   {
                     className: "rstr-select",
-                    value: workspaceId,
+                    value: workspaceKey,
                     "aria-label": t("teamCreate.workspace"),
-                    onChange: (event) => setWorkspaceId(event.target.value),
+                    onChange: (event) => setWorkspaceKey(event.target.value),
                   },
-                  (Array.isArray(workspaces) ? workspaces : []).map((item) =>
+                  (Array.isArray(workspaces) ? workspaces : []).map((item, index) =>
                     h(
                       "option",
-                      { key: item.workspaceId || item.path, value: item.workspaceId },
-                      `${item.title || item.path.split("/").filter(Boolean).pop() || item.path}`,
+                      { key: workspaceKeyOf(item), value: workspaceKeyOf(item) },
+                      workspaceLabels(workspaces)[index] ?? item.path,
                     ),
                   ),
                 ),
