@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [1.8.2] - 2026-11-06
+
+### Fixed
+
+- **A role-style roster's captain persona was silently dropped.** v2 keeps it in `captain.personaPrefix` (the compiled form of `captain.persona`), while the kick-off prompt only read the v1 field `captain.systemPrompt`. Applying such a roster produced no persona block and the session fell back to the deployment preset without saying so. Both fields are now accepted, with a regression test on the v2 shape.
+
+### Changed
+
+- **The READMEs were rewritten against the current implementation** (1.8.x): the space model as the primary shape, favourites and the four-tab panel, the origin ledger with seven update states, the eleven tools, the twelve routes, the nine CLI commands, the seven configuration keys, and the persona injection. Stale claims (a settings section, per-roster pulls, six update states, single-roster installs keeping the v2 layout) are gone.
+
 ## [1.8.1] - 2026-11-06
 
 ### Fixed
@@ -868,7 +878,10 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.2...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.2...main
+[1.8.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.1...v1.8.2
+[1.8.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.0...v1.8.1
+[1.8.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.2...v1.8.0
 [1.7.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.6.1...v1.7.0

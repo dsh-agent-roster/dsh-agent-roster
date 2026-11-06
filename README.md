@@ -2,626 +2,451 @@
 
 **English** | [简体中文](README.zh.md)
 
-Static member rosters for multi-agent teams in the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
+A **static member roster** plugin for multi-agent teams on DeepSeek Harness.
 
-A roster is a file on disk: who is on the team, what each member is for, which model route they use, and which tools they are allowed to touch. This plugin defines that file format, validates it, and translates it into `agent_teams_*` call arguments — nothing more.
+A roster is a file on disk: who is on the team, what each member owns, which model route they take, and which tools they may touch. This plugin defines that format, validates it, and translates it into `agent_teams_*` arguments — it does not run teams.
 
 ## What it is / what it is not
 
-| | |
+| It is | It is not |
 |---|---|
-| **It is** a definition and validation layer | rosters are versioned, reviewable files; mistakes fail loudly with a file and field path |
-| **It is** a bridge to `dsh-agent-teams` | `roster_create` emits ready-to-use `agent_teams_add_member` arguments and marks, field by field, what the runtime actually accepts |
-| **It is** a verification aid | `roster_verify` reads `team.json` and compares persisted values against the roster |
-| **It is not** a team runner | it never creates members, schedules tasks, or writes `.agent-teams/` state |
-| **It is not** a scheduler or a runtime | dispatch, retries and review loops belong to `dsh-agent-teams` |
+| A definition and validation layer: versionable, reviewable, and loud on errors (file path + field path), never silently degrading | A team runtime: it never creates members, schedules work, or replaces a scheduler |
+| A bridge to `dsh-agent-teams`: `roster_create` emits ready-to-use member arguments and labels every field with whether the runtime really carries it | A writer of `.agent-teams/` state: read-only, for verification |
+| A verification path: `roster_verify` reads the values **actually persisted** in `team.json` | A rubber stamp: when the evidence source is absent it says “unverified” |
 
 ## Install
 
-Requires DSH with the `tools` service (any recent build) and `yaml` — both are declared as dependencies.
-
-From the plugin manager, point it at this repository (absolute path) or at the package name after publication:
+Requirements: DSH provides the `tools` service; Node.js ≥ 22.19. Runtime dependencies are declared (`yaml`, `@deepseek-ai/schemastery`); `@deepseek-ai/dsh-tools` is a peer.
 
 ```
 @stofone/dsh-agent-roster
 ```
 
-The bundle ships `cordis.patch.yml`, so installing it inserts the plugin into the profile automatically. After install you should see eleven tools (`roster_list`, `roster_show`, `roster_create`, `roster_verify`, `roster_diff`, `roster_index`, `roster_space`, `roster_search`, `roster_changes`, `roster_compile`, `roster_team`) and an **Agent Roster** entry in the left sidebar (a full main panel, not a Settings section).
+The package ships `cordis.patch.yml`, so installing it into a profile wires the plugin. After install you should see **eleven tools** (see “Tools”) and an **Agent Roster** panel in the left sidebar.
+
+Plugin code is loaded when DSH starts: after upgrading, **restart `dsh web`**. Swapping `node_modules` alone leaves the running host on the old build.
 
 ## Quick start
 
-The library is **global**: one per machine, not per workspace, and it lives under the DSH data
-directory (`$DSH_HOME/agent-roster`, which is `~/.dsh/agent-roster` by default — in Docker that is
-the mounted volume). It is created on first save; you do not have to make it yourself.
+The roster library is **global** by default: one per machine, independent of workspaces, at `$DSH_HOME/agent-roster` (`~/.dsh/agent-roster`; the mounted data volume under Docker). It is created on first save.
+
+A v2 space looks like this:
 
 ```
 ~/.dsh/agent-roster/
-└── core-review/
-    └── roster.yaml
+├── space.yaml                     # optional: register the library as a space
+├── roles/
+│   └── core-review-lead/
+│       └── AGENT.md               # a role = one directory + one AGENT.md
+├── rosters/
+│   └── core-review/
+│       ├── roster.yaml            # a roster = members + orchestration
+│       └── capabilities.yaml      # optional: what the deployment must provide
+└── dist/
+    └── core-review-1.0.0.json     # compiled artifact (self-contained)
 ```
+
+```bash
+npx dsh-agent-roster validate --dir examples     # validate the example space (v2)
+npx dsh-agent-roster list --dir examples         # list rosters and members
+npx dsh-agent-roster compile --roster examples/rosters/core-review   # print the compiled result
+```
+
+The repo ships two example libraries: [`examples/`](./examples) (v2) and [`examples-orchestration/`](./examples-orchestration) (v2, demonstrating gates and the task plan).
+
+## Three on-disk shapes
+
+| Shape | Layout | Produced by |
+|---|---|---|
+| **Flat library (v1)** | `<root>/<id>/roster.yaml` | hand-written, single installs, old libraries |
+| **Space (v2)** | `<root>/roles/` + `<root>/rosters/` (+ optional `snippets/`, `space.yaml`) | hand-written, `migrate`, `clone` |
+| **Pulled copy** | a space or flat library + `.dsh-roster-origin.json` (origin ledger) | `clone` / the panel’s “pull the whole space” |
+
+`space.yaml` is an **optional** declaration layer: with it you get “declared vs on disk vs missing vs undeclared”; without it the library is still scanned, just without that reconciliation. Favourites live in `.dsh-roster-favorites.json` at the library root (a dotfile; the scanner skips it).
+
+## Roster format (v1, flat libraries)
 
 ```yaml
 kind: dsh-agent-roster/v1
 roster: core-review          # must equal the directory name
 version: 1.0.0               # exact SemVer
-title: Core review team
-description: Fixed members for code review and release gatekeeping.
+title: Core review
+description: A fixed team for code review and release gating.
 license: MIT
 maintainers: [STofone]
 tags: [review, release]
 
-defaults:                    # team-wide fallback for route fields
+defaults:                    # shared route defaults
   provider: deepseek
   model: deepseek-v4.1-flash
   reasoningEffort: high
 
 members:
-  - name: reviewer          # kebab-case, unique in the team
+  - name: reviewer           # kebab-case, unique in the team
     role: Code review
-    description: Reviews only, never releases   # one-line responsibility, used for delegation
-    aliases: [code-reviewer]                   # former names: still matched after a rename
-    skills: [frontend-skill]                   # declared skills (never auto-loaded)
-    examples:                                  # typical requests, used as delegation hints
-      - Review this change for semantic bugs
     systemPrompt: |
-      You review for semantic bugs first, style second.
+      Look for semantic errors first, style second.
     toolPolicy: readonly
   - name: release-manager
-    role: Release gatekeeper
+    role: Release gating
     systemPrompt: |
-      You check the diff, the version and the rollback plan.
-    model: deepseek-v4.1-pro
-    reasoningEffort: low
+      Check the diff, the version bump, and the rollback plan.
 
-captain:                     # optional: what the captain (the session that creates a team) should be
+captain:                     # optional: what the session that creates the team looks like
   name: lead
-  description: The main session is the captain; it splits work and accepts results
   provider: tsingmicro
   model: deepseek-v4.1-flash
   personaPrefix: |
-    Restate the goal and acceptance criteria before delegating.
+    Restate the goal and the acceptance criteria before delegating.
 ```
-
-JSON works too (`roster.json`); YAML and JSON are probed in the order `roster.yaml`, `roster.yml`, `roster.json`. Exactly one file per directory — a second one is reported, never silently picked.
-
-This package ships two example libraries: [`examples/`](./examples) (v2, migrated from the v1 archives this repo grew up with) and [`examples-orchestration/`](./examples-orchestration) (v2, hand-written to show gates and a construction plan). `rosterDirs` is empty by
-default, meaning the global library above, which is empty in a fresh install — so the panel shows
-"0 rosters" until you create one in the UI. To look at the examples instead, point the CLI at them:
-
-```bash
-# see what the example libraries look like
-npx dsh-agent-roster list --dir examples
-```
-
-Then ask the model to run `roster_list`, or call the CLI (it reads the same global library by
-default):
-
-```bash
-npx dsh-agent-roster validate
-npx dsh-agent-roster list
-```
-
-## File reference
-
-Top level: only these keys are allowed — unknown keys are errors, not warnings.
 
 | Key | Required | Notes |
 |---|---|---|
-| `kind` | yes | must be `dsh-agent-roster/v1` |
-| `roster` | yes | kebab-case id, must equal the containing directory name |
-| `version` | yes | exact SemVer (`1.2.0`, not `^1.2.0`) |
-| `title` | no | single line, at most 120 chars (defaults to the id) |
-| `description` | no | at most 500 chars |
-| `license` | no | SPDX-ish single line |
-| `maintainers` | no | non-empty strings if present |
-| `tags` | no | at most 16 tags, each lowercase kebab-case |
-| `defaults` | no | route fields inherited by members |
-| `members` | yes | 1 to 32 entries |
-| `captain` | no | captain block: describes, never creates (see below) |
+| `kind` | yes | `dsh-agent-roster/v1` |
+| `roster` | yes | kebab-case id; must equal the directory name (position is identity) |
+| `version` | yes | exact SemVer, no ranges |
+| `title` / `description` / `license` / `maintainers` / `tags` | no | display and discovery metadata |
+| `defaults` | no | `provider` / `model` / `reasoningEffort` inherited by members |
+| `members` | yes | 1–32 |
+| `captain` | no | declaration only; its persona is injected into the session when applied |
 
-Member keys: `name`, `role`, `systemPrompt` (all required), plus `provider`, `model`, `reasoningEffort`, `toolPolicy`, `fallback`, `toolScope`, `maxTokens`, `title`, `tags`, `notes`, `description`, `aliases`, `skills`, `examples`.
+Member keys: `name`, `role`, `systemPrompt` (required), plus `provider`, `model`, `reasoningEffort`, `toolPolicy`, `fallback`, `toolScope`, `maxTokens`, `title`, `tags`, `notes`, `description`, `aliases`, `skills`, `examples`.
 
-`systemPrompt` is capped at 8000 characters. Members that omit a route field inherit it from `defaults`; the resolved value is recorded in the member's `inherited` list so you can see where it came from.
+A directory is probed as `roster.yaml` → `roster.yml` → `roster.json`; **exactly one** is accepted. A second file is an error, never a silent pick. Unknown keys are errors.
 
-A machine-readable JSON Schema lives in [`schema/roster.v1.schema.json`](./schema/roster.v1.schema.json) for editor completion and external tools. `lib/validate.js` stays authoritative; `test/schema.test.js` keeps the two aligned.
+## Role → roster → artifact (v2)
 
-An **optional sibling file** `capabilities.yaml` in the same directory declares what the deployment must provide before this roster can be built — see [Capability requirements](#capability-requirements-capabilitiesyaml).
+### Roles: `roles/<name>/AGENT.md`
 
-### Where each field actually lands
+A role is “one directory plus a file named exactly `AGENT.md`”; directories may nest (up to 3 levels), but a directory holds at most one role. Identity comes from frontmatter `name`, not the directory name; duplicate names are an error.
 
-The bridge never pretends a field took effect. Every member field is classified:
+```yaml
+---
+kind: "dsh-agent-roster/role@1"
+name: "core-review-lead"
+version: "1.0.0"
+role: "Lead"
+title: "Orchestration"
+description: "Runs the review, splits work, merges conclusions"
+tags: ["orchestration"]
+route:
+  provider: "deepseek"
+  model: "deepseek-v4.1-flash"
+  reasoningEffort: "high"
+tools:
+  policy: "read-only"
+requires:
+  skills: ["frontend-skill"]
+---
+```
 
-| Class | Fields | Meaning |
+The body is the persona. `prompt.parts` may add fragments after the body, in order; fragments must live inside the role directory (escaping is an error).
+
+### Rosters: `rosters/<id>/roster.yaml`
+
+```yaml
+kind: dsh-agent-roster/roster@2
+id: core-review
+version: 1.0.0
+title: Core review
+description: A small team: the lead splits work, review gates it, a fixer closes it.
+license: MIT
+maintainers: [stofone]
+tags: [review, example]
+
+defaults:
+  route:
+    provider: deepseek
+    model: deepseek-v4.1-flash
+    reasoningEffort: high
+targets: [agent-teams/members]
+
+members:
+  - as: reviewer            # name inside the team
+    role: reviewer@1.0.0    # role reference with an exact version
+  - as: fixer
+    role: fixer@1.0.0
+    prompt:
+      append: overrides/fixer.md   # member-level append, joined at the end
+
+captain:
+  role: lead@1.0.0
+  persona: captains/lead.md    # a file path (relative to the roster dir); its body is the persona
+
+orchestration:
+  shape: gate-pipeline
+  stages:
+    - id: build
+      serial: [fixer]
+    - id: audit
+      parallel: [reviewer]
+  gates:
+    - id: tests-pass
+      after: [audit]
+      by: reviewer
+      requires: [Existing tests pass]
+      verify:
+        - command: node --test
+          expectExit: 0
+
+requires:
+  toolPolicies: [member-safe]
+onMissing: refuse
+```
+
+Roster keys: `kind`, `id`, `version`, `title`, `description`, `license`, `maintainers`, `tags`, `defaults`, `targets`, `members`, `captain`, `orchestration`, `requires`, `onMissing`, `notes`.
+
+There is exactly one way to assemble the execution prompt (`lib/frontmatter.js#assemblePrompt`):
+
+```
+executionPrompt = join("\n\n", [member prepend, body after references, ...prompt.parts, member append])
+```
+
+Budgets are **characters**: body 8000, one part 6000, 16 parts, 12000 after expansion, member append 6000.
+
+### Orchestration and gates
+
+`orchestration.stages` are stages (`serial` / `parallel` lists, optional `join`, `on`, `maxRounds`); `gates` are gates (`after`, `by`, `requires`, `verify`).
+
+A gate without an executable check is an error (`gate-unverifiable`): each `verify` entry needs `command` and `expectExit` (1–8 entries). **Only what a machine can run counts as a gate**; prose criteria belong in `requires`.
+
+### Compiled artifacts
+
+```bash
+npx dsh-agent-roster compile --roster examples/rosters/core-review --write
+```
+
+- `dist/<id>-<version>.json` (`compiled@1`): self-contained; members carry `executionPrompt`, `promptStats` (character counts, per-part `{path, kind, line?, sha256}`, an overall sha256) and `provenance`; `source` carries discovery metadata (title, description, tags, license, maintainers).
+- `dist/<id>-<version>.tasks.json` (`plan@1`): emitted when the roster has orchestration; `executor: "captain"`.
+- `--run <receipt>` folds a failed `run@1` back into the retry card.
+
+## References inside a persona
+
+A persona body may place a shared block inline, **on a line of its own**:
+
+```markdown
+{{> snippets/report-shape.md}}
+```
+
+- `snippets/…` resolves against the **library root**; other paths resolve against the **role directory**; escaping is an error.
+- Exactly one level: a `{{>` inside an included file is `include-nested`.
+- Including the same file twice expands it twice; `prompt.parts` still rejects duplicates.
+- Budgets apply **after** expansion: 6000 per file, 12000 total, at most 32 references.
+- Errors carry line numbers of the whole file; `promptStats` records `{path, kind: "include", line, sha256}`.
+- No conditionals, loops, or variables: a roster must be readable literally and statically checkable.
+
+`snippets/` belongs to v2 libraries only; `dist/` is not cloned and must be rebuilt locally.
+
+## Where each field actually lands
+
+| Destination | Fields | Does the runtime receive it? |
 |---|---|---|
-| `direct` | `name`, `role`, `systemPrompt`, `provider`, `model`, `reasoningEffort`, `toolPolicy` | passed to `agent_teams_add_member` and stored by the runtime |
-| `config` | `fallback` | no runtime argument; needs owner-side configuration |
-| `declaration` | `toolScope`, `maxTokens`, `title`, `tags`, `notes`, `description`, `aliases`, `skills`, `examples` | documentation and validation only — explicitly reported as not applied |
+| **direct** | `name`, `role`, `systemPrompt`, `provider`, `model`, `reasoningEffort`, `toolPolicy` | passed to `agent_teams_add_member` |
+| **config** | library directories, team state directory, language, index sources | plugin configuration, not team state |
+| **declaration** | `description`, `aliases`, `skills`, `examples`, `tags`, `notes`, `captain` | documentation and validation only; `skills` never auto-loads, `captain` only describes (its persona is injected on apply) |
 
-`roster_create` emits `agent_teams_add_member` arguments (`systemPrompt` → `executionPrompt`, `reasoningEffort` → `reasoning_effort`, `toolPolicy` → `tool_policy`) and a per-field summary; `roster_verify` then reports each field as `applied`, `overridden`, `omitted` or `unconfirmed`.
-
-### Declared fields and the captain
-
-These four declared fields carry information the runtime does not act on, and each has one job:
-
-- `description` — one line on what the member owns. CrewAI's `backstory`, Claude's `description` and the OpenAI Agents SDK's `handoff_description` occupy this slot; it is what you read when handing out work.
-- `aliases` — former names. After a rename the team state still holds the old name; verification matches by alias (reported as `matchedAs`) instead of raising "not deployed" plus "unmanaged" on every rename. Aliases may not collide with a member name or with each other.
-- `skills` — skill names the member is expected to use, matching the DSH skill catalog. **Declaration only**: nothing is loaded because a roster says so; when the host can list skills, `roster_verify` answers just one question — declared but not installed.
-- `examples` — typical requests, one per line, useful as delegation hints; never executed as instructions.
-
-The `captain` block records the captain, which is **not a member**. In `dsh-agent-teams` the captain is the session that creates the team: `team.json` has no captain member row and no argument can change its model. So a roster only does three things for it:
-
-1. describe what it should be (`name`, `description`, `systemPrompt`);
-2. declare its route and persona: **when applying a roster, the captain's `systemPrompt` is injected verbatim into the kick-off prompt**, so the new session acts on it; the route still prints a copy-pasteable profile snippet (`agent-default-model`, `@deepseek-ai/dsh-persona`) from `roster_show`;
-3. validate that the declarations pair up (`provider` and `model` come together).
-
-Making it real means editing the profile's `cordis.patch.yml` and the agent preset. Editing the captain block in the panel records intent; the plugin neither can nor will change your session.
+`roster_create` labels every emitted field with its class; `roster_verify` compares only what the runtime persisted.
 
 ## Capability requirements (`capabilities.yaml`)
 
-A roster says *who the members are*. It cannot say *whether this machine can actually run them* — the skill catalogue and the tool-policy definitions live in the deployment, not in the archive. An optional sibling file in the roster directory declares exactly that, and nothing else:
+A sibling file may declare what the deployment must provide before the team can be built:
 
 ```yaml
-kind: dsh-agent-roster-capabilities/v1
-roster: money-lab            # must equal the directory name
-onMissing: refuse            # refuse (default) | degraded
-asOf: 2026-11-02             # date only
 requires:
-  skills: [frontend-skill, {name: dsh-chat-import, reason: 会话导出需要}]
+  skills: [frontend-skill]
   toolPolicies: [member-safe]
-notes: 建队前先确认成员会话可用。
+onMissing: refuse        # refuse (default) | degraded
 ```
 
-Every requirement lands in one of **three** states — never two:
-
-| State | Meaning | Effect |
-|---|---|---|
-| `present` | the evidence source has it | nothing to do |
-| `missing` | the evidence source says it is not there | the **only** state that trips the gate |
-| `unknown` | there is no evidence source at all | neither pass nor failure — written down so silence is never read as approval |
-
-There are exactly two evidence sources, because they are the only two the host can answer: `skills` from the skill catalogue, `toolPolicies` from this plugin's `knownToolPolicies` configuration. Everything else — model-routing availability, plugin versions, credential pointers, business preconditions — is rejected (`unknown-field`): a requirement nobody can check is just another way to look green.
-
-Behaviour: under `onMissing: refuse` (default) `roster_create` emits **no** `agent_teams_add_member` argument while anything is `missing`, and prints where to install each one. `roster_verify` reports `requires=<missing>missing/<declared>` plus `capabilityBlocked` in its status line, and `ok` is false when a declared requirement blocks a build. `onMissing: degraded` still hands you the arguments, with the debt recorded on every verification. `roster_show` prints the declaration block itself.
-
-**The panel shows it too.** Each roster card lists these requirements as diagnostics: a missing `toolPolicies` requirement is an `error` under `refuse` (so the sidebar badge goes red) and a `warn` under `degraded`. Skill requirements are deliberately reported as `capability-skills-unverified` / `info` — the panel snapshot is synchronous and cannot enumerate the skill catalogue, so it says *not checked here* instead of guessing; run `roster_verify` for the real answer. When `knownToolPolicies` is unset, a single `capability-cross-check-skipped` entry names the affected rosters rather than repeating once per roster.
-
-The sibling file has its own JSON Schema: [`schema/capabilities.v1.schema.json`](./schema/capabilities.v1.schema.json), kept aligned with `lib/capabilities.js` by `test/capabilities.test.js`.
+- Only two verifiable classes: whether a skill is installed, and whether a toolPolicy id was declared by the deployment.
+- Three states: `present` / `missing` / `unknown`; only `missing` triggers `onMissing`; `unknown` (no evidence source) is not a pass.
+- `refuse` makes `roster_create` emit no arguments and name what is missing; `degraded` emits them with per-field labels.
 
 ## Spaces (`space.yaml`)
 
-A roster answers *who the members are*; it cannot answer **which rosters belong together, which one is production and which is retired**. When a library holds twenty archives from different sources, the directory listing stops being an index. An optional file at the **library root** declares that, and nothing else:
-
 ```yaml
 kind: dsh-agent-roster/space@1
-space: agent-roster-collective   # must equal the directory name
-layout: monorepo                 # flat = <id>/roster.yaml; monorepo = roles/ + rosters/ + dist/
-title: 团队档案合集
+space: agent-roster            # must equal the directory name
+title: Team roster collection
+description: Many rosters living in one repository.
+license: MIT
+homepage: https://github.com/…
 maintainers: [STofone]
+layout: monorepo               # monorepo | flat
 rosters:
-  - {id: api-design, title: API 设计评审组, status: active, origin: 本项目自撰}
-  - {id: legacy-team, status: archived}
+  - id: core-review
+  - id: research
+    status: active             # active | archived
+roles: [core-review-lead, reviewer]   # optional role declarations
 ```
 
-Placement matters: the file sits **next to** the roster directories, not inside one. It is a table of contents for the library, so it is the only file allowed at the root — scatter a `foo.yaml` there and the scanner still warns `unexpected-file`.
+- `layout` describes file placement, not counts: `monorepo` is `rosters/<id>/roster.yaml`, `flat` is `<id>/roster.yaml`.
+- Declared vs disk: missing → error `space-roster-missing`; extra → warn `space-roster-undeclared`; archived but still present → info.
+- **`origin` is an error inside a repository**: the source is the repository itself, and a second copy would be a second source of truth. Only pulled local copies may carry `origin: {repo, ref, path}`.
 
-The declaration is mechanically checked against disk, and the three outcomes are deliberately different severities:
-
-| Situation | Code | Severity | Why |
-|---|---|---|---|
-| declared, directory missing | `space-roster-missing` | **error** | the organization page is lying — worse than no page |
-| directory present, not declared | `space-roster-undeclared` | warn | someone added a roster around the index; it still loads |
-| declared `archived`, directory still there | `space-roster-archived` | info | archiving is a statement, not a delete |
-
-`space` must equal the directory name, exactly like `roster` does: position is identity, and two ids for one library would make every diagnostic ambiguous. Unknown keys are rejected — a field nobody can check is another way to look green.
-
-This file creates nothing. It does not write `team.json`, does not create members, and never reaches `agent_teams_add_member`. Its JSON Schema is [`schema/space.v1.schema.json`](./schema/space.v1.schema.json), kept aligned with `lib/space.js` by `test/space.test.js`.
-
-Pulling a whole space keeps the layout, so editing the local copy edits the same file the repository holds:
+### Pulling a whole space
 
 ```bash
-dsh-agent-roster clone --repo dsh-agent-roster/agent-teams --space agent-teams
+npx dsh-agent-roster clone --repo dsh-agent-roster/agent-teams --space agent-teams --dir /tmp/clone
 ```
 
-`clone` brings `rosters/`, the referenced `roles/` (with their `parts/`), and the `snippets/` those roles
-reference; `dist/` is deliberately left out because it is a build product. The panel's one button on a space
-head is the same command.
+It pulls rosters, roles, `parts/`, `snippets/` and `space.yaml` in their original layout, then writes an origin ledger `.dsh-roster-origin.json` (`origin`, `commit`, `pulledAt`, per-file `sha256` and blob id). `dist/` is deliberately not pulled.
 
-**A worked example ships in this repository:** [`orgs/agent-roster-collective/`](./orgs/agent-roster-collective/) holds 21 rosters (63 members) covering API review, incident response, data quality, database migration, localization, security audit, performance, frontend, docs, release, support triage, recruiting, market research, finance reconciliation, contract review, content ops, regression testing, model evaluation, SRE on-call, literature review and product discovery. Every roster is a three-person team with a captain, and each was written for this repository (no upstream text is copied). Validate it with:
+### Keeping a pulled copy current
 
 ```bash
-node bin/cli.mjs validate --dir orgs/agent-roster-collective
+npx dsh-agent-roster update --dir /tmp/clone/agent-teams           # check only
+npx dsh-agent-roster update --dir /tmp/clone/agent-teams --write   # fast-forward
+npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # accept local as the new baseline
 ```
 
-## Roles, rosters and compiled artifacts (v2)
+Three-way comparison per file (ledger / disk / remote at the ref), seven states:
 
-v1 keeps everything in one `roster.yaml`: the persona sits in a YAML block scalar, the assembly protocol lives in plugin code, the captain is written twice, and identity comes from the directory name. v2 splits that into three layers, one authority each:
+| State | Meaning | `--write` |
+|---|---|---|
+| `clean` | neither side changed | nothing |
+| `local-only` | local changed, remote did not | nothing |
+| `remote-only` | remote changed, local did not | replace and update the ledger |
+| `diverged` | both changed | **nothing**; print both shas and a diff |
+| `remote-deleted` | gone on the remote | nothing; keep local and mark it |
+| `missing` | gone locally | report only |
+| `unverified` | remote did not answer | nothing; **not clean** |
 
-```text
-roles/<any-dir>/AGENT.md     role: frontmatter is parameters, body is the persona, parts/ optional
-snippets/<name>.md           shared text any role can pull in with {{> snippets/<name>.md}}
-rosters/<id>/roster.yaml     assembly: members are references, the captain has its own section
-dist/<id>-<ver>.json         compiled: self-contained, hashable, the only thing consumers read
-```
-
-The discriminator decides the version — `dsh-agent-roster/role@1`, `dsh-agent-roster/roster@2`, `dsh-agent-roster/compiled@1`. Two formats never share a directory: v1 is frozen, and `roster migrate` (not yet built) rewrites it in place.
-
-Assembly is written into the format rather than hidden in code:
-
-```text
-executionPrompt = join("\n\n", [body with {{> …}} expanded, ...parts, ...member.append])
-```
-
-`assemblePrompt()` in `lib/frontmatter.js` is the only implementation, and the compiled artifact records the character count, the block list and a SHA-256 for every prompt, so "which text did this member actually get" is answerable without re-reading the sources.
-
-### References inside a persona
-
-A persona can place a block exactly where it belongs instead of only appending it at the end:
-
-```md
-## Before you ship
-{{> parts/self-check.md}}
-
-## Units
-{{> snippets/units.md}}
-```
-
-- The directive must be a line of its own. A `{{>` anywhere else is `include-syntax`: a half-written reference is a bug, not prose.
-- `snippets/…` resolves against the library root (shared across roles); anything else resolves against the role directory. Both go through the same guard as `parts`: `..`, absolute paths and symlink escapes are `unsafe-include`.
-- One level only. An included file is literal text; a reference inside it is `include-nested`, never expanded silently and never shipped as a raw directive.
-- The budget counts the expanded text: at most 32 references, 6000 characters per included file, and the 12000 `promptChars` ceiling applies after expansion.
-- `missing-include`, `unreadable-include`, `library-root-unknown` and `include-too-long` are errors that carry `AGENT.md:line`, so fixing one is a jump rather than a search.
-- The same reference twice expands twice (position is meaning). `prompt.parts` still rejects duplicates, because a duplicated tail block is almost always a mistake.
-- `promptStats.parts` records every include as `{ path, kind: "include", line, sha256 }`, so the panel and any verifier point at the same line the compiler read.
-
-`snippets/` belongs to v2 libraries (a directory holding `roles/` and `rosters/`); a v1 flat library has no
-library root to resolve it against.
-
-There is deliberately no condition, loop or variable: `executionPrompt` has to stay a deterministic function of the files on disk, otherwise `promptStats.sha256` stops meaning anything and "what did this member actually receive" becomes a runtime guess.
-
-A gate must be runnable, not self-certified: every gate carries at least one `verify` entry (`command` + `expectExit`), and a gate without one is rejected at validation time (`gate-unverifiable`). `requires` stays, but only as prose for the human reading the verdict.
-
-`compile` also emits the construction plan — `dist/<id>-<ver>.tasks.json`:
-
-```json
-{ "kind": "dsh-agent-roster/plan@1", "executor": "captain",
-  "tasks": [ { "id": "build", "kind": "stage", "member": "fixer", "dependencies": [] },
-             { "id": "audit", "kind": "stage", "member": "reviewer", "dependencies": ["build"] },
-             { "id": "tests-pass", "kind": "gate", "member": "reviewer", "dependencies": ["audit"] } ],
-  "loop": { "onGateFailure": { "retry": "build", "maxRounds": 1 } } }
-```
-
-`executor: "captain"` is the whole point: the plugin never calls `agent_teams_create_task`, because writing team state belongs to the captain session. The plan is a drawing the captain builds from, not the plugin building for it.
-
-The example library in [`examples-orchestration/`](./examples-orchestration/) compiles end to end:
-
-```bash
-node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review --write
-node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review --json
-```
-
-`orchestration` is part of the format but is compiled with `status: "declaration"`: stages and gates are validated (a gate's `after` must name real stages, `by` must name a real member), yet nothing executes them. Declaring a field is not the same as proving it runs, so the artifact says which is which in `declarations[]`. The full contract — field ownership, assembly semantics, identity and uniqueness, migration rules — is in [`docs/roster-v2.md`](./docs/roster-v2.md); the schemas are [`schema/role.v1.schema.json`](./schema/role.v1.schema.json), [`schema/roster.v2.schema.json`](./schema/roster.v2.schema.json) and [`schema/compiled.v1.schema.json`](./schema/compiled.v1.schema.json).
-
-### From v1 to v2 in one command
-
-```bash
-node bin/cli.mjs migrate --dir examples            # 只出计划：要写哪些文件、能不能编译
-node bin/cli.mjs migrate --dir examples --write    # 原地重写：roles/ + rosters/ + dist/，删掉旧目录
-```
-
-Migration keeps personas verbatim: a member's `systemPrompt` becomes the body of
-`roles/<roster>-<member>/AGENT.md`, and the member turns into a reference. The captain stops being a
-loose field and becomes a role file of its own — `<roster>-<captain>-captain` when its name collides
-with a member, because those are two different personas and silently merging them would lose one.
-
-If the v1 rosters live in a subdirectory (the usual case for a repository that publishes a
-collection), point the migration at the library root and tell it where the old files are:
-
-```bash
-node bin/cli.mjs migrate --dir . --from rosters --repo owner/repo --write
-```
-
-That layout rewrites `rosters/<id>/roster.yaml` in place, adds `roles/` and `dist/` at the repository
-root, and drops the stale `roster.json`/`roster.yml` next to it — two spellings of one roster are two
-sources of truth. The collection then uses `path: ""` (the repository root *is* the library) and a
-`files` map pointing at `dist/`, because an assembly only references roles and cannot be pulled alone.
-
-Role names carry the roster id prefix because v2 requires role names to be **unique per library**,
-and a library whose 21 rosters all call their captain `lead` cannot have 21 files with the same name.
-
-### Feeding a failed round back into the plan
-
-`compile --run <file>` reads an execution record (`run@1`) and appends the previous round's failures
-to the retry card's description:
-
-```bash
-node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
-  --run examples-orchestration/dist/core-review-1.0.0.run.json
-```
-
-The record is written by whoever executes the plan (the captain session), not by the plugin: a task
-id belongs to the team, and the plugin never writes team state. What it does own is the merge — a
-failure that only exists on a red card never reaches the next compile, which is exactly how a gate
-turns into decoration.
-
-## The library tab: find by capability, not by source
-
-The panel opens on **Rosters** — the local ones: what you work with every day, its tags and members, ready
-to filter or edit. The second tab is the **Library**, meant to read like a plugin marketplace: one search
-field, one row of tags, and one list that spans this machine and every subscribed source.
-
-```
-要找什么能力？例：数据质量、发版、代码评审
-```
-
-Two characters in, after a 240 ms pause, the panel asks `/search` a question. Every row says **why** it
-matched (`标签：数据质量 · 成员角色：数据质量工程师`) and where it lives (`来自 agent-roster-collective`),
-and carries the next action inside the row: **Open** for something already on this machine, a **favourite**
-star for a roster you want to keep at hand, and a quiet **Not installed** for the rest — pulling happens per
-space, never per roster, so a single file cannot drift away from the space it belongs to.
-
-With an empty field it **browses**: `/catalog` flattens this machine and the subscribed sources in one
-response, the tag strip summarises every tag in view with its count (multiple tags are AND), and the
-segmented control switches between **by source** (this machine, then one group per collection) and **flat**
-(one list, source named per row). Tag filtering is view state only; it never writes back to a file.
-
-By source, each group's head **is the space**: its id sits in the same column as the roster ids, the
-right side states two facts you can check on the spot — how many rosters it holds, how many are already
-here — and carries one button that pulls the whole space. A roster that is already here reads **Open** plus a star:
-the panel never asks you to pull something you already have.
-
-**Favourites decide what the first tab shows.** The Rosters tab opens on `Favourites` — pulling a 21-roster
-space should not dump 21 rows on the screen you look at every day. Star a roster (here or in the Library) and
-it appears; a segmented control in the toolbar switches to `All` when you need the full shelf. The star is
-stored in `.dsh-roster-favorites.json` at the library root, so it travels with the library instead of the
-machine, and a corrupt file degrades to "nothing starred" with one warning — it never blocks the panel.
-
-Multiple words are AND, not OR: `data kubernetes` returns nothing rather than every roster that merely
-mentions "data". Ranking is a pure function in `lib/search.js`, so it is unit-tested rather than eyeballed.
-
-Subscribed rosters resolve through `files` in the index, which points at a concrete compiled artifact
-(`dist/<id>-<ver>.json`). The artifact carries its own title, description, tags, licence and maintainers,
-so finding a roster from a distance costs one file — not a clone.
-
-## Tools
-
-| Tool | Purpose |
-|---|---|
-| `roster_list` | list rosters in a library with per-roster validation results |
-| `roster_show` | show one roster (or one member) in full, including bridge field classes |
-| `roster_create` | translate members into `agent_teams_add_member` arguments / `plan.members`; refuses when a declared capability is missing |
-| `roster_verify` | compare a roster against `dsh-agent-teams`' `team.json`; reports faithful / unverified / drift / missing, plus materialised tool-filter digests, policy drift, provenance and capability requirements |
-| `roster_diff` | diff two rosters (generation N vs N+1): members matched by name, effective values compared, persona compared by length + hash |
-| `roster_index` | list registry sources and their collections, including whether a ledger-backed copy is already on this machine (`pulled`); given a collection, fetch it read-only and report its `space` and `layout` |
-| `roster_space` | describe a space: layout, declared vs present vs missing rosters, roles, `origin` and the pulled commit, diagnostics |
-| `roster_search` | search this machine and the first eight subscribed sources with the same engine as the Library tab; each hit names the field it matched |
-| `roster_changes` | compare a pulled space against its origin ledger: clean / local-only / remote-only / diverged / remote-deleted / missing / unverified, per file |
-| `roster_compile` | compile a v2 roster in memory: members, prompt stats (characters, parts, includes, sha256), diagnostics — writes nothing |
-| `roster_team` | create a team from a roster: a new session (choose the space and its name) or an existing one, then select the captain model and queue the build prompt |
-
-All but `roster_team` are read-only. `roster_create` only produces arguments — the model still has to call `agent_teams_add_member` itself. `roster_team` is the one tool that touches the runtime: it creates or reuses a session, renames it when it is new, selects the captain model declared by the roster, and queues the same prompt the panel's **Create team** button uses, so the two paths cannot drift.
-
-`roster_list`, `roster_show`, `roster_create` and `roster_verify` all accept a `path` argument: when given, it is the library root, with no silent fallback to the configured directory.
-
-### One roster per directory, two generations per machine
-
-`roster` must equal the directory name, and a library holds one document per directory. Two
-generations of the same roster therefore live in **two libraries** — that is intended, not a
-gap: it keeps "position is identity" intact (a later `load` can never pick the wrong generation
-by accident) and makes the switch an explicit `path` argument instead of a silent side effect.
-
-```text
-~/.dsh/agent-roster/money-lab/roster.yaml          # one generation
-/workspace/money/.dsh/rosters/money-lab/roster.yaml # the next generation
-```
-
-`roster_diff({ from, to })` answers "what changed between the generations"; `roster_create`
-prints a provenance line (`roster:money-lab@9.0.0#ab12cd34`) to put into the created team's
-description, and `roster_verify` compares that line against the current file — so a roster
-edited after the team was created shows up as `differ` instead of silently passing.
-
-### Captain verification
-
-An archive's `captain` block is a declaration, and the persona in it is carried into the session when
-the roster is applied. The captain is the session that creates the team — it has no member row; its
-model comes from the deployment (`agent-default-model`), its persona from `captain.systemPrompt`
-(injected into the kick-off prompt). The panel therefore **compares and injects** instead of
-pretending to write the deployment: the Settings row
-shows the deployed provider / model per profile, and every archive with a captain block reports
-`match` / `differ` / `undeclared` / `unknown` per field. When the deployment cannot be read the
-state is `unknown`, never "passed".
-
-The **apply** action is the one write the panel offers here: it switches the chosen session to the
-declared model and queues a prompt that carries the captain persona and calls `agent_teams_create`,
-`agent_teams_add_member` per
-member and finally `roster_verify`. Creating the team stays with the runtime.
-
-Since 1.2.0 the roster row itself carries **Create team**, so this no longer hides behind an
-expanded card. It defaults to a *new* session — quick creation must not hijack the conversation
-you are in — lets you rename the team, switches the captain model when the archive declares one,
-and queues the same build prompt. The plugin still writes no team state: the row action prepares a
-session, the session does the creating.
+There is deliberately **no auto-merge**: these files are YAML plus prose, with no merge base; a three-way merge would quietly invent duplicate roles or half-renamed members. Real merging belongs to `git clone` — which drags credentials and push access into the plugin, so it is not the default. `--accept` only accepts `local-only`; `diverged` is never accepted.
 
 ## Sidebar panel
 
-The roster list is a **ledger, not a wall of cards**: one row per roster — a 3px state edge (lit only when something is wrong, quiet when it is fine), a monospace id column, the title with a one-line description, right-aligned counts (members / errors / warnings / deployment), and a quiet pair of actions (edit, expand). Duplicate, copy-create and delete moved into the expanded area, which turns 105 buttons across 21 rosters into 42. Below 860px the tag pool becomes a top row and the metadata wraps. Expansions never build their own scroll box: the panel root is the only scroller, so an expanded section grows as tall as its content instead of showing "just a few rows".
+The plugin adds one row, **Agent Roster**, to the global sidebar (`sidebar.panellist`) and registers the full page under the same id in `main`. Four tabs:
 
-The panel takes the full page width; nothing constrains it to a reading column. The archive list has
-a **tag pool** on the left: every tag present in the library, with how many archives carry it. Clicking
-tags narrows the list — multiple selections are ANDed — and one button clears the selection. The tag
-pool is a filtered view only; it never writes tags back to files.
-
-Header actions follow the place they act on: **Import** and **New archive** sit in the archive tab
-next to the search box, **Refresh** sits in the Library tab (it bypasses the one-hour cache and re-reads
-the public index), and the header keeps a single **gear button** that opens the settings dialog.
-The dialog edits the language, the download region, the mirror address and the roster directories, and shows the resolved
-data directory, the team state directory and the version.
-
-A badge at the top summarises how many items need attention
-
-The client plugin adds an **Agent Roster** entry to the left sidebar: one row in the `sidebar.panellist` slot plus the matching key in the `main` slot. Clicking the row opens a full-width page with four tabs — the panel is not only a viewer:
-
-| Tab | What you can do |
+| Tab | What it does |
 |---|---|
-| Rosters | the starred rosters by default (a segmented control shows all of them); browse every workspace × library, expand members, **create a team** (a new session picks the space and its name; existing sessions are listed as space · session name), and **create / edit / duplicate / delete / import / export** rosters. The editor has a form mode and a source mode (the file as-is); the host validates before writing and keeps a `.bak` next to an overwritten file |
-| Library | find a roster by capability across this machine and every subscribed source: search with hit reasons, tag filtering, grouped by space or flat; open what is here, star what you want, pull a whole space, and check a local space for updates from its origin |
-| Teams | read one configured state directory (`.agent-teams` by default) and see every team the runtime created: profile, member profiles and model routes, whether each persisted member really matches its roster, plus the team's tasks |
-| Health | the "configuration points somewhere wrong" questions in one place: which directories resolved, whether the state directory exists, how many declarations are unconfirmed, and what to change |
+| **Rosters** | defaults to favourites (segmented control switches to all); create / edit / duplicate / delete / import / export; a “Create team” button per row; expand for members, apply-captain, copy member params; search and a tag pool |
+| **Library** | find rosters across local libraries and subscribed sources: search, tag filtering, grouped by source or flat; open local ones, favourite the rest; “pull the whole space” per space; the local space header shows “check updates / apply N updates / N conflicts / N unverified / no baseline” |
+| **Teams** | reads the state directory (default `.agent-teams`) and lists the teams actually built, member routes, per-member agreement with the roster, and tasks |
+| **Health** | resolved directories, state directory, unconfirmed declarations, and which setting to change |
 
-A badge at the top summarises how many items need attention; the Health tab explains each one. All write operations go through `POST /plugins/dsh-agent-roster/rosters`, which enforces same-origin (`connection`), a JSON content type, a body-size cap and a library-root whitelist — the client never writes files itself.
+The design is a **ledger, not a card wall**: one row per roster — a 3px status edge (lit only for error/warn), a monospace id column, title and one-line description, counts on the right, quiet actions. Only the panel root scrolls; expanded content grows the page instead of creating a nested scroll box. Below 860px the tag pool moves above the list and the space header wraps to two lines.
 
-The panel is bilingual. Its language defaults to the DSH language and can be pinned in **Settings → Plugins → Agent Roster** (the same section shows a read-only summary of the configuration). Both the panel and the host-side texts are translated; dictionaries live in `locale/` and are served by the host, so switching the DSH language re-renders the panel without a reload.
+Settings live only in the panel’s gear dialog (language, download region, mirror, library directories, read-only summary); the plugin **no longer registers a DSH settings section**.
 
-## Keeping a pulled space current
+### Creating a team
 
-A space pulled with `clone` carries a ledger, `.dsh-roster-origin.json` (hidden, so the scanner ignores it): the repository, ref and path it came from, the commit it was pulled at, and the sha256 plus blob id of every file written. The ledger is the baseline — without it there is nothing to compare against, and `update` says so instead of pretending the copy is clean.
+The row button and the `roster_team` tool share one `applyCaptain` path:
 
-`dsh-agent-roster update --dir <space>` compares each file three ways (ledger vs disk vs the remote at that ref) and reports one of seven states:
+- **New session**: pick a workspace (dropdown; duplicates are disambiguated with one parent directory) and type a session name; the session is renamed after creation.
+- **Existing session**: shown as “workspace · session name”, never an id or a path.
+- If the roster declares a captain persona, it is injected into the kick-off prompt verbatim; the model still comes from the deployment, and the plugin writes no runtime state.
+- Both the panel and the tool only **queue** the prompt; the model in that session calls `agent_teams_*` to build the team.
 
-| State | Meaning | What `--write` does |
+### Favourites
+
+Favourites live in `.dsh-roster-favorites.json` at the library root (`dsh-agent-roster/favorites@1`, at most 500 entries, atomic replace). Saving or importing auto-favourites the new roster; deleting unfavourites it; a broken file yields one warning and the panel still works. Favourites **affect the view only** and never move files.
+
+## Tools (eleven, all read-only)
+
+| Tool | Purpose | Key parameters |
 |---|---|---|
-| `clean` | nobody moved | nothing |
-| `local-only` | you edited, the remote did not | nothing — your edit stays |
-| `remote-only` | the remote moved, you did not | replaces the file and updates the ledger |
-| `diverged` | both moved | **nothing** — it prints both shas and a diff; a human decides |
-| `remote-deleted` | gone upstream | nothing; the local copy is kept and flagged |
-| `missing` | gone locally | nothing; reported |
-| `unverified` | the remote did not answer (network, rate limit) | nothing; **not counted as clean** |
+| `roster_list` | list rosters and members | `path?` |
+| `roster_show` | all fields, destinations and diagnostics for one roster | `ref`, `member?`, `path?` |
+| `roster_create` | emit ready-to-use member arguments + provenance line `roster:<id>@<ver>#<sha8>` | `ref`, `path?` |
+| `roster_verify` | compare against the values persisted in `team.json` | `ref`, `team?`, `path?` |
+| `roster_diff` | semantic diff between two rosters | `from`, `to`, `path?` |
+| `roster_index` | public index state; collections carry `pulled` / `space` / `layout` | `collection?`, `source?`, `refresh?` |
+| `roster_space` | declared vs on-disk rosters, roles, origin and ledger commit | `path?` |
+| `roster_search` | search across local and subscribed sources (words are ANDed; remote scans at most 8 sources and reports truncation) | `query`, `path?`, `remote?`, `limit?` |
+| `roster_compile` | compilation preview (writes nothing) | `ref`, `path?` |
+| `roster_changes` | per-file update check (seven states) | `path?`, `refresh?` |
+| `roster_team` | create a team from a roster (new or existing session) | `id`, `teamName?`, `mode?`, `workspace?`, `sessionName?`, `sessionId?`, `path?` |
 
-There is deliberately **no automatic merge**: these files are YAML plus prose, there is no merge base, and a three-way merge would quietly produce duplicate role names or half-renamed members. If you want real merging, use `git clone` and let git do it — that keeps credentials and pushes out of the plugin. The panel exposes the same check on the local space header: **Check updates** turns into `Apply N updates` only when something can be fast-forwarded, and otherwise says `N conflicts`, `N unverified`, or `No baseline` — a network failure is never shown as "up to date". `update --accept` records your local content as the new baseline (only files in `local-only`; a `diverged` file is never accepted, because that would throw the remote half away without telling you).
+Writing goes through the CLI and the panel’s HTTP routes only; the tool layer stays read-only.
 
-## Public registry and one-click pull
+## CLI
 
-Rosters can be shared: keep one or more of them in a GitHub repository, register them as a **collection** in that
-repository's `index/registry.json`, and anyone who subscribes can see them in the panel and pull them locally.
+| Command | Purpose |
+|---|---|
+| `validate [--dir…] [--json]` | validate libraries; exit code 1 on errors |
+| `list [--dir…] [--json]` | list rosters and members |
+| `compile --roster <dir> [--write] [--run <receipt>] [--json]` | compile a v2 roster; `--write` writes `dist/` |
+| `migrate --dir <dir> [--from <sub>] [--repo <owner/repo>] [--write]` | migrate v1 → v2 in place |
+| `clone --repo <owner/repo> [--ref] [--path] [--space] [--dir]` | pull a whole space with a ledger |
+| `update --dir <space> [--write] [--accept] [--json]` | check / fast-forward / accept |
+| `registry validate --file <path>` | validate a public index |
+| `registry fetch --file <path> [--local-only]` | confirm every collection really resolves |
+| `registry sync --file <path> [--write]` | recompute roster lists and file maps from the repo |
 
-- **Subscribing**: set `indexes` to an `https://…/registry.json` URL or `npm:pkg` (reads `registry.json` from the
-  package). Empty means the official source, `dsh-agent-roster/dsh-agent-roster`'s `index/registry.json`; an explicit `false`
-  is the only way to disable remote sources entirely.
-- **How often it refreshes**: TTL **one hour** — that is the unauthenticated GitHub budget of 60 requests/hour.
-  `?refresh=1` (or the tools' `refresh`) bypasses the cache, throttled to one try per 60 seconds so the quota is not
-  burned. On failure the last cached index is reused and labelled "cached (fetch failed)" in the panel.
-  The cache records **which shape of index it holds** (`CACHE_VERSION`): a plugin upgrade that changes the
-  index shape invalidates old caches and refetches once, so "I upgraded but the panel still 404s" is not a
-  thing you have to debug by deleting a directory.
-- **Pulling**: writes are idempotent and report one of `created`, `updated` (explicit overwrite), `unchanged`
-  (same content, nothing written) or `conflict` (the local copy differs and is **not** overwritten by default).
-  Conflicts are yours to resolve: merge in the editor, or pull again with `overwrite` in the request body.
-- **Expanding is fast and filterable**: opening a collection fetches its rosters in parallel (up to six in
-  flight) instead of one after another — the 21-roster collective went from **9.4 s to 0.8 s** on this
-  machine. The route memoises the fetched result for 60 seconds, and the panel keeps the last expansion in
-  memory, so re-opening is instant and re-opening after a minute costs one round of six requests, not 21.
-  A filter box inside the expanded list narrows by id, title or member name; it only hides rows, it never
-  changes data.
-- **Where each roster lives**: a collection's `rosters[]` is just the list of ids; the optional
-  `files` map says where each one is (`{"core-review": "dist/core-review-1.0.0.json"}`). It is optional —
-  without it the fetcher assumes the v1 layout `<id>/roster.yaml` — but a v2 library needs it, because an
-  assembly only references roles and cannot be pulled on its own. `registry sync` writes this map for you.
-- **The index has a schema**: [`schema/registry.v1.schema.json`](./schema/registry.v1.schema.json) mirrors the
-  runtime validator, so an editor flags a typo before CI does.
-- **Publishing your own**: add an entry to `collections` in `index/registry.json` (`id`, `repo: github:owner/repo`,
-  `ref`, `path`, `rosters[]`) and open a PR. `.github/workflows/registry.yml` checks the index against the real files.
-
-## Routes
+## Routes (twelve)
 
 | Route | Method | Purpose |
 |---|---|---|
-| `/plugins/dsh-agent-roster/library` | GET | panel snapshot: libraries, rosters, teams, hints, counts, remote sources |
-| `/plugins/dsh-agent-roster/document` | GET | one roster's raw text plus its parsed form (editor) |
-| `/plugins/dsh-agent-roster/rosters` | POST | create / update / delete / import / export one roster |
-| `/plugins/dsh-agent-roster/apply` | POST | apply an archive's captain to an existing or new session and queue the team-building prompt |
-| `/plugins/dsh-agent-roster/collection` | GET | fetch one collection's rosters read-only (nothing is written) |
-| `/plugins/dsh-agent-roster/install` | POST | write one collection into the local library (idempotent, no overwrite by default) |
-| `/plugins/dsh-agent-roster/install-space` | POST | pull a whole space (rosters + roles + parts + snippets + `space.yaml`) into a local directory |
-| `/plugins/dsh-agent-roster/catalog` | GET | every roster this machine can see: local libraries plus every subscribed source |
-| `/plugins/dsh-agent-roster/search` | GET | `?q=` — the same engine the Library tab uses, with per-hit reasons |
-| `/plugins/dsh-agent-roster/favorites` | POST | star / unstar one roster; writes only the library's `.dsh-roster-favorites.json` |
-| `/plugins/dsh-agent-roster/space-update` | POST | `check` / `apply` / `accept` a pulled space against its origin ledger |
-| `/plugins/dsh-agent-roster/locale` | GET | `en` / `zh` dictionary for the panel |
+| `/plugins/dsh-agent-roster/library` | GET | panel snapshot: workspaces, libraries, rosters, teams, diagnostics, counts, `hostWorkspaces` |
+| `/plugins/dsh-agent-roster/document` | GET | raw and parsed document for the editor |
+| `/plugins/dsh-agent-roster/rosters` | POST | create / update / delete / import / export |
+| `/plugins/dsh-agent-roster/apply` | POST | apply the captain: new session (workspace + name) or existing session |
+| `/plugins/dsh-agent-roster/collection` | GET | read a collection without writing |
+| `/plugins/dsh-agent-roster/install` | POST | write a collection into a local library (idempotent, no overwrite by default) |
+| `/plugins/dsh-agent-roster/install-space` | POST | pull a whole space into a local directory |
+| `/plugins/dsh-agent-roster/catalog` | GET | every roster visible locally or in subscribed sources |
+| `/plugins/dsh-agent-roster/search` | GET | `?q=`, with match reasons |
+| `/plugins/dsh-agent-roster/favorites` | POST | favourite / unfavourite |
+| `/plugins/dsh-agent-roster/space-update` | POST | `check` / `apply` / `accept` |
+| `/plugins/dsh-agent-roster/locale` | GET | panel dictionary (`zh` / `en`) |
 
-All twelve are `exact` routes behind the host's `connection` fence and answer `405` for other methods.
+All are exact routes behind the host `connection` fence; a wrong method is 405. Write routes also enforce a root-directory allow-list and request-body limits.
 
 ## Configuration
 
 | Key | Default | Meaning |
 |---|---|---|
-| `rosterDirs` | `[]` | library directories. Empty means the global library `$DSH_HOME/agent-roster`; an absolute or `~` path is global too; only a relative path is resolved per workspace. The first entry is what the tools read by default |
-| `knownToolPolicies` | `[]` | tool-policy ids declared by your deployment; enables cross-checks |
-| `agentTeamsStateDir` | `.agent-teams` | read only: where `roster_verify` and the Teams tab look for team state |
-| `language` | `"auto"` | panel language: `auto` follows DSH, or pin `zh` / `en` |
-| `indexes` | `[]` | public registry sources: an `https` `registry.json` or `npm:pkg`. Empty means the official source; `false` means local-only |
-| `region` | `"auto"` | download region: `china` reads npm-style index packages from the Tencent mirror; `auto` equals `global` (no probing, one less request) |
-| `registryMirror` | `""` | custom npm registry for download sources, e.g. `https://registry.npmmirror.com` or `http://nexus.corp.local/repository/npm`. Set it and it beats `region`; a registry pinned inside a source still beats both. Empty means no custom mirror |
+| `rosterDirs` | `[]` | library directories. Empty = global library `$DSH_HOME/agent-roster`; absolute or `~` paths are global too; only relative paths resolve per workspace. The first entry is the tools’ default |
+| `knownToolPolicies` | `[]` | toolPolicy ids declared by the deployment; cross-checking only happens when set |
+| `agentTeamsStateDir` | `.agent-teams` | read-only state directory for `roster_verify` and the Teams tab |
+| `language` | `"auto"` | `auto` follows DSH, or pin `zh` / `en` |
+| `indexes` | `[]` | public sources: an `https` `registry.json` or `npm:pkg`; empty = official source; `false` = local only |
+| `region` | `"auto"` | download region: `china` uses the Tencent npm mirror; `auto` means `global` (no probing) |
+| `registryMirror` | `""` | custom mirror URL (sub-paths allowed); empty uses the region preset |
 
-All seven are `volatile`: changes apply immediately, no host restart.
+All seven are volatile: changes apply without a restart, but the running host re-registers tools on its own schedule.
 
 ## Diagnostics
 
-Validation reports errors, warnings and infos with `file`, `path` and `reason`. Families:
+Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 when there is an error. By family:
 
-- structure: `missing-field`, `unknown-key`, `invalid-type`, `invalid-kind`, `pair-required`, `invalid-value`
-- values: `invalid-id`, `invalid-provider`, `invalid-model`, `invalid-semver`, `invalid-tag`, `invalid-tool-name`, `invalid-tool-policy-id`, `invalid-number`, `empty-tool-scope`
-- safety: `reserved-character` (`^`, `$`, `|`, braces), `forbidden-content` (prompt-injection patterns), `single-line-required`
-- limits: `string-too-long`, `too-many-members`, `too-many-values`
-- library level: `library-missing`, `library-unusable`, `missing-roster-file`, `multiple-roster-files`, `unexpected-file`, `unreadable-file`, `unreadable-dir`, `duplicate-roster-id`, `tool-policy-cross-check-skipped`
-- persona references: `include-syntax`, `missing-include`, `unreadable-include`, `unsafe-include`, `include-nested`, `library-root-unknown`, `include-too-long` (each carries `AGENT.md:line`)
-- remote sources: `index-unreachable`, `index-invalid`, `index-refresh-throttled`, `index-source-invalid`, `collection-fetch-failed`, `collection-not-found`, `index-may-be-stale` (a v1-path fetch failed on a collection that has no `files` map — the index is probably older than the library), `collection-roster-needs-roles` (the entry points at a v2 assembly, which cannot travel as one file)
-
-An empty library is not an error. A missing one is reported as info, not error. `tool-policy-cross-check-skipped` is emitted **once per library** (not once per roster) when no `knownToolPolicies` are configured — a per-roster warning would turn one fact into n lines of noise.
+| Family | Examples |
+|---|---|
+| Format | `unknown-field`, `unknown-format`, `multiple-roster-files`, `duplicate-roster-id`, `duplicate-role` |
+| Roles and assembly | `missing-part`, `prompt-part-too-long`, `include-syntax`, `missing-include`, `unsafe-include`, `include-nested` |
+| Orchestration | `gate-unverifiable`, `gate-without-stage`, `empty-stage` |
+| Capabilities | `capability-policy-missing`, `capability-skills-unverified`, `capability-cross-check-skipped` |
+| Spaces | `space-roster-missing`, `space-roster-undeclared`, `space-roster-archived`, `multiple-space-files`, `space-origin-not-allowed` |
+| Ledger | `no-origin-ledger`, `origin-ledger-broken`, `clone-unsafe-path`, `clone-snippet-missing` |
+| Sessions | `session-controller-unavailable`, `session-create-failed`, `session-rename-failed`, `prompt-not-queued` |
+| Favourites / writes | `favorites-unreadable`, `write-failed`, `delete-failed` |
 
 ## Relationship to `dsh-agent-teams`
 
-`dsh-agent-teams` owns team lifecycles, task dispatch and member persistence. This plugin owns the *definition* of members and the honesty of the handoff: it reads `.agent-teams/<team>/team.json` (read-only) to verify what the runtime actually stored, and it degrades to "unconfirmed" when it cannot read it. No state is ever written.
+- `roster_create` member arguments feed `agent_teams_add_member` directly; every field is labelled direct / config / declaration.
+- The provenance line `roster:<id>@<version>#<sha8>` is meant for `agent_teams_create`’s `description`; `roster_verify` parses it and reports `match` / `differ` / `id-only` / `absent`.
+- `roster_verify` reads persisted fields in `team.json`; the persona (`executionPrompt`) is not persisted there, so it is reported as “not persisted”, never as “matches”.
+- `toolFilter` is the materialised deny list and is not stored in `team.json`, so it is reported as “unverified”; check policy definitions on the deployment side.
+- The plugin never writes team state and has no transfer operation.
 
 ## Development
 
 ```bash
-npm install
-npm test          # node --test, 358 cases
-npm run smoke     # registers the tools against a real DSH bundle, asserts lossless output
-node scripts/check-locale.mjs   # static t() keys must exist in both dictionaries
-```
-
-Layout:
-
-```
-index.js          host plugin: Config, apply, twelve routes
-lib/              reading: format, format-v2, frontmatter, parse, validate, role, roster2,
-                  capabilities, organization, registry, remote, library, home
-                  compiling: compile2, plan, migrate, run
-                  speaking to the runtime: bridge, verify, diff, digest, render, tools, service,
-                  teams-state, captain, write, apply, serialize, config-view, json, http
-client.js         client plugin: sidebar entry, main panel (rosters/teams/health), settings dialog
-locale/           panel + listing dictionaries (en/zh)
-schema/           roster v1 / role v1 / roster v2 / compiled v1 / capabilities / organization / registry
-                  schemas (editor completion; kept aligned by tests)
-bin/cli.mjs       validate/list/compile/migrate/registry for CI
-scripts/          host-smoke.mjs, client-smoke.mjs, check-locale.mjs (dev only, not shipped)
-examples/         a v2 library migrated from the v1 archives
-examples-orchestration/  a v2 library with orchestration, gates and a construction plan
-orgs/             a worked example library with its own space.yaml (21 rosters)
-test/             unit tests
+node --test                 # 359 tests
+npm run smoke               # host: 11 tools; client: two slots
+npm run check:locale        # zh/en dictionary key parity
+npx dsh-agent-roster validate --dir examples
+npx dsh-agent-roster registry validate --file index/registry.json
 ```
 
 ## Verification status
 
-Verified on this machine:
-
-- `npm test` — 358/358 passing (format, parse, validate, registry, paths, bridge, verify buckets, digests and provenance, roster diff, capability requirements and the capability gate, library organization, registry schema, lossless JSON, write plan/apply, all routes, panel snapshot and hints, dictionary consistency, tool contracts, client loader contract, favourites (storage, snapshot wiring, route, panel filter), library snapshot, config view, package manifest, declared fields and captain block, schema/constant alignment, the v2 role/roster/compiled layers and their schema alignment, v1→v2 migration, persona references (own line, one level, both roots, budget, line numbers), origin ledgers and the seven change states, run records feeding the plan, remote registry and one-click install).
-- `npm run smoke` — `apply()` registers all eleven tools through a real `defineTool` from a DSH bundle; the six original tools execute, every output survives `lossless` checks, `path` overrides are honored, effect disposal runs cleanly. The same command then loads `client.js` against a stubbed module table and asserts the three slot registrations, style injection and effect disposal.
-- CLI: `validate --dir examples` returns exit 0 over both example libraries.
-- Installed into a real profile with the plugin manager (`plugin_manager install_bundle` against this directory → `link:` dependency + bundle entry); the profile re-reads the linked files on restart.
-- The read-only route answered from the running host: `GET /plugins/dsh-agent-roster/library` → 200 with the plugin version and resolved rosters.
-- A second agent session saw all eleven tools in its tool list and called them.
-- The sidebar panel was confirmed visible with real roster data.
-
-Not verified in this pass: the 0.2.0 management UI (tabs, editors, Teams view, language switch, `document` / `rosters` routes) inside a live page — those need a host restart to load the new modules, and are verified after it.
-
-Three real defects were found by this verification and fixed:
-
-1. `volatile()` config fields reach `apply()` as `{ get, write }` reference objects, so the panel and every tool were reading the defaults no matter what the settings form said. Reads now go through `lib/config-view.js`, which resolves references per access and falls back on type mismatch.
-2. `roster_list` ignored its `path` argument and always scanned the configured directory. `resolvePaths` now treats an explicit `path` as an override.
-3. Tool outputs carried `undefined`-valued keys, which the runtime rejects as `value is not lossless JSON`. Absent values are now `null` (or omitted), and every return value goes through `lib/json.js#lossless` first.
+- **359/359** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
+- CI `registry` (Node 22) recomputes the index, recompiles the examples, and fails when `dist/` drifts from source.
+- Live e2e on an isolated `DSH_HOME` (port 3099): the `agent-teams` (4 members), `metagpt-company` (4) and `openmanus` (3) rosters each actually built a team; `roster_verify` reported every member faithful, `drift 0`, and the provenance line carried the content hash.
+- Known boundaries: `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT

@@ -4,39 +4,67 @@
 
 面向多 Agent 团队的**静态成员档案**插件（DeepSeek Harness）。
 
-一份档案就是磁盘上的一个文件：团队里有谁、各自负责什么、走哪个模型路由、被允许碰哪些工具。本插件定义这套格式、校验它，并把它翻译成 `agent_teams_*` 的调用参数——仅此而已。
+一份档案就是磁盘上的文件：团队里有谁、各自负责什么、走哪个模型路由、被允许碰哪些工具。本插件定义这套格式、校验它，并把它翻译成 `agent_teams_*` 调用参数——它不运行团队。
 
 ## 它是什么 / 不是什么
 
 | 是 | 不是 |
 |---|---|
-| 定义与校验层：档案可版本化、可评审，写错时带文件路径与字段路径**直接报错**，不静默降级 | 团队运行时：从不建成员、不调度任务、不替代任何调度器 |
-| 对 `dsh-agent-teams` 的桥接：`roster_create` 产出可直接使用的 `agent_teams_add_member` 参数，并逐字段标注运行时是否真的接收 | 不写 `.agent-teams/` 状态：只读，核对用 |
-| 核对手段：`roster_verify` 读 `team.json`，比对运行时**实际存下的值** | 不假装通过：读不到运行时状态时如实降级为「无法核对」 |
+| 定义与校验层：格式可版本化、可评审，写错时带文件路径与字段路径报错，不静默降级 | 团队运行时：从不建成员、不调度任务、不替代调度器 |
+| 对 `dsh-agent-teams` 的桥接：`roster_create` 产出可直接使用的建员参数，并逐字段标注运行时是否真的接收 | 不写 `.agent-teams/` 状态：只读，用于核对 |
+| 核对手段：`roster_verify` 读 `team.json` 里**实际存下的值** | 不假装通过：证据源缺席时记「无法核对」 |
 
 ## 安装
 
-前置：DSH 提供 `tools` 服务；依赖已在 `package.json` 里声明（`yaml`、`@deepseek-ai/schemastery`）。
-
-用插件管理器指向本仓库（绝对路径），或发布后按包名安装：
+前置：DSH 提供 `tools` 服务；Node.js ≥ 22.19。运行依赖已声明（`yaml`、`@deepseek-ai/schemastery`），`@deepseek-ai/dsh-tools` 是 peer。
 
 ```
 @stofone/dsh-agent-roster
 ```
 
-包内带 `cordis.patch.yml`，安装即把插件插进 profile。装好后应看到十一个工具（`roster_list`、`roster_show`、`roster_create`、`roster_verify`、`roster_diff`、`roster_index`、`roster_space`、`roster_search`、`roster_changes`、`roster_compile`、`roster_team`）以及左侧栏里的 **Agent Roster** 面板（独立主面板，不再放设置页）。
+包内带 `cordis.patch.yml`，安装即把插件插进 profile。装好后应看到**十一个工具**（见「工具」）与左侧栏里的 **Agent 档案** 面板。
+
+插件代码在 DSH 启动时加载：升级包后**必须重启 `dsh web`**，面板与工具才会是新的；只换 `node_modules` 不重启，运行中的宿主仍是旧版本。
 
 ## 快速开始
 
-档案库是**全局**的：一台机器一份，不跟工作区走，放在 DSH 数据目录下
-（`$DSH_HOME/agent-roster`，默认 `~/.dsh/agent-roster`；docker 部署时就是被挂载的数据卷）。
-目录在第一次保存时自动创建，不需要你提前建。
+档案库默认是**全局**的：一台机器一份，不跟工作区走，位于 `$DSH_HOME/agent-roster`（默认 `~/.dsh/agent-roster`；docker 下就是挂载的数据卷）。目录在第一次保存时自动创建。
+
+v2 空间长这样：
 
 ```
 ~/.dsh/agent-roster/
-└── core-review/
-    └── roster.yaml
+├── space.yaml                     # 可选：把这座库登记成一个空间
+├── roles/
+│   └── core-review-lead/
+│       └── AGENT.md               # 角色 = 一个目录 + 一份 AGENT.md
+├── rosters/
+│   └── core-review/
+│       ├── roster.yaml            # 档案 = 成员清单 + 编排
+│       └── capabilities.yaml      # 可选：声明部署侧必须先提供什么
+└── dist/
+    └── core-review-1.0.0.json     # 编译产物（自包含）
 ```
+
+```bash
+npx dsh-agent-roster validate --dir examples     # 校验示例库（v2）
+npx dsh-agent-roster list --dir examples         # 列出档案与成员
+npx dsh-agent-roster compile --roster examples/rosters/core-review   # 只打印编译结果
+```
+
+本仓自带两座示例库：[`examples/`](./examples)（v2）与 [`examples-orchestration/`](./examples-orchestration)（v2，演示门与施工图）。
+
+## 三种落盘形态
+
+| 形态 | 目录特征 | 由谁产生 |
+|---|---|---|
+| **平铺库（v1）** | `<根>/<id>/roster.yaml` | 手写、单份安装、老库 |
+| **空间（v2）** | `<根>/roles/` + `<根>/rosters/`（+ 可选 `snippets/`、`space.yaml`） | 手写、`migrate`、`clone` |
+| **拉取副本** | 空间或平铺库 + `.dsh-roster-origin.json`（来源账本） | `clone` / 面板「拉取整个空间」 |
+
+`space.yaml` 是**可选**的登记层：有它就有「声明了几份、实际几份、缺了谁、谁没登记」的核对；没有它，库仍按目录扫描，只是没有这层对账。收藏存在库根的 `.dsh-roster-favorites.json`（点文件，扫描器跳过）。
+
+## 档案格式（v1，平铺库）
 
 ```yaml
 kind: dsh-agent-roster/v1
@@ -48,19 +76,14 @@ license: MIT
 maintainers: [STofone]
 tags: [review, release]
 
-defaults:                    # 团队成员共享的路由默认值
+defaults:                    # 成员共享的路由默认值
   provider: deepseek
   model: deepseek-v4.1-flash
   reasoningEffort: high
 
 members:
-  - name: reviewer          # kebab-case，团队内唯一
+  - name: reviewer           # kebab-case，团队内唯一
     role: 代码评审
-    description: 只做评审，不碰发布  # 一句话职责，供派活与团队列表用
-    aliases: [code-reviewer]       # 曾用名：改名后核对仍认作同一成员
-    skills: [frontend-skill]       # 声明期望用到的技能（不自动加载）
-    examples:                      # 典型请求，派活时当提示
-      - 帮我审一下这次改动
     systemPrompt: |
       你先找语义错误，再看风格。
     toolPolicy: readonly
@@ -69,526 +92,362 @@ members:
     systemPrompt: |
       你核对变更、版本号与回滚方案。
     model: deepseek-v4.1-pro
-    reasoningEffort: low
 
-captain:                     # 可选：记录队长（＝创建团队的那个会话）应该是什么样
+captain:                     # 可选：记录队长（= 创建团队的那个会话）应该是什么样
   name: lead
-  description: 主会话即队长，负责拆活与验收
   provider: tsingmicro
   model: deepseek-v4.1-flash
   personaPrefix: |
     派活前先复述目标与验收标准。
 ```
 
-JSON 也可以（`roster.json`）。同一目录下按 `roster.yaml` → `roster.yml` → `roster.json` 顺序探测，**只认一份**；出现第二份会报诊断，绝不静默挑一份。
-
-本包自带两份示例档案库：[`examples/`](./examples)（v2，由本仓历史档案迁移而来）与 [`examples-orchestration/`](./examples-orchestration)（v2，手写，用来演示门与施工图）。`rosterDirs` 默认留空，也就是上面那座全局库；
-新装时它是空的，所以面板一开始显示「0 份档案」——在面板里新建一份即可（目录会自动创建）。想先看示例库：
-
-```bash
-# 先看看示例库长什么样
-npx dsh-agent-roster list --dir examples
-```
-
-之后让模型调用 `roster_list`，或用 CLI（默认读同一座全局库）：
-
-```bash
-npx dsh-agent-roster validate
-npx dsh-agent-roster list
-```
-
-## 格式说明
-
-顶层只允许这些键，未知键是 **error** 而不是警告：
-
 | 键 | 必填 | 说明 |
 |---|---|---|
-| `kind` | 是 | 必须是 `dsh-agent-roster/v1` |
-| `roster` | 是 | kebab-case id，必须等于所在目录名 |
-| `version` | 是 | 精确 SemVer（`1.2.0`，不接受 `^1.2.0`） |
-| `title` | 否 | 单行，≤120 字符（省略时用 id） |
-| `description` | 否 | ≤500 字符 |
-| `license` | 否 | 单行 |
-| `maintainers` | 否 | 非空字符串列表 |
-| `tags` | 否 | ≤16 个，小写 kebab-case |
-| `defaults` | 否 | 成员继承的路由字段 |
-| `members` | 是 | 1 到 32 个 |
-| `captain` | 否 | 队长段：只描述、不创建（见下） |
+| `kind` | 是 | `dsh-agent-roster/v1` |
+| `roster` | 是 | kebab-case id，必须等于目录名（位置即身份） |
+| `version` | 是 | 精确 SemVer，不接受范围 |
+| `title` / `description` / `license` / `maintainers` / `tags` | 否 | 展示与检索元数据 |
+| `defaults` | 否 | 成员继承的 `provider` / `model` / `reasoningEffort` |
+| `members` | 是 | 1–32 个 |
+| `captain` | 否 | 只描述、不创建；应用时人设会注入会话 |
 
 成员键：`name`、`role`、`systemPrompt`（必填），以及 `provider`、`model`、`reasoningEffort`、`toolPolicy`、`fallback`、`toolScope`、`maxTokens`、`title`、`tags`、`notes`、`description`、`aliases`、`skills`、`examples`。
 
-档案目录里还可以有一个**可选的兄弟文件** `capabilities.yaml`，声明"建这支队伍前部署侧必须提供什么"——见「能力要求」一节。
+同一目录按 `roster.yaml` → `roster.yml` → `roster.json` 探测，**只认一份**；出现第二份是 error，绝不静默挑一份。未知键一律 error。
 
-`systemPrompt` 上限 8000 字符。成员省略路由字段时从 `defaults` 继承，继承结果记入 `inherited` 列表，能看清"这个值哪来的"。
+## 角色 → 档案 → 产物（v2）
 
-机器可读的 JSON Schema 在 [`schema/roster.v1.schema.json`](./schema/roster.v1.schema.json)，供编辑器补全与外部工具校验；权威校验始终是 `lib/validate.js`，两者由 `test/schema.test.js` 对齐。
+### 角色 `roles/<name>/AGENT.md`
 
-### 每个字段到底落在哪
+角色是「一个目录 + 一份精确命名为 `AGENT.md` 的文件」；目录可以嵌套（最多 3 层），但**一个目录只能有一份角色**。角色身份取 frontmatter 的 `name`，不是目录名；重名是 error。
 
-桥接绝不假装字段生效。每个成员字段都归类：
+```yaml
+---
+kind: "dsh-agent-roster/role@1"
+name: "core-review-lead"
+version: "1.0.0"
+role: "队长"
+title: "编排与取舍"
+description: "编排这次审查、拆任务、合并结论；不写具体代码"
+tags: ["orchestration"]
+route:
+  provider: "deepseek"
+  model: "deepseek-v4.1-flash"
+  reasoningEffort: "high"
+tools:
+  policy: "read-only"
+requires:
+  skills: ["frontend-skill"]
+---
+```
 
-| 类别 | 字段 | 含义 |
+正文就是人设。`prompt.parts` 可以再拆若干片段，按顺序拼在正文之后；片段必须位于角色目录内（越界即 error）。
+
+### 档案 `rosters/<id>/roster.yaml`
+
+```yaml
+kind: dsh-agent-roster/roster@2
+id: core-review
+version: 1.0.0
+title: 核心评审组
+description: 一个小团队：队长拆任务，评审把关，修复收尾。
+license: MIT
+maintainers: [stofone]
+tags: [review, example]
+
+defaults:
+  route:
+    provider: deepseek
+    model: deepseek-v4.1-flash
+    reasoningEffort: high
+targets: [agent-teams/members]
+
+members:
+  - as: reviewer            # 团队里的名字
+    role: reviewer@1.0.0    # 引用角色与精确版本
+  - as: fixer
+    role: fixer@1.0.0
+    prompt:
+      append: overrides/fixer.md   # 成员级追加，拼在执行提示词末尾
+
+captain:
+  role: lead@1.0.0
+  persona: captains/lead.md    # 文件路径（相对档案目录），内容是队长人设
+
+orchestration:
+  shape: gate-pipeline
+  stages:
+    - id: build
+      serial: [fixer]
+    - id: audit
+      parallel: [reviewer]
+  gates:
+    - id: tests-pass
+      after: [audit]
+      by: reviewer
+      requires: [现有测试全部通过]
+      verify:
+        - command: node --test
+          expectExit: 0
+
+requires:
+  toolPolicies: [member-safe]
+onMissing: refuse
+```
+
+档案级键：`kind`、`id`、`version`、`title`、`description`、`license`、`maintainers`、`tags`、`defaults`、`targets`、`members`、`captain`、`orchestration`、`requires`、`onMissing`、`notes`。
+
+执行提示词只有一种拼法（`lib/frontmatter.js#assemblePrompt`）：
+
+```
+executionPrompt = join("\n\n", [成员 prepend, 展开引用后的正文, ...prompt.parts, 成员 append])
+```
+
+预算口径按**字符**：正文 8000、单片段 6000、片段 16 个、展开后 12000、成员追加 6000。
+
+### 编排与门
+
+`orchestration.stages` 是阶段（`serial` / `parallel` 列表，可选 `join`、`on`、`maxRounds`），`gates` 是门（`after`、`by`、`requires`、`verify`）。
+
+门没有可执行判据就是 error（`gate-unverifiable`）：每条 `verify` 必须给出 `command` 与 `expectExit`（1–8 条）。**能被机器跑的才算门**，纯文字标准只能写进 `requires` 供人看。
+
+### 编译产物
+
+```bash
+npx dsh-agent-roster compile --roster examples/rosters/core-review --write
+```
+
+- `dist/<id>-<version>.json`（`compiled@1`）：自包含，成员带 `executionPrompt`、`promptStats`（字符数、逐段 `{path, kind, line?, sha256}`、整体 sha256）与 `provenance`；`source` 里带发现元数据（标题、描述、标签、许可、维护者）。
+- `dist/<id>-<version>.tasks.json`（`plan@1`）：有编排时生成，`executor: "captain"`，队长按图施工。
+- 失败轮次可用 `--run <回执>` 把 `run@1` 的失败并入重试卡。
+
+## 正文里的引用
+
+人设正文可以就地引用一段共享片段，**独占一行**才算：
+
+```markdown
+{{> snippets/report-shape.md}}
+```
+
+- `snippets/…` 相对**库根**；其余路径相对**角色目录**，越界即 error。
+- 只展开一层：被引文件里再出现 `{{>` 是 `include-nested`。
+- 同一文件引两次就展开两次；`prompt.parts` 仍拒绝重复。
+- 预算按**展开后**算：单片段 6000、整篇 12000、最多 32 处。
+- 报错带整份文件的行号，`promptStats` 记 `{path, kind: "include", line, sha256}`。
+- 不做条件、循环、变量：档案要能逐字读懂，也要能被静态校验。
+
+`snippets/` 只属于 v2 库；`dist/` 不随 `clone` 拉取，需要本地重新编译。
+
+## 每个字段到底落在哪
+
+| 归宿 | 字段 | 运行时是否真的接收 |
 |---|---|---|
-| `direct` | `name`、`role`、`systemPrompt`、`provider`、`model`、`reasoningEffort`、`toolPolicy` | 进入 `agent_teams_add_member` 参数并被运行时持久化 |
-| `config` | `fallback` | 运行时无对应参数，需落部署配置 |
-| `declaration` | `toolScope`、`maxTokens`、`title`、`tags`、`notes`、`description`、`aliases`、`skills`、`examples` | 仅作文档与校验依据，明确标注未生效 |
+| **direct** | `name`、`role`、`systemPrompt`、`provider`、`model`、`reasoningEffort`、`toolPolicy` | 传给 `agent_teams_add_member` |
+| **config** | 档案库目录、团队状态目录、语言、索引源等 | 插件自己的配置，不进团队 |
+| **declaration** | `description`、`aliases`、`skills`、`examples`、`tags`、`notes`、`captain` | 只做文档与校验；`skills` 永不自动加载，`captain` 只描述（应用时人设注入会话） |
 
-`roster_create` 输出 `agent_teams_add_member` 参数（`systemPrompt` → `executionPrompt`、`reasoningEffort` → `reasoning_effort`、`toolPolicy` → `tool_policy`）与逐字段归宿；`roster_verify` 随后把每个字段判为 `applied`、`overridden`、`omitted` 或 `unconfirmed`。
-
-### 声明层字段与队长
-
-这四个声明字段解决的是"档案写着给人看、运行时却不认"的那类信息，各有明确用途：
-
-- `description`：一句话说明这名成员负责什么。CrewAI 的 `backstory`、Claude 的 `description`、OpenAI Agents SDK 的 `handoff_description` 都是这个位置——派活时先看它。
-- `aliases`：曾用名。成员改名后团队状态里仍是旧名，核对时按别名认作同一成员（结果里标 `matchedAs`），不会把一次改名变成"未部署 + 无档案"两条假报警。别名不能与现有成员重名，也不能两名成员共用一个别名。
-- `skills`：期望这名成员用到的技能名，与 DSH 技能目录同名。**声明层**：运行时不会据此加载技能；宿主能列出技能时，`roster_verify` 只回答"声明了但没装"这一件事。
-- `examples`：典型请求，一行一条，派活时当提示参考，永远不会被当作指令执行。
-
-`captain` 段记录队长——它**不是成员**。`dsh-agent-teams` 里队长就是创建团队的那个会话：`team.json` 没有 captain 成员行，也没有任何参数能改写它的模型。所以档案对队长只做三件事：
-
-1. 描述它应该是什么样（`name`、`description`、`systemPrompt`）；
-2. 声明它的路由与人格（`systemPrompt`）：**应用/建团队时，队长人设会原样注入那条起始提示词**，新会话按它行动；路由仍要在 `roster_show` 里给出可复制的 profile 片段（`agent-default-model`、`@deepseek-ai/dsh-persona`）；
-3. 校验这些声明是否成对（`provider` 与 `model` 必须同时出现）。
-
-模型的生效仍要改 profile 的 `cordis.patch.yml`（插件不会、也不能替你切部署）；但**人设不必再改 preset**——它随档案走，应用时注入。在预设里也保留一份并不冲突：提示词里的这段优先。
+`roster_create` 输出的每个字段都带这一类标注；`roster_verify` 只比对运行时实际存下的值。
 
 ## 能力要求（`capabilities.yaml`）
 
-档案说的是**成员是谁**，说不了**这台机器到底能不能把他们跑起来**——技能目录与工具策略定义都在部署侧，不在档案里。档案目录里一个可选的兄弟文件只声明这件事，别的一律不写：
+档案旁可以有一份兄弟文件，声明「建这支队伍前，部署侧必须提供什么」：
 
 ```yaml
-kind: dsh-agent-roster-capabilities/v1
-roster: money-lab            # 必须等于目录名
-onMissing: refuse            # refuse（默认）| degraded
-asOf: 2026-11-02             # 只写日期
 requires:
-  skills: [frontend-skill, {name: dsh-chat-import, reason: 会话导出需要}]
+  skills: [frontend-skill]
   toolPolicies: [member-safe]
-notes: 建队前先确认成员会话可用。
+onMissing: refuse        # refuse（默认）| degraded
 ```
 
-每一条要求只会落进**三种**状态之一，没有第四种：
-
-| 状态 | 含义 | 效果 |
-|---|---|---|
-| `present` | 证据源说有 | 无需处理 |
-| `missing` | 证据源明确说没有 | **唯一**会触发闸门的状态 |
-| `unknown` | 根本没有证据源 | 既不算过也不算错，但一定要写下来——沉默不等于批准 |
-
-证据源只有两个，因为宿主只答得出这两件事：`skills` 来自技能目录，`toolPolicies` 来自本插件的 `knownToolPolicies` 配置。其余一切——模型路由可用性、插件版本、凭据指针、业务前置条件——一律拒收（`unknown-field`）：没人核得了的要求，只是换一种方式发绿。
-
-行为：`onMissing: refuse`（默认）下，只要有一项 `missing`，`roster_create` **不产出任何** `agent_teams_add_member` 参数，并逐项告诉你该装到哪；`roster_verify` 状态行报 `requires=<缺>missing/<声明>` 与 `capabilityBlocked`，被能力拦下的档案会让 `ok` 为 false。`onMissing: degraded` 照样给参数，但这笔账每次核对都会记着。`roster_show` 直接打印这份声明。
-
-**面板也会显示它。** 每张档案卡片把这些要求作为诊断列出：缺 `toolPolicies` 时，`onMissing: refuse` 记 **error**（左侧栏角标因此变红），`degraded` 记 **warn**。技能要求一律记成 `capability-skills-unverified` / **info**——面板快照是同步的，列不出技能目录，所以它只说"这里不判定"而不猜；要真答案用 `roster_verify`。没配 `knownToolPolicies` 时只出一条 `capability-cross-check-skipped`，点名受影响的档案，而不是每份档案刷一遍。
-
-兄弟文件有自己的 JSON Schema：[`schema/capabilities.v1.schema.json`](./schema/capabilities.v1.schema.json)，由 `test/capabilities.test.js` 钉住与 `lib/capabilities.js` 一致。
+- 只声明**能核对**的两类：技能是否装进目录、策略 id 是否在部署里声明过。
+- 三态：`present` / `missing` / `unknown`；只有 `missing` 触发 `onMissing`，`unknown`（证据源缺席）不算通过。
+- `refuse` 时 `roster_create` 不出参数并说明缺什么；`degraded` 出参数但逐条标注。
 
 ## 档案空间（`space.yaml`）
 
-档案回答的是**成员是谁**，回答不了**哪几份档案属于同一套、哪份是生产、哪份已退役**。一座库放二十份来自不同来源的档案时，目录列表就不再是索引。库**根目录**上一个可选文件只声明这件事：
-
 ```yaml
 kind: dsh-agent-roster/space@1
-space: agent-roster-collective   # 必须等于目录名
-layout: monorepo                 # flat = <id>/roster.yaml；monorepo = roles/ + rosters/ + dist/
+space: agent-roster            # 必须等于目录名
 title: 团队档案合集
+description: 多份档案放在同一个仓库里。
+license: MIT
+homepage: https://github.com/…
 maintainers: [STofone]
+layout: monorepo               # monorepo | flat
 rosters:
-  - {id: api-design, title: API 设计评审组, status: active, origin: 本项目自撰}
-  - {id: legacy-team, status: archived}
+  - id: core-review
+  - id: research
+    status: active             # active | archived
+roles: [core-review-lead, reviewer]   # 可选：声明角色
 ```
 
-位置是有讲究的：它和档案目录**并列**，不在任何一份档案里面。它是这座库的目录页，所以也是库根唯一被允许的文件——在根上散落一个 `foo.yaml` 依然会报 `unexpected-file`。
+- `layout` 描述文件布局，不描述数量：`monorepo` 是 `rosters/<id>/roster.yaml`，`flat` 是 `<id>/roster.yaml`。
+- 登记与磁盘对账：缺 → error `space-roster-missing`；多 → warn `space-roster-undeclared`；归档但仍在 → info。
+- **仓库里写 `origin` 是 error**：来源就是仓库本身，再写一遍等于第二个真源。只有拉下来的本地副本可以带 `origin: {repo, ref, path}`。
 
-声明会和磁盘对账，三种结果刻意用不同严重度：
-
-| 情况 | 代码 | 严重度 | 理由 |
-|---|---|---|---|
-| 声明了，目录不在 | `space-roster-missing` | **error** | 组织页在撒谎，比没有组织页更糟 |
-| 目录在，没登记 | `space-roster-undeclared` | warn | 有人绕过索引加了档案，但它仍会被加载 |
-| 声明 `archived`，目录还在 | `space-roster-archived` | info | 归档是声明，不是删除 |
-
-`space` 必须等于目录名，和 `roster` 同一条规则：位置即身份，一座库两个 id 会让所有诊断都变得没法定位。未知键一律拒收——没人核得了的字段，只是换一种方式发绿。
-
-这份文件什么都不创建：不写 `team.json`、不建成员，也永远不会进入 `agent_teams_add_member` 参数。
-
-**它同时固定了布局。** `layout: flat` 是 `<id>/roster.yaml`（v1 时代的一仓多档案）；`layout: monorepo` 是 `roles/<role>/AGENT.md` + `rosters/<id>/roster.yaml` + `dist/`。布局进了格式，编辑器才知道该改哪个文件——不再是"拉下来摊平、改的和源文件没关系"。
-
-**本地副本靠 `origin` 认祖归宗。** 从远端拉下来的空间会在 `space.yaml` 里多一段 `origin: {repo, ref, path}`，其余字段原样保留；仓库里的空间文件**不许**写 `origin`（源就是这个仓库本身，再写一遍就是第二真源），校验器会拒收。
-
-拉一整座空间、并且保留原布局（拉完就能改，改的就是源仓库里那个文件）：
+### 整空间拉取
 
 ```bash
-dsh-agent-roster clone --repo dsh-agent-roster/agent-teams --space agent-teams
+npx dsh-agent-roster clone --repo dsh-agent-roster/agent-teams --space agent-teams --dir /tmp/clone
 ```
 
-面板「档案库」里每组来源都有一个「拉取整个空间」按钮，等价于这条命令。拉取只发生在空间这一级：`rosters/`、被引用的 `roles/`（连同 `parts/`）、以及这些角色用 `{{> snippets/…}}` 引到的共享片段都会带下来，`dist/` 不拉（编译产物在本地重新生成）。单份档案用星标收藏，不会被摊成一份脱离空间的孤本。
-它的 JSON Schema 在 [`schema/space.v1.schema.json`](./schema/space.v1.schema.json)，由 `test/space.test.js` 钉住与 `lib/space.js` 一致。
+按原布局拉 rosters、roles、`parts/`、`snippets/` 与 `space.yaml`，并写一份来源账本 `.dsh-roster-origin.json`（`origin`、`commit`、`pulledAt`、每个文件的 `sha256` 与 blob id）。`dist/` 有意不拉。
 
-**仓内带了一个可跑的示例**：[`orgs/agent-roster-collective/`](./orgs/agent-roster-collective/) 里有 21 份档案（63 名成员），覆盖接口评审、事故响应、数据质量、数据库迁移、本地化、安全审计、性能、前端、文档、发布、客服分诊、招聘、市场研究、财务对账、合同审阅、内容运营、回归测试、模型评测、SRE 值守、文献综述与产品发现。每份都是"队长 + 两名专家"的三人组，全部为本项目自撰（未复制任何上游文本）。校验方式：
+### 让副本保持更新
 
 ```bash
-node bin/cli.mjs validate --dir orgs/agent-roster-collective
+npx dsh-agent-roster update --dir /tmp/clone/agent-teams           # 只看
+npx dsh-agent-roster update --dir /tmp/clone/agent-teams --write   # 快进
+npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地内容记成新基线
 ```
 
-## 角色 / 组装 / 编译产物（v2）
+逐文件三方对比（账本 / 磁盘 / 该 ref 的远端），七态：
 
-v1 把一切都塞进一份 `roster.yaml`：人设住在 YAML 块标量里，拼装协议藏在插件代码里，队长写两遍，身份靠目录名。v2 把它拆成三层，每层只有一个权威：
+| 状态 | 含义 | `--write` |
+|---|---|---|
+| `clean` | 两边都没动 | 不动 |
+| `local-only` | 本地改了、远端没动 | 不动 |
+| `remote-only` | 远端改了、本地没动 | 替换并更新账本 |
+| `diverged` | 两边都改了 | **不动**，打印两边 sha 与 diff |
+| `remote-deleted` | 远端删了 | 不动，本地保留并标记 |
+| `missing` | 本地没了 | 只报告 |
+| `unverified` | 远端没回话 | 不动；**不算干净** |
 
-```text
-roles/<任意目录>/AGENT.md     角色：frontmatter 是参数，正文是人设，parts/ 可选
-snippets/<名字>.md            共享文字：任何角色都可以用 {{> snippets/<名字>.md}} 引用
-rosters/<id>/roster.yaml      组装：成员是引用，队长独立成段
-dist/<id>-<ver>.json          编译产物：自包含、可哈希，消费者只看它
-```
-
-判别键决定版本——`dsh-agent-roster/role@1`、`dsh-agent-roster/roster@2`、`dsh-agent-roster/compiled@1`。同一目录不允许两种格式共存：v1 冻结，`migrate` 负责原地重写。
-
-拼装写进格式，而不是藏在代码里：
-
-```text
-executionPrompt = join("\n\n", [展开 {{> …}} 后的正文, ...parts, ...member.append])
-```
-
-`lib/frontmatter.js` 的 `assemblePrompt()` 是唯一实现；编译产物为每份人设记录字符数、块清单与 SHA-256，所以「这名成员到底拿到了哪段文字」不必回头读源文件就能回答。
-
-### 正文里的引用
-
-人设可以把一段文字放在它该在的位置，而不是只能接在末尾：
-
-```md
-## 交付前
-{{> parts/self-check.md}}
-
-## 口径
-{{> snippets/units.md}}
-```
-
-- 引用必须**独占一行**；写在句子中间的 `{{>` 是 `include-syntax`——半截引用是缺陷，不是散文。
-- `snippets/…` 相对**库根**解析（跨角色共享），其余相对**角色目录**；两者都走 `parts` 的同一条路径守卫：`..`、绝对路径、符号链接逃逸一律 `unsafe-include`。
-- **只展开一层**：被引文件按字面拼入；里面再写引用是 `include-nested`，既不静默展开，也不把原始指令发出去。
-- 预算按**展开后**的文本算：最多 32 处引用、单个被引文件 6000 字符，`promptChars` 的 12000 上限在展开之后生效。
-- `missing-include`、`unreadable-include`、`library-root-unknown`、`include-too-long` 都是 error，并带 `AGENT.md:行号`——修一处是跳转，不是搜索。
-- 同一个文件引两次就展开两次（位置即语义）。`prompt.parts` 仍然拒绝重复，因为尾部重复的片段几乎总是手误。
-- `promptStats.parts` 把每处引用记成 `{ path, kind: "include", line, sha256 }`，面板和核对工具指到的正是编译器读过的那一行。
-
-`snippets/` 只属于 v2 档案库（有 `roles/` 与 `rosters/` 的那一层）；v1 的扁平库没有可解析的库根。
-
-刻意不做条件、循环、变量：`executionPrompt` 必须是「磁盘上文件的确定性函数」，否则 `promptStats.sha256` 就不再有意义，「这名成员到底收到了什么」只能靠运行时猜。
-
-门必须能被跑，而不是自己给自己盖章：每个门至少带一条 `verify`（`command` + `expectExit`），没有判据的门在校验阶段就被拒（`gate-unverifiable`）。`requires` 保留，但只是给读结论的人看的说明。
-
-`compile` 还会产出施工图 `dist/<id>-<ver>.tasks.json`：
-
-```json
-{ "kind": "dsh-agent-roster/plan@1", "executor": "captain",
-  "tasks": [ { "id": "build", "kind": "stage", "member": "fixer", "dependencies": [] },
-             { "id": "audit", "kind": "stage", "member": "reviewer", "dependencies": ["build"] },
-             { "id": "tests-pass", "kind": "gate", "member": "reviewer", "dependencies": ["audit"] } ],
-  "loop": { "onGateFailure": { "retry": "build", "maxRounds": 1 } } }
-```
-
-`executor: "captain"` 就是关键：插件从不调用 `agent_teams_create_task`，因为写团队状态的能力属于队长会话。施工图是给队长照着建的图，不是插件替队长建。
-
-[`examples-orchestration/`](./examples-orchestration/) 里的示例库可端到端编译：
-
-```bash
-node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review --write
-node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review --json
-```
-
-`orchestration` 是格式的一部分，但编译时标 `status: "declaration"`：阶段与门会被校验（门的 `after` 必须指向真实阶段，`by` 必须指向真实成员），但没有任何东西执行它。能声明不等于已被证明会运行，所以产物在 `declarations[]` 里逐条说明谁属于哪一类。完整契约——字段归宿、拼装语义、身份与唯一性、迁移规则——见 [`docs/roster-v2.md`](./docs/roster-v2.md)；schema 见 [`schema/role.v1.schema.json`](./schema/role.v1.schema.json)、[`schema/roster.v2.schema.json`](./schema/roster.v2.schema.json)、[`schema/compiled.v1.schema.json`](./schema/compiled.v1.schema.json)。
-
-### 从 v1 到 v2，一条命令
-
-```bash
-node bin/cli.mjs migrate --dir examples            # 只出计划：要写哪些文件、能不能编译
-node bin/cli.mjs migrate --dir examples --write    # 原地重写：roles/ + rosters/ + dist/，删掉旧目录
-```
-
-迁移逐字保留人设：成员的 `systemPrompt` 原文成为 `roles/<档案>-<成员>/AGENT.md` 的正文，成员本身变成引用。队长不再是一个散字段，而是自己的角色文件——与成员同名时得到 `-captain` 后缀，因为那是两份人设，悄悄合并会丢掉一份。
-
-如果 v1 的档案在子目录里（把仓库当 collection 发布的常见形态），把 `--dir` 指到库根、用 `--from` 指旧目录：
-
-```bash
-node bin/cli.mjs migrate --dir . --from rosters --repo owner/repo --write
-```
-
-这种布局会就地重写 `rosters/<id>/roster.yaml`，在仓库根上补 `roles/` 与 `dist/`，并删掉并排的旧
-`roster.json`/`roster.yml`——同一份档案两种写法就是两个真源。之后 collection 用 `path: ""`（仓库根就是库），
-再用 `files` 指向 `dist/`：组装只引用角色，单独拉一个文件拉不到角色目录。
-
-角色名带档案 id 前缀，是因为 v2 要求同库角色名唯一：一座库里 21 套组装都叫自己的队长 `lead`，不可能有 21 个同名文件。
-
-### 把失败的一轮喂回施工图
-
-`compile --run <文件>` 读执行回执（`run@1`），把上一轮的失败并进重试卡的 description：
-
-```bash
-node bin/cli.mjs compile --roster examples-orchestration/rosters/core-review \
-  --run examples-orchestration/dist/core-review-1.0.0.run.json
-```
-
-回执由执行施工图的队长会话写，不由插件写：任务 id 属于团队，插件从不写团队状态。插件负责的是合并——只活在红卡上的失败，下一次编译就消失了，门也就变成了装饰。
-
-## 档案库：按能力找，而不是按来源翻
-
-面板的**首屏是本机档案**（第一个页签）：你每天打交道的那些档案、它们的标签与成员，进来就能看见、能筛选、能改。
-第二个页签是**档案库**，定位接近一个插件市场：一个搜索框、一排标签、一份横跨本机与所有订阅来源的清单。
-
-```
-要找什么能力？例：数据质量、发版、代码评审
-```
-
-输入两个字以上，停顿 240 毫秒后向 `/search` 提一个问题。每一行都写清**为什么命中**
-（`标签：数据质量 · 成员角色：数据质量工程师`）与**它住在哪**（`来自 agent-roster-collective`），
-并把下一步放在行内：已经在本机的给「打开」与一颗**收藏**星，其余只写「未在本机」——拉取只发生在空间这一级，
-单份档案不会被拉成一份脱离了空间的孤本。
-
-不输入时是**浏览**：`/catalog` 一次把本机与订阅来源摊平返回；上方标签池汇总全库出现过的标签与计数，
-多选是「且」；右侧可以在**按来源**（本机 + 每个 collection 各一组）与**平铺**（一份清单，来源写在行内）
-之间切换。标签筛选只影响视图，不写回文件。
-
-按来源时，每一组的头就是**空间**本身：等宽的空间 id 落在与档案 id 同一列，右侧写两件当场能核对的事实
-——「几份 · 已装几份」——并带一个「拉取整个空间」按钮。已经在本机的那份给「打开」与星标：
-面板不会让你去拉一份自己已经有的档案。窄屏上这个头折成两行，空间名不会被挤成竖排。
-
-**收藏决定首屏显示什么。** 档案页默认只看 `收藏`——拉一个 21 份的空间，不该把 21 行摊在你每天看的那一屏上。
-在档案页或档案库里点一颗星就收进来；工具条上的分段控件切到 `全部` 时才是整座库。星标存在库根的
-`.dsh-roster-favorites.json` 里，所以它跟着库走而不是跟着机器走；文件坏了只会退化成「一份都没收藏」并留一条提醒，
-不会挡住面板。
-
-多个词是「且」不是「或」：`data kubernetes` 一条都不返，而不是把所有提到 data 的档案都堆上来。
-排序是 `lib/search.js` 里的纯函数，所以它被单测钉住，而不是靠肉眼看着顺。
-
-订阅来源的档案在索引里由 `files` 指向具体的编译产物（`dist/<id>-<ver>.json`）。产物自带标题、描述、
-标签、许可与维护者——「从远处找一份档案」因此只需要拉一个文件，不必先克隆一个仓库。
-
-## 工具
-
-| 工具 | 作用 |
-|---|---|
-| `roster_list` | 列出档案库里的档案与每份的校验结果 |
-| `roster_show` | 完整查看一份档案（或其中一名成员），含字段归宿 |
-| `roster_create` | 把成员翻译成 `agent_teams_add_member` 参数 / `plan.members`；声明的能力缺失时拒绝出参数 |
-| `roster_verify` | 与 `dsh-agent-teams` 的 `team.json` 比对；分「一致 / 未核实 / 降级 / 未部署」四桶，并报物化后的工具过滤器摘要、策略漂移、团队溯源与能力要求 |
-| `roster_diff` | 比较两代档案：成员按 name 对齐、比有效值、人设只比长度与哈希 |
-| `roster_index` | 列出公共档案源（registry）的索引状态与 collection，并标出本机是否已有带账本的副本（`pulled`）；给定 collection 时只读地拉下来看，附 `space` 与 `layout` |
-| `roster_space` | 说明一个空间：布局、登记/在库/缺失、角色数、来源与已拉取的 commit、诊断 |
-| `roster_search` | 用与档案库页签同一套引擎搜本机与前八个订阅源；每条命中都写明命中在哪 |
-| `roster_changes` | 拿拉下来的空间与来源账本比：干净 / 仅本地 / 仅远端 / 冲突 / 远端删除 / 本地缺失，逐文件 |
-| `roster_compile` | 在内存里编译一份 v2 档案：成员数、提示词统计（字符、片段、引用、sha256）、诊断——不写 dist |
-| `roster_team` | 从档案建团队：新建会话（选空间与名字）或复用已有会话，选好队长模型后排入建团提示 |
-
-除 `roster_team` 外都不写团队状态。`roster_create` 只产出参数，真正的建员仍由模型调用 `agent_teams_add_member`；`roster_team` 是唯一会动运行时的工具——它建/复用会话、给新会话改名、按档案选队长模型，再排入与面板「创建团队」完全相同的那段提示，两条路不会漂移。
-
-带路径的工具（`roster_list` / `roster_show` / `roster_create` / `roster_verify` / `roster_diff`）都接受 `path` 参数：给了就只看那个目录，不会悄悄回落到配置目录。
-
-### 一目录一档案，一台机器可有两代
-
-`roster` 必须等于目录名，一座库里每个目录只有一份档案。所以同一份档案的两代就放在**两座库**里——
-这是预期用法，不是缺口：它保住了「位置即身份」（后续加载永远不会误取另一代），
-也让换代成为一个显式的 `path` 参数，而不是悄悄发生的副作用。
-
-```text
-~/.dsh/agent-roster/money-lab/roster.yaml           # 这一代
-/workspace/money/.dsh/rosters/money-lab/roster.yaml # 下一代
-```
-
-`roster_diff({ from, to })` 回答「两代之间改了什么」；`roster_create` 会打印一行溯源串
-（`roster:money-lab@9.0.0#ab12cd34`），建团队时放进 description；`roster_verify` 再拿这一行
-与当前档案内容比对——档案在建团队之后被改过，就会报 `differ`，而不是静默通过。
-
-### 队长核对
-
-档案里的 `captain` 段是声明。队长就是创建团队的那个会话——它没有成员行，模型来自部署
-（`agent-default-model`），人设来自档案的 `captain.systemPrompt`（应用时注入起始提示词）。所以面板做的是**核对 + 注入**，不是假装能写：
-面板显示每个 profile 里实际部署的 provider / model，每份带 captain 段的档案按字段报
-「一致 / 不一致 / 未声明 / 无法核对」。读不到部署配置时是「无法核对」，永远不会写成“通过”。
-
-面板在这里唯一会写的一步是**应用**：把选中的会话切到声明的模型，再排入一条提示词——
-提示词里带着队长人设原文，并要求它依次调用 `agent_teams_create`、逐成员
-`agent_teams_add_member`，最后 `roster_verify`。
-建团队本身仍由运行时完成。
-
-1.2.0 起，档案行上直接有**创建团队**，不必先展开卡片：默认开**新会话**（快速建团不该劫持
-你正在聊的这个），可改团队名，档案声明了队长模型就一并切换，然后排入同样的建团提示词。
-插件仍然不写团队状态——行上的按钮只负责把一个会话准备好，动手创建的是那个会话。
-
-**应用**是这块唯一会写入的动作：把选中会话切到声明里的模型，并排入一段提示词，让它依次调用
-`agent_teams_create`、逐成员 `agent_teams_add_member`，最后 `roster_verify` 核对。
-团队仍由运行时创建，插件不代劳。
+刻意**不做自动合并**：这些是 YAML 加散文，没有 merge base，三方合并只会悄悄造出重名角色或改了一半的成员。要真合并就用 `git clone` 让 git 做——那会把凭据与推送带进插件，不作为默认。`--accept` 只认 `local-only`；`diverged` 永不认账。
 
 ## 左侧栏面板
 
-面板铺满整个页面宽度，外层容器不设阅读列宽度。
-
-档案列表是**账本，不是卡片墙**：一行一份档案——左沿 3 像素状态色（只有出错或有提醒时才亮，正常的档案不标记）、等宽字体的 id 列、标题与一句话描述、右侧计数（成员数 / 错误 / 提醒 / 部署态），最后是一对安静的操作（编辑、展开成员）。复制、复制建队、删除收在展开区里，21 份档案的 105 个按钮因此变成 42 个。窄于 860 像素时标签池从左侧栏变成顶上一行、元数据自动折行。展开区不另建小滚动盒：整页只有面板根滚动，展开多少内容就撑多高，不会出现「展开了却只看得到几条」。
-
-档案列表左侧是**标签池**：列出全库出现过的标签
-以及各标签的档案数，点标签即筛选——多选是「且」，一个按钮清除选择。标签池只影响视图，不会把
-标签写回文件。
-
-头部只留一个齿轮按钮打开**设置弹窗**：语言、下载区、镜像地址、档案库目录都能在这里改；解析出来的数据目录、
-团队状态目录与版本号也列在同一处。导入与新建档案挪到档案页签的搜索框右侧，刷新在档案库页签
-（绕过一小时的缓存，直接回源读公共索引）。
-
-客户端插件在左侧全局栏新增一行 **Agent Roster** 图标（`sidebar.panellist` 列表槽），并在 `main` 槽用同一个面板 id 注册整页内容；点图标即在主区域打开，宽度与对话页一致。面板分四个页签，不只是看：
+左侧全局栏一行 **Agent 档案** 图标（`sidebar.panellist`），主区域同 id 注册整页；四个页签：
 
 | 页签 | 能做什么 |
 |---|---|
-| 档案 | 默认只列收藏的档案（分段控件可切全部）；浏览每个工作区 × 每座档案库，展开成员；**新建 / 编辑 / 复制 / 删除 / 导入 / 导出**档案。编辑器有表单与源码两种模式（源码就是文件原文）；写之前由宿主校验，覆盖已有文件会留一份 `.bak`；顶上有搜索框与标签池 |
-| 档案库 | 按能力找档案：搜索（横跨本机与订阅来源，命中给出处）、标签筛选、按来源聚合或平铺；本机的行内打开，想要的点星收藏，整空间一次拉取 |
-| 团队 | 读一个配置好的状态目录（默认 `.agent-teams`），列出运行时真正建出来的每个团队：档案、成员档案与模型路由、每个持久化成员是否真的与其档案一致，以及该团队的任务 |
-| 体检 | 把「配置有没有指错」集中一处：目录解析到了哪、状态目录在不在、有多少声明未被确认，以及该改哪个设置 |
+| **档案** | 默认只列收藏（分段控件切「全部」）；新建 / 编辑 / 复制 / 删除 / 导入 / 导出；每行「创建团队」；展开看成员、应用队长、复制成员参数；搜索与标签池 |
+| **档案库** | 跨本机与订阅来源找档案：搜索、标签筛选、按来源聚合或平铺；本机的打开，其余的收藏；每个空间可「拉取整个空间」；本地空间章头显示「检查更新 / 应用 N 处更新 / N 处冲突 / N 处无法核对 / 无基线」 |
+| **团队** | 读状态目录（默认 `.agent-teams`），列出运行时真正建出来的团队、成员路由、逐成员是否与档案一致、任务 |
+| **体检** | 目录解析、状态目录、声明未确认项，指出该改哪个设置 |
 
-顶部一条徽标汇总「有几件事需要处理」，体检页逐条说明。所有写操作都走 `POST /plugins/dsh-agent-roster/rosters`：宿主侧校验同源（`connection`）、JSON content-type、请求体大小上限与档案库根目录白名单，客户端不直接写文件。
+设计上是**账本，不是卡片墙**：一行一份档案——左沿 3px 状态色（只有 error/warn 才亮）、等宽 id 列、标题与一句话、右侧计数、安静的操作；整页只有面板根滚动，展开多少内容就撑多高。窄于 860px 时标签池移到顶部、空间章头折两行。
 
-面板是中英双语，语言默认跟随 DSH，可在 **设置 → 插件 → Agent Roster** 里固定（同一节还有只读的配置摘要）。词典放在 `locale/` 由宿主提供，所以切 DSH 语言时面板无需刷新就会跟着变。
+设置只在面板头部的齿轮弹窗里（语言、下载区、镜像、档案库目录、只读摘要），**不再注册 DSH 设置页的节**。
 
-## 让拉下来的空间保持更新
+### 创建团队
 
-用 `clone` 拉下来的空间会带一份来源账本 `.dsh-roster-origin.json`（点文件，扫描器跳过）：来自哪个仓库、哪个 ref、哪个路径，拉取时的 commit，以及每个写入文件的 sha256 与 blob id。账本就是基线——没有它就没有可比的东西，`update` 会直说，而不是假装这份副本是干净的。
+档案行上的「创建团队」与 `roster_team` 工具走同一段 `applyCaptain`：
 
-`dsh-agent-roster update --dir <空间目录>` 把每个文件三方对比（账本 vs 磁盘 vs 该 ref 的远端），给出七态之一：
+- **新建会话**：选工作区（下拉，重名时补一级目录）+ 会话名；建好后自动改名。
+- **已有会话**：只显示「空间 · 会话名」，不显示 id 与路径。
+- 队长人设若在档案里声明，会原样注入提示词；模型仍来自部署，插件不写运行时。
+- 队长应用（`/apply`）与工具都只**排队**提示词，建队由会话里的模型调用 `agent_teams_*` 完成。
 
-| 状态 | 含义 | `--write` 的行为 |
+### 收藏
+
+收藏写在库根的 `.dsh-roster-favorites.json`（`dsh-agent-roster/favorites@1`，最多 500 条，原子替换）。保存/导入会自动收藏新档案；删除会取消收藏；坏文件只报一条 warn，面板照常可用。收藏**只影响视图**，不会移动文件。
+
+## 工具（十一个，全部只读）
+
+| 工具 | 作用 | 主要参数 |
 |---|---|---|
-| `clean` | 两边都没动 | 不动 |
-| `local-only` | 本地改了、远端没动 | 不动——你的改动保留 |
-| `remote-only` | 远端改了、本地没动 | 替换文件并更新账本 |
-| `diverged` | 两边都改了 | **不动**——打印两边 sha 与 diff，由人决定 |
-| `remote-deleted` | 远端删了 | 不动；本地保留并标记 |
-| `missing` | 本地没了 | 不动；只报告 |
-| `unverified` | 远端没回话（网络、限频） | 不动；**不算"干净"** |
+| `roster_list` | 列出档案与成员 | `path?` |
+| `roster_show` | 一份档案的全部字段、归宿与诊断 | `ref`、`member?`、`path?` |
+| `roster_create` | 产出可直接用的建员参数 + 溯源行 `roster:<id>@<ver>#<sha8>` | `ref`、`path?` |
+| `roster_verify` | 比对 `team.json` 里实际存下的值 | `ref`、`team?`、`path?` |
+| `roster_diff` | 两份档案的语义差异 | `from`、`to`、`path?` |
+| `roster_index` | 公共索引状态；collection 附 `pulled` / `space` / `layout` | `collection?`、`source?`、`refresh?` |
+| `roster_space` | 空间的登记 vs 在库、角色、来源与账本 commit | `path?` |
+| `roster_search` | 跨本机与订阅来源搜索（多词为「且」；远端最多 8 个来源，超出报 info） | `query`、`path?`、`remote?`、`limit?` |
+| `roster_compile` | 编译预览（不写盘） | `ref`、`path?` |
+| `roster_changes` | 逐文件更新检查（七态） | `path?`、`refresh?` |
+| `roster_team` | 从档案创建团队（新会话或已有会话） | `id`、`teamName?`、`mode?`、`workspace?`、`sessionName?`、`sessionId?`、`path?` |
 
-这里刻意**不做自动合并**：这些文件是 YAML 加散文，没有 merge base，三方合并只会悄悄产出重名角色或改了一半的成员。要真合并就用 `git clone` 让 git 做——那会把凭据与推送带进插件，不作为默认。面板在本地空间章头上提供同一套检查：**检查更新** 只有在确实有可快进的文件时才变成 `应用 N 处更新`，否则显示 `N 处冲突`、`N 处无法核对` 或 `无基线`——网络失败绝不会显示成"已是最新"。`update --accept` 把本地内容记成新基线（只认 `local-only`；`diverged` 永不认账，那等于不告诉你就丢掉远端那一半）。
+写操作只走 CLI 与面板 HTTP 路由；工具层保持只读。
 
-## 公共档案源与一键拉取
+## 命令行
 
-档案可以共享：把一份或多份档案放在 GitHub 仓库里，在 `index/registry.json` 登记成一个 **collection**，
-别人订阅后就能在面板里看到并一键拉到自己机器上。
+| 命令 | 用途 |
+|---|---|
+| `validate [--dir…] [--json]` | 校验档案库，有 error 时退出码 1 |
+| `list [--dir…] [--json]` | 列出档案与成员 |
+| `compile --roster <目录> [--write] [--run <回执>] [--json]` | 编译 v2 档案；`--write` 才写 `dist/` |
+| `migrate --dir <目录> [--from <子目录>] [--repo <owner/repo>] [--write]` | v1 → v2 原地迁移 |
+| `clone --repo <owner/repo> [--ref] [--path] [--space] [--dir]` | 整空间拉成本地副本（带账本） |
+| `update --dir <空间> [--write] [--accept] [--json]` | 检查/快进/认账 |
+| `registry validate --file <路径>` | 校验公共索引 |
+| `registry fetch --file <路径> [--local-only]` | 逐条确认真能取到 |
+| `registry sync --file <路径> [--write]` | 按仓库实际内容重算 roster 列表与文件映射 |
 
-- **订阅方式**：设置里 `indexes` 填 `https://…/registry.json`，或 `npm:pkg`（从 npm 包的 `registry.json` 读）。
-  留空 = 只用官方源 `dsh-agent-roster/dsh-agent-roster` 的 `index/registry.json`；显式写 `false` 才彻底不连远端。
-- **多久更新一次**：TTL **一小时**——等于未认证 GitHub 的 60 次/小时配额。`?refresh=1`（或工具的 `refresh`）
-  可绕过缓存，但 60 秒内最多一次，避免把配额烧光。拉取失败时沿用上次缓存并在页面上写明「缓存（拉取失败）」。
-  缓存里记着**它存的是哪一种形状的索引**（`CACHE_VERSION`）：升级插件后如果索引形状变了，旧缓存自动失效、重取一次，
-  所以「我升级了，面板却还 404」不需要靠删目录来排查。
-- **展开很快、也能查找**：展开一个集合时档案是**并发**拉的（最多 6 条在飞），不是一份一份排队——
-  21 份的集合在本机从 **9.4 秒降到 0.8 秒**。服务端把结果记 60 秒，面板也记住上次展开的内容，
-  所以再点开是瞬间的，隔一分钟再点开也只花一轮 6 个请求而不是 21 个。展开区里带一个查找框，
-  按 id、标题或成员名过滤；它只隐藏行，不改任何数据。
-- **拉取到本机**：写入是幂等的，四种结果都会报给你——
-  `created`（新写入）、`updated`（显式覆盖）、`unchanged`（内容一致，不写盘）、`conflict`（本地不一样，**默认不覆盖**）。
-  冲突要你自己决定：要么在编辑器里合并，要么再点一次「拉取到本机」并在请求里带 `overwrite`。
-- **索引本身也有 schema**：[`schema/registry.v1.schema.json`](./schema/registry.v1.schema.json) 与运行时校验器对齐，
-  拼错字段在编辑器里就会提示，不必等 CI。
-- **每份档案住在哪**：collection 的 `rosters[]` 只是 id 名单，实际位置由可选的 `files` 映射给出
-  （如 `{"core-review": "dist/core-review-1.0.0.json"}`）。不写就按 v1 布局 `<id>/roster.yaml` 猜——v2 的库必须写，
-  因为组装本身只引用角色，单独拉一个文件拉不到角色目录。`registry sync` 会替你填。
-- **登记自己的档案**：在 `index/registry.json` 的 `collections` 里加一条（`id`、`repo: github:owner/repo`、
-  `ref`、`path`、`rosters[]`），提交 PR 即可；`.github/workflows/registry.yml` 会校验索引与仓库真实文件是否对得上。
-
-## 路由
+## 路由（十二条）
 
 | 路由 | 方法 | 用途 |
 |---|---|---|
-| `/plugins/dsh-agent-roster/library` | GET | 面板快照：工作区、档案库、档案、团队、提示、计数、远端源状态 |
-| `/plugins/dsh-agent-roster/document` | GET | 单份档案的原文与解析结果（编辑器用） |
-| `/plugins/dsh-agent-roster/rosters` | POST | 新建 / 更新 / 删除 / 导入 / 导出单份档案 |
-| `/plugins/dsh-agent-roster/apply` | POST | 把档案里的队长应用到已有会话或新会话，并排入建团队提示词 |
-| `/plugins/dsh-agent-roster/collection` | GET | 拉取某个 collection 的档案内容（只读，不落盘） |
-| `/plugins/dsh-agent-roster/install` | POST | 把某个 collection 落盘到本机档案库（幂等，默认不覆盖） |
-| `/plugins/dsh-agent-roster/install-space` | POST | 整空间拉取（rosters + roles + parts + snippets + `space.yaml`）到本地目录 |
-| `/plugins/dsh-agent-roster/catalog` | GET | 本机能看到的全部档案：本地库 + 每个订阅源 |
-| `/plugins/dsh-agent-roster/search` | GET | `?q=`：与档案库页签同一引擎，带命中原因 |
-| `/plugins/dsh-agent-roster/favorites` | POST | 收藏 / 取消收藏一份档案；只写库根的 `.dsh-roster-favorites.json` |
-| `/plugins/dsh-agent-roster/space-update` | POST | 对拉下来的空间做 `check` / `apply` / `accept` |
-| `/plugins/dsh-agent-roster/locale` | GET | 面板词典（`en` / `zh`） |
+| `/plugins/dsh-agent-roster/library` | GET | 面板快照：工作区、库、档案、团队、提示、计数、`hostWorkspaces` |
+| `/plugins/dsh-agent-roster/document` | GET | 单份档案原文与解析结果 |
+| `/plugins/dsh-agent-roster/rosters` | POST | 新建 / 更新 / 删除 / 导入 / 导出 |
+| `/plugins/dsh-agent-roster/apply` | POST | 应用队长：新会话（工作区 + 会话名）或已有会话 |
+| `/plugins/dsh-agent-roster/collection` | GET | 只读拉取某个 collection |
+| `/plugins/dsh-agent-roster/install` | POST | 把 collection 落盘（幂等，默认不覆盖） |
+| `/plugins/dsh-agent-roster/install-space` | POST | 整空间拉取到本地目录 |
+| `/plugins/dsh-agent-roster/catalog` | GET | 本机 + 每个订阅源的全部档案 |
+| `/plugins/dsh-agent-roster/search` | GET | `?q=`：带命中原因 |
+| `/plugins/dsh-agent-roster/favorites` | POST | 收藏 / 取消收藏 |
+| `/plugins/dsh-agent-roster/space-update` | POST | `check` / `apply` / `accept` |
+| `/plugins/dsh-agent-roster/locale` | GET | 面板词典（`zh` / `en`） |
 
-十二条都是 `exact` 路由，走宿主的 `connection` 围栏，方法不符返回 `405`。
+都是 `exact` 路由，走宿主 `connection` 围栏，方法不符返回 405；写路由还会校验根目录白名单与请求体。
 
 ## 配置
 
 | 键 | 默认值 | 含义 |
 |---|---|---|
-| `rosterDirs` | `[]` | 档案库目录。留空 = 全局库 `$DSH_HOME/agent-roster`（默认 `~/.dsh/agent-roster`）；绝对路径或 `~` 开头同样是全局的；只有相对路径才按工作区解析。第一项是工具的默认目录 |
+| `rosterDirs` | `[]` | 档案库目录。留空 = 全局库 `$DSH_HOME/agent-roster`；绝对路径或 `~` 开头同样是全局的；只有相对路径按工作区解析。第一项是工具默认目录 |
 | `knownToolPolicies` | `[]` | 部署已声明的 toolPolicy id；填了才做交叉校验 |
-| `agentTeamsStateDir` | `.agent-teams` | 只读：`roster_verify` 与「团队」页签在这里找团队状态 |
-| `language` | `"auto"` | 面板语言：`auto` 跟随 DSH，或固定 `zh` / `en` |
-| `indexes` | `[]` | 公共档案源：`https` 的 `registry.json` 或 `npm:pkg`。留空 = 官方源；显式 `false` = 只在本机库工作 |
-| `region` | `"auto"` | 下载区：`china` 时用腾讯 npm 镜像读 npm 形式的目录包；`auto` 等同 `global`（不自动探测，省一次出网） |
-| `registryMirror` | `""` | 自定义 npm 镜像地址（如 `https://registry.npmmirror.com`、`http://nexus.corp.local/repository/npm`）。填了它优先于 `region`；源里自己写死的 registry 又优先于它。留空 = 不用自定义镜像 |
+| `agentTeamsStateDir` | `.agent-teams` | 只读：`roster_verify` 与「团队」页签的状态目录 |
+| `language` | `"auto"` | `auto` 跟随 DSH，或固定 `zh` / `en` |
+| `indexes` | `[]` | 公共源：`https` 的 `registry.json` 或 `npm:pkg`；留空 = 官方源；`false` = 不连远端 |
+| `region` | `"auto"` | 下载区：`china` 走腾讯 npm 镜像；`auto` 等同 `global`，不探测 |
+| `registryMirror` | `""` | 自定义镜像地址（可带子路径），留空用下载区预置 |
 
-七项都是 `volatile`：改完立即生效，无需重启。
+七项都是 volatile：改完不需要重启，但运行中的宿主重新注册工具时才生效。
 
 ## 诊断
 
-校验输出 error / warn / info 三档，每条带 `file`、`path`、`reason`。主要代码族：
+诊断统一是 `{severity, code, path, message, file}`；`validate` 有 error 时退出码 1。按族看：
 
-- 结构：`missing-field`、`unknown-key`、`invalid-type`、`invalid-kind`、`pair-required`、`invalid-value`
-- 取值：`invalid-id`、`invalid-provider`、`invalid-model`、`invalid-semver`、`invalid-tag`、`invalid-tool-name`、`invalid-tool-policy-id`、`invalid-number`、`empty-tool-scope`
-- 安全：`reserved-character`（`^`、`$`、`|`、花括号）、`forbidden-content`（提示注入特征）、`single-line-required`
-- 上限：`string-too-long`、`too-many-members`、`too-many-values`
-- 档案库级：`library-missing`、`library-unusable`、`missing-roster-file`、`multiple-roster-files`、`unexpected-file`、`unreadable-file`、`unreadable-dir`、`duplicate-roster-id`、`tool-policy-cross-check-skipped`
-- 正文引用：`include-syntax`、`missing-include`、`unreadable-include`、`unsafe-include`、`include-nested`、`library-root-unknown`、`include-too-long`（都带 `AGENT.md:行号`）
-- 远端源：`index-unreachable`、`index-invalid`、`index-refresh-throttled`、`index-source-invalid`、`collection-fetch-failed`、`collection-not-found`、`index-may-be-stale`（没有 `files` 映射却回退到 v1 路径并失败——索引多半比档案库旧）、`collection-roster-needs-roles`（条目指向 v2 组装，而组装不能以单文件旅行）
+| 族 | 例子 |
+|---|---|
+| 格式 | `unknown-field`、`unknown-format`、`multiple-roster-files`、`duplicate-roster-id`、`duplicate-role` |
+| 角色与拼装 | `missing-part`、`prompt-part-too-long`、`include-syntax`、`missing-include`、`unsafe-include`、`include-nested` |
+| 编排 | `gate-unverifiable`、`gate-without-stage`、`empty-stage` |
+| 能力 | `capability-policy-missing`、`capability-skills-unverified`、`capability-cross-check-skipped` |
+| 空间 | `space-roster-missing`、`space-roster-undeclared`、`space-roster-archived`、`multiple-space-files`、`space-origin-not-allowed` |
+| 账本 | `no-origin-ledger`、`origin-ledger-broken`、`clone-unsafe-path`、`clone-snippet-missing` |
+| 会话 | `session-controller-unavailable`、`session-create-failed`、`session-rename-failed`、`prompt-not-queued` |
+| 收藏/写入 | `favorites-unreadable`、`write-failed`、`delete-failed` |
 
-空档案库不是错误；目录不存在只算 info。`tool-policy-cross-check-skipped` **每座档案库只发一条**（不是每份档案一条）——没配 `knownToolPolicies` 是一件库级的事，按档案重复只会把一个事实放大成 n 行噪音。
+## 与 `dsh-agent-teams` 的关系
 
-## 与 dsh-agent-teams 的关系
-
-团队生命周期、任务派发、成员持久化归 `dsh-agent-teams`；本插件只管成员**定义**与交接的诚实性：只读 `.agent-teams/<team>/team.json` 核对运行时真正存了什么，读不到就说「无法核对」。从不写状态。
+- `roster_create` 的成员参数可直接喂给 `agent_teams_add_member`；每个字段标注 direct / config / declaration。
+- 溯源行 `roster:<id>@<version>#<sha8>` 建议写进 `agent_teams_create` 的 `description`；`roster_verify` 会解析它并回显 `match` / `differ` / `id-only` / `absent`。
+- `roster_verify` 读 `team.json` 的持久化字段；人设（`executionPrompt`）**不在** team.json 里，所以显示为「未持久化」而不是「一致」。
+- `toolFilter` 是策略物化后的结果，team.json 不存，故显示「无法核对」；要核对策略定义得在部署侧。
+- 插件不写团队状态，也不做 transfer。
 
 ## 开发
 
 ```bash
-npm install
-npm test          # node --test，358 个用例
-npm run smoke     # 用真实 DSH bundle 注册工具，断言输出可无损往返
-node scripts/check-locale.mjs   # client.js 里的静态 t() 键必须两本词典都有
+node --test                 # 359 个测试
+npm run smoke               # 宿主侧 11 个工具 + 客户端两槽位
+npm run check:locale        # 中英词典键对齐
+npx dsh-agent-roster validate --dir examples
+npx dsh-agent-roster registry validate --file index/registry.json
 ```
 
-```
-index.js          宿主半边：Config、apply、十二条路由
-lib/              读：format / format-v2 / frontmatter / parse / validate / role / roster2 /
-                  capabilities / organization / registry / remote / library / home
-                  编译：compile2 / plan / migrate / run
-                  对运行时说话：bridge / verify / diff / digest / render / tools / service /
-                  teams-state / captain / write / apply / serialize / config-view / json / http
-client.js         客户端半边：左侧栏图标 + 主面板（档案/团队/体检）+ 面板内的设置弹窗
-locale/           面板与列表词典（en/zh）
-schema/           roster v1 / role v1 / roster v2 / compiled v1 / capabilities / organization / registry
-                  schema（编辑器补全用，与校验器由测试对齐）
-bin/cli.mjs       validate / list / compile / migrate / registry，给 CI 用
-scripts/          host-smoke.mjs、client-smoke.mjs、check-locale.mjs（开发用，不随包发布）
-examples/         由历史 v1 档案迁移来的 v2 库（roles/ + rosters/ + dist/）
-examples-orchestration/  手写的 v2 库：编排、门与施工图
-orgs/             带 organization.yaml 的示例库（21 套 v2 档案）
-test/             单测
-```
+## 验证状态
 
-## 验证进度
-
-本机已验证：
-
-- `npm test` —— 358/358 通过（格式、解析、校验、扫描、路径、桥接、核对四桶、摘要与溯源、档案差异、能力要求与能力闸门、档案库组织、索引 schema、无损 JSON、写入计划与执行、路由、快照与提示、两本词典一致、工具契约、客户端加载器契约、收藏（存储、快照接线、路由、面板筛选）、包清单、配置视图、样式 token 约束、声明层字段与队长段、schema 与常量对齐、v2 角色/组装/编译三层及其 schema 对齐、v1→v2 迁移、正文引用（独占一行、只一层、两种根、预算与行号）、执行回执并入施工图、来源账本与七态判定）。
-- `npm run smoke` —— 用真实 DSH bundle 的 `defineTool` 注册十一个工具，原来的六个逐个调用：输出全部通过无损校验、`path` 覆盖生效、释放干净；同一条命令随后用桩模块表加载 `client.js`，断言三处槽位注册、样式只注入一次、effect 可回收。
-- CLI：`validate --dir examples` 对两座示例库退出码 0。
-- 用插件管理器真的装进了本机 profile（`plugin_manager install_bundle` 指向本仓库 → `link:` 依赖 + bundle 条目），重启后按链接读取本仓库文件。
-- 运行中的宿主已能应答只读路由：`GET /plugins/dsh-agent-roster/library` 返回 200，带插件版本与解析出的档案目录。
-- 另一个 agent 会话在工具清单里看到了十一个工具，并实际调用了它们。
-- 左侧栏面板已在活页面里确认可见，并展示了真实档案。
-
-这一轮没验证到的：0.2.0 的管理界面（页签、编辑器、团队页、语言切换、`document` / `rosters` 路由）在活页面里的表现——这些改动要重启宿主才会被加载，重启后再验。
-
-验证过程抓到三个真缺陷并已修：
-
-1. `volatile()` 配置字段进 `apply()` 时是 `{ get, write }` 引用对象，导致面板和所有工具一直读默认值、设置表单形同虚设。现在读取统一走 `lib/config-view.js`，每次访问都取当前值，类型不对则退回默认值。
-2. `roster_list` 忽略 `path` 参数，永远扫配置目录。`resolvePaths` 现在把显式 `path` 当作覆盖。
-3. 工具返回值里带 `undefined` 键，运行时判 `value is not lossless JSON` 而整次失败。缺失值现在写 `null`（或直接省略），且所有返回值先过 `lib/json.js#lossless`。
+- 全仓 **359/359**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
+- CI `registry`（Node 22）重算索引、重编示例，并在 `dist/` 与源码不一致时失败。
+- 实机 e2e（独立 `DSH_HOME` + 端口 3099）：`agent-teams`（4 人）、`metagpt-company`（4 人）、`openmanus`（3 人）三套档案分别真的建出团队，`roster_verify` 均 `faithful` 全中、`drift 0`；溯源行含内容哈希。
+- 已知边界：`dist/` 不随 clone 拉取；按合集安装（`/install`）会把档案摊平成 v1 文档，整空间拉取（`clone` / `/install-space`）才保留 v2 布局与账本；`toolFilter` 无法从 team.json 核对；升级后需重启 `dsh web`。
 
 ## 许可
 
-MIT，见 [LICENSE](./LICENSE)。
+MIT
