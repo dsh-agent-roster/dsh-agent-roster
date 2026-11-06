@@ -168,7 +168,7 @@
     "captainModel": "模型",
     "captainEffort": "思考档位",
     "captainPersona": "人格前缀",
-    "captainPersonaHint": "由 agent preset 生效，不是这份档案。写在这里只是为了不丢意图。",
+    "captainPersonaHint": "应用时原文注入会话的起始提示词，对该会话优先；模型仍来自部署，插件不写运行时。",
     "memberTags": "标签",
     "source": "源码",
     "form": "表单",

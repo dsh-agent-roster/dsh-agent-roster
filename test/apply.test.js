@@ -136,6 +136,16 @@ test("buildCaptainPrompt 在队长没有写人设时如实退回部署的人设"
   assert.match(prompt, /captain 段没有人设，本次会话的行为以部署的 preset persona 为准/);
 });
 
+test("buildCaptainPrompt 认得 v2 档案的 captain.personaPrefix（角色式档案）", () => {
+  // v2 把队长人设放在 personaPrefix（编译产物里是 captain.persona 的正文）。
+  // 只认 systemPrompt 会把角色式档案的队长人设静默丢掉。
+  const prompt = buildCaptainPrompt({
+    roster: roster({ captain: { name: "lead", personaPrefix: "你是角色式档案的队长。" } }),
+  });
+  assert.equal(prompt.includes("你是角色式档案的队长。"), true);
+  assert.match(prompt, /队长人设（来自档案 captain 段/);
+});
+
 test("buildCaptainPrompt 用给定的团队名，缺省才退回档案 id", () => {
   const named = buildCaptainPrompt({ roster: roster(), teamName: "ops-floor" });
   assert.match(named, /agent_teams_create`，参数 name: "ops-floor"/);

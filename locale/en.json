@@ -168,7 +168,7 @@
     "captainModel": "Model",
     "captainEffort": "Effort",
     "captainPersona": "Persona prefix",
-    "captainPersonaHint": "Applied by the agent preset, not by this roster. Shown here so the intent is not lost.",
+    "captainPersonaHint": "Injected verbatim into the session's kick-off prompt when applied, taking precedence there; the model still comes from the deployment.",
     "memberTags": "Tags",
     "source": "Source",
     "form": "Form",
