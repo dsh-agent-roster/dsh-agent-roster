@@ -59,8 +59,12 @@ function fakeController(overrides = {}) {
       calls.push(["selectModel", request]);
       return { selected: { provider: request.provider, model: request.model } };
     },
-    async prompt(request) {
-      calls.push(["prompt", request]);
+    async prompt(request, signal) {
+      // 宿主服务的真实签名是 `prompt(request, signal)`，第一句就是
+      // `signal.throwIfAborted()`；假控制器必须照这个契约来，否则会漏掉
+      // "少传 signal ⇒ TypeError ⇒ 被包成 prompt-not-queued" 这类事故。
+      signal.throwIfAborted();
+      calls.push(["prompt", request, signal]);
       return { accepted: true };
     },
     ...overrides,
@@ -145,6 +149,10 @@ test("applyCaptain 走已有会话：切模型 + 排队提示词", async () => {
   assert.equal(prompt.mode, "queue");
   assert.equal(prompt.content[0].type, "text");
   assert.match(prompt.content[0].text, /roster_show/);
+  // 宿主服务的第二个参数是 AbortSignal；不带它，服务内部 `signal.throwIfAborted()`
+  // 会抛 TypeError，我们就会把"少参数"误报成"排队失败"。
+  assert.equal(controller.calls[1][2] instanceof AbortSignal, true);
+  assert.equal(controller.calls[1][2].aborted, false);
 });
 
 test("applyCaptain 新建会话：create 之后再用新 id 切模型并提示", async () => {

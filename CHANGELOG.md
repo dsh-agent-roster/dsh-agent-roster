@@ -4,6 +4,17 @@
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-11-06
+
+### Fixed
+
+- **Creating a team from a roster failed with `prompt-not-queued`.** The host service's signature is `sessionController.prompt(request, signal)` — the second argument is an `AbortSignal`, and the service starts with `signal.throwIfAborted()`. We passed only the request, so every apply threw `TypeError: Cannot read properties of undefined (reading 'throwIfAborted')` and the catch turned it into "the prompt was not queued". The call now passes `AbortSignal.timeout(30_000)`; the same second DSH instance reproduces the old failure on 1.7.0 and succeeds on this build.
+- The panel now shows the host's `reason` next to the error code when applying a captain fails, instead of a bare code.
+
+### Changed
+
+- The fake `sessionController` in `test/apply.test.js` mirrors the real contract (`prompt(request, signal)` with `signal.throwIfAborted()`), so a missing signal fails the suite instead of the user's first team creation.
+
 ## [1.7.0] - 2026-11-05
 
 ### Removed
@@ -831,7 +842,8 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.1...main
+[1.7.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.6.1...v1.7.0
 [1.6.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.5.0...v1.6.0

@@ -369,3 +369,9 @@ test("收藏：档案页只列收藏，星标能切换，复制一份会回填",
   }
   assert.equal(zh.roster.copyCreate, "复制成员参数", "「复制建团队载荷」这个名字没人看得懂");
 });
+
+test("应用失败时把宿主给的 reason 也显示出来，不只报一个 code", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  assert.match(source, /reason: typeof response\.body\?\.reason === "string" \? response\.body\.reason : ""/);
+  assert.match(source, /result\.reason \? `\$\{result\.code\} — \$\{result\.reason\}` : result\.code/);
+});

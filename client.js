@@ -589,7 +589,13 @@ window.__ModuleLoader__.load({
             body: JSON.stringify(payload),
           });
           if (!response.ok || response.body?.ok !== true) {
-            setResult({ ok: false, code: response.body?.code ?? response.body?.error?.code ?? String(response.status) });
+            setResult({
+              ok: false,
+              code: response.body?.code ?? response.body?.error?.code ?? String(response.status),
+              // 宿主给的 reason 往往才是可行动的那句话（例如少参数、模型不可用）；
+              // 只显示一个 code 会把"哪里错了"藏起来。
+              reason: typeof response.body?.reason === "string" ? response.body.reason : "",
+            });
             onToast(t("captain.applyFailed"));
             return;
           }
@@ -709,7 +715,13 @@ window.__ModuleLoader__.load({
           ),
         ),
         result !== null && result.ok === false
-          ? h("p", { className: "rstr-bad rstr-small" }, t("captain.applyFailedCode", { code: result.code }))
+          ? h(
+              "p",
+              { className: "rstr-bad rstr-small" },
+              t("captain.applyFailedCode", {
+                code: result.reason ? `${result.code} — ${result.reason}` : result.code,
+              }),
+            )
           : null,
         result !== null && result.ok === true
           ? h("p", { className: "rstr-ok rstr-small" }, t("captain.appliedTo", { session: result.sessionId }))
