@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+## [1.8.4] - 2026-11-08
+
+### Fixed
+
+- **`roster_index({ collection })` crashed with `Cannot read properties of undefined (reading 'filter')`.** A registry entry may declare only `files` (roster id → path) and omit `rosters`; the validator defaulted the list to `[]` and then dropped every `files` key as "not in the roster list", while `buildResult` handed the **raw** document downstream instead of the validated collections — so `collection.rosters` stayed `undefined` and the first fetch died on `.filter`. Three things changed: validated collections are what leaves `loadRegistry`; a `files`-only entry now derives its roster list from the keys (with an `info collection-rosters-derived`, never silently); and the fetch/count helpers tolerate a missing list. Two regression tests cover the shape.
+
 ## [1.8.3] - 2026-11-06
 
 ### Fixed
@@ -886,6 +892,7 @@ point is now one search field above the tabs.
 
 [Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.2...main
 [1.8.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.2...v1.8.3
+[1.8.4]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.3...v1.8.4
 [1.8.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.1...v1.8.2
 [1.8.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.2...v1.8.0

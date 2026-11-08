@@ -147,3 +147,44 @@ test("path 为空表示仓库根：索引合法，地址不多一层", () => {
     "https://raw.githubusercontent.com/dsh-agent-roster/agent-teams/main/dist/agent-teams-1.0.0.json",
   );
 });
+
+test("只写 files 不写 rosters：名单由 files 的键补齐，并记一条 info", () => {
+  const checked = validateRegistry({
+    kind: "dsh-agent-roster-registry/v1",
+    collections: [
+      {
+        id: "legacy",
+        repo: "github:dsh-agent-roster/agent-teams",
+        path: "",
+        files: { "aa": "dist/aa-1.0.0.json" },
+      },
+    ],
+  });
+  assert.equal(checked.ok, true);
+  const entry = checked.registry.collections[0];
+  assert.deepEqual(entry.rosters, ["aa"]);
+  assert.deepEqual(entry.files, { "aa": "dist/aa-1.0.0.json" });
+  assert.deepEqual(checked.diagnostics.map((item) => item.code), ["collection-rosters-derived"]);
+});
+
+test("collection 没有 rosters 时取回不崩：按 files 的键请求", async () => {
+  const seen = [];
+  const fetched = await fetchCollection(
+    {
+      id: "legacy",
+      repo: "github:dsh-agent-roster/agent-teams",
+      ref: "main",
+      path: "",
+      files: { "aa": "dist/aa-1.0.0.json" },
+    },
+    {
+      fetchImpl: async (url) => {
+        seen.push(String(url));
+        return { ok: true, status: 404, text: async () => "" };
+      },
+    },
+  );
+  assert.deepEqual(fetched.rosters, []);
+  assert.equal(seen.length, 1);
+  assert.match(seen[0], /dist\/aa-1\.0\.0\.json$/);
+});
