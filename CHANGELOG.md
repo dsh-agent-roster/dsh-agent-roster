@@ -4,6 +4,19 @@
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-09
+
+### Added
+
+- **Failure edges on gates (`gate.onFail {to, maxRounds}`).** A gate can now say where control goes when it fails and how many times it may retry: `to` must be a declared stage that is not in the gate's own `after` (`onfail-immediate`), must be covered by another gate (`onfail-dangling`), and `maxRounds` is required (1–5). Two edges may point at each other, but the product of rounds around such a loop must stay ≤ 5 (`onfail-unbounded`). `after` still declares order only — the checkable loop is the one through `onFail`.
+- **Documents as evidence (`capabilities.requires.documents [{path, sha256?}]`).** Paths are relative to the library root, must stay inside it, and a pinned sha256 turns "present" into "present and unchanged" (`why: sha-mismatch`). Documents are checked by `roster_create`'s gate and by `roster_verify`; they are never assembled into `executionPrompt`.
+- **The captain's route is checked against the session, not the default.** `roster_verify` resolves the team's `captainSessionId` by the `roster:<id>@` provenance line and compares `provider` / `model` / `reasoningEffort` with what that session actually selected (`session.*`). An unreadable session stays `unknown`; the deployment default is not substituted for it.
+
+### Changed
+
+- **`tools.scope` is reported as a declaration.** Validation emits `scope-declaration-only` (info) and `roster_verify` prints the members under “declared fields (applied: false)” — it never reaches `agent_teams_add_member` and does not change what a member may call. Runtime permissions still come from `toolPolicy`.
+- Tests 364 → 375.
+
 ## [1.8.4] - 2026-11-08
 
 ### Fixed
@@ -890,9 +903,10 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.2...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.9.0...main
 [1.8.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.2...v1.8.3
 [1.8.4]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.3...v1.8.4
+[1.9.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.4...v1.9.0
 [1.8.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.1...v1.8.2
 [1.8.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.2...v1.8.0

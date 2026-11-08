@@ -71,7 +71,7 @@ test("能力要求：onMissing 默认 refuse，无法核对的字段一律拒绝
   });
   assert.equal(minimal.ok, true);
   assert.equal(minimal.capabilities.onMissing, "refuse");
-  assert.deepEqual(minimal.capabilities.requires, { skills: [], toolPolicies: [] });
+  assert.deepEqual(minimal.capabilities.requires, { skills: [], toolPolicies: [], documents: [] });
   assert.equal(minimal.capabilities.asOf, null);
 
   // 模型路由 / 插件版本没有证据源：写进来就是又一份"看起来声明了"的假绿。
@@ -261,7 +261,8 @@ test("schema：capabilities.v1.schema.json 的取值来自运行时常量，不�
   assert.equal(schema.additionalProperties, false);
   assert.equal(schema.properties.requires.additionalProperties, false);
   assert.deepEqual(Object.keys(schema.properties).sort(), ["$schema", "asOf", "kind", "notes", "onMissing", "requires", "roster"]);
-  assert.deepEqual(Object.keys(schema.properties.requires.properties).sort(), ["skills", "toolPolicies"]);
+  assert.deepEqual(Object.keys(schema.properties.requires.properties).sort(), ["documents", "skills", "toolPolicies"]);
+  assert.equal(schema.properties.requires.properties.documents.items.$ref, "#/$defs/documentRequirement");
   assert.equal(schema.$defs.id.pattern, ID_PATTERN.source);
   assert.equal(schema.$defs.skillName.pattern, SKILL_PATTERN.source);
   assert.equal(schema.$defs.policyId.pattern, ID_PATTERN.source);
@@ -348,4 +349,62 @@ test("面板诊断：证据源缺席时汇总成一条，而不是逐档案刷�
   assert.equal(items[0].severity, "info");
   assert.match(items[0].reason, /a/);
   assert.match(items[0].reason, /b/);
+});
+
+test("文档要求：在 / 缺 / 哈希不符 / 没有证据源，四种结果互不冒充", () => {
+  const sha = "a".repeat(64);
+  const doc = capabilitiesDocument({
+    requires: { skills: [], toolPolicies: [], documents: [{ path: "docs/runbook.md", sha256: sha }] },
+  });
+  const validated = validateCapabilities(doc, { expectedId: "core-review" });
+  assert.equal(validated.ok, true, JSON.stringify(validated.diagnostics, null, 2));
+  assert.deepEqual(validated.capabilities.requires.documents, [{ path: "docs/runbook.md", sha256: sha, reason: null }]);
+
+  const rosters = [{ id: "core-review", version: "1.0.0" }];
+  const caps = { "core-review": validated.capabilities };
+
+  const present = checkCapabilities(rosters, caps, {
+    documents: { "core-review": { "docs/runbook.md": { exists: true, sha256: sha } } },
+  });
+  assert.equal(present.entries[0].blocked, false);
+  assert.equal(present.summary.present, 1);
+  assert.equal(present.summary.missing, 0);
+
+  const missing = checkCapabilities(rosters, caps, {
+    documents: { "core-review": { "docs/runbook.md": { exists: false, sha256: "" } } },
+  });
+  assert.equal(missing.entries[0].blocked, true);
+  assert.equal(missing.entries[0].missing[0].why, "file-missing");
+
+  const drifted = checkCapabilities(rosters, caps, {
+    documents: { "core-review": { "docs/runbook.md": { exists: true, sha256: "b".repeat(64) } } },
+  });
+  assert.equal(drifted.entries[0].blocked, true);
+  assert.equal(drifted.entries[0].missing[0].why, "sha-mismatch");
+
+  // 没有证据源：不翻红，也不算过。
+  const unchecked = checkCapabilities(rosters, caps, {});
+  assert.equal(unchecked.entries[0].blocked, false);
+  assert.equal(unchecked.summary.unknown, 1);
+  assert.equal(unchecked.entries[0].status, "unchecked");
+});
+
+test("文档要求：路径必须是库内相对路径，拒绝对路径与 ../", () => {
+  for (const bad of ["/etc/passwd", "../secret.md", "docs/../../x.md"]) {
+    const doc = capabilitiesDocument({
+      requires: { skills: [], toolPolicies: [], documents: [{ path: bad }] },
+    });
+    const result = validateCapabilities(doc, { expectedId: "core-review" });
+    assert.equal(result.ok, false, `${bad} 应该被拒`);
+    assert.ok(result.diagnostics.some((item) => item.code === "invalid-document-path"));
+  }
+});
+
+test("文档要求：sha256 必须是 64 位小写十六进制", () => {
+  const doc = capabilitiesDocument({
+    requires: { skills: [], toolPolicies: [], documents: [{ path: "docs/runbook.md", sha256: "ABC" }] },
+  });
+  const result = validateCapabilities(doc, { expectedId: "core-review" });
+  assert.equal(result.ok, false);
+  assert.ok(result.diagnostics.some((item) => item.code === "invalid-document-sha"));
 });

@@ -161,6 +161,24 @@
               },
               "by": {
                 "type": "string"
+              },
+              "onFail": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "to",
+                  "maxRounds"
+                ],
+                "properties": {
+                  "to": {
+                    "type": "string"
+                  },
+                  "maxRounds": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  }
+                }
               }
             }
           }

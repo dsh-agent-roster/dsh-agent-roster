@@ -385,6 +385,26 @@
               }
             }
           }
+        },
+        "onFail": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "to",
+            "maxRounds"
+          ],
+          "description": "失败回边：门没过时回到哪个阶段、最多重试几轮。上限必填——没有上限的重试等于死循环。",
+          "properties": {
+            "to": {
+              "$ref": "#/$defs/id",
+              "description": "回到哪个阶段；必须是已声明的 stage，且不能在本门 after 里（否则是原地重试）。"
+            },
+            "maxRounds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            }
+          }
         }
       }
     },

@@ -210,6 +210,20 @@ Budgets are **characters**: body 8000, one part 6000, 16 parts, 12000 after expa
 
 A gate without an executable check is an error (`gate-unverifiable`): each `verify` entry needs `command` and `expectExit` (1–8 entries). **Only what a machine can run counts as a gate**; prose criteria belong in `requires`.
 
+A gate may also declare a **failure edge**: where control goes when the gate fails, and how many times it may retry.
+
+```yaml
+gates:
+  - id: tests-pass
+    after: [audit]
+    onFail: { to: repair, maxRounds: 2 }
+```
+
+- `onFail.to` must be a declared stage and must **not** be in this gate's own `after` (that is a retry in place, with no repair step) — `onfail-immediate`.
+- It must be covered by another gate's `after`; otherwise the repair never returns to a gate and the edge has no exit — `onfail-dangling`.
+- `maxRounds` is required (1–5) — a retry without a bound is a loop with no stop condition.
+- Two failure edges may point at each other; the product of the rounds around such a loop must stay ≤ 5 (`onfail-unbounded`). `after` declares order only and is not a machine-checkable cycle.
+
 ### Compiled artifacts
 
 ```bash
@@ -243,9 +257,11 @@ A persona body may place a shared block inline, **on a line of its own**:
 |---|---|---|
 | **direct** | `name`, `role`, `systemPrompt`, `provider`, `model`, `reasoningEffort`, `toolPolicy` | passed to `agent_teams_add_member` |
 | **config** | library directories, team state directory, language, index sources | plugin configuration, not team state |
-| **declaration** | `description`, `aliases`, `skills`, `examples`, `tags`, `notes`, `captain` | documentation and validation only; `skills` never auto-loads, `captain` only describes (its persona is injected on apply) |
+| **declaration** | `description`, `aliases`, `skills`, `examples`, `tags`, `notes`, `captain`, `tools.scope` | documentation and validation only; `skills` never auto-loads, `captain` only describes (its persona is injected on apply) |
 
 `roster_create` labels every emitted field with its class; `roster_verify` compares only what the runtime persisted.
+
+`tools.scope` is a declaration too: it is validated and surfaced by `roster_verify` under “declared fields (applied: false)”, but it never reaches `agent_teams_add_member` and does not change what a member may call. Runtime permissions come from `toolPolicy`.
 
 ## Capability requirements (`capabilities.yaml`)
 
@@ -255,12 +271,16 @@ A sibling file may declare what the deployment must provide before the team can 
 requires:
   skills: [frontend-skill]
   toolPolicies: [member-safe]
+  documents:
+    - path: docs/runbook.md
+      sha256: 3f2a…            # optional: pin the content, not just the name
 onMissing: refuse        # refuse (default) | degraded
 ```
 
-- Only two verifiable classes: whether a skill is installed, and whether a toolPolicy id was declared by the deployment.
+- Three verifiable classes: whether a skill is installed, whether a toolPolicy id was declared by the deployment, and whether a document is present (and unchanged, if you pinned its sha256).
 - Three states: `present` / `missing` / `unknown`; only `missing` triggers `onMissing`; `unknown` (no evidence source) is not a pass.
 - `refuse` makes `roster_create` emit no arguments and name what is missing; `degraded` emits them with per-field labels.
+- Document paths are relative to the **library root** (not the roster directory); `..` and absolute paths are rejected. A missing file is `missing`; an existing file whose content no longer matches the pinned sha256 is also `missing` (with `why: sha-mismatch`). Documents are never assembled into `executionPrompt` — they are evidence, not persona text.
 
 ## Spaces (`space.yaml`)
 
@@ -336,6 +356,7 @@ The row button and the `roster_team` tool share one `applyCaptain` path:
 - **New session**: pick a workspace (dropdown; duplicates are disambiguated with one parent directory) and type a session name; the session is renamed after creation. The choice is sent as the host `workspaceId` (not just a directory), so the session is accounted in that workspace; a bare directory is resolved to a workspace id first.
 - **Existing session**: shown as “workspace · session name”, never an id or a path.
 - If the roster declares a captain persona, it is injected into the kick-off prompt verbatim; the model still comes from the deployment, and the plugin writes no runtime state.
+- `roster_verify` compares the declared captain route with **the model the captain session actually selected** (`session.*`), not with the deployment default; if the session cannot be read, the check is `unknown` rather than a pass.
 - Both the panel and the tool only **queue** the prompt; the model in that session calls `agent_teams_*` to build the team.
 
 ### Favourites
@@ -415,8 +436,8 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 |---|---|
 | Format | `unknown-field`, `unknown-format`, `multiple-roster-files`, `duplicate-roster-id`, `duplicate-role` |
 | Roles and assembly | `missing-part`, `prompt-part-too-long`, `include-syntax`, `missing-include`, `unsafe-include`, `include-nested` |
-| Orchestration | `gate-unverifiable`, `gate-without-stage`, `empty-stage` |
-| Capabilities | `capability-policy-missing`, `capability-skills-unverified`, `capability-cross-check-skipped` |
+| Orchestration | `gate-unverifiable`, `gate-without-stage`, `empty-stage`, `onfail-unknown-stage`, `onfail-immediate`, `onfail-dangling`, `onfail-unbounded` |
+| Capabilities | `capability-policy-missing`, `capability-skills-unverified`, `capability-cross-check-skipped`, `invalid-document-path`, `invalid-document-sha` |
 | Spaces | `space-roster-missing`, `space-roster-undeclared`, `space-roster-archived`, `multiple-space-files`, `space-origin-not-allowed` |
 | Ledger | `no-origin-ledger`, `origin-ledger-broken`, `clone-unsafe-path`, `clone-snippet-missing` |
 | Sessions | `session-controller-unavailable`, `session-create-failed`, `session-rename-failed`, `prompt-not-queued` |
@@ -442,7 +463,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## Verification status
 
-- **364/364** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
+- **375/375** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
 - CI `registry` (Node 22) recomputes the index, recompiles the examples, and fails when `dist/` drifts from source.
 - Live e2e on an isolated `DSH_HOME` (port 3099): the `agent-teams` (4 members), `metagpt-company` (4) and `openmanus` (3) rosters each actually built a team; `roster_verify` reported every member faithful, `drift 0`, and the provenance line carried the content hash.
 - Known boundaries: `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.

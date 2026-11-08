@@ -211,6 +211,20 @@ executionPrompt = join("\n\n", [成员 prepend, 展开引用后的正文, ...pro
 
 门没有可执行判据就是 error（`gate-unverifiable`）：每条 `verify` 必须给出 `command` 与 `expectExit`（1–8 条）。**能被机器跑的才算门**，纯文字标准只能写进 `requires` 供人看。
 
+门还可以声明**失败回边**：没过时回到哪个阶段、最多重试几轮。
+
+```yaml
+gates:
+  - id: tests-pass
+    after: [audit]
+    onFail: { to: repair, maxRounds: 2 }
+```
+
+- `onFail.to` 必须是已声明的阶段，且不能在本门自己的 `after` 里（那是原地重试，没有修复动作）——`onfail-immediate`。
+- 它必须被另一个门的 `after` 覆盖，否则修完回不到任何一个门，这条回边没有出口——`onfail-dangling`。
+- `maxRounds` 必填（1~5）——没有上限的重试等于死循环。
+- 两条回边可以互相指，但环上的轮数乘积必须 ≤ 5（`onfail-unbounded`）。`after` 只声明先后，不构成可判定的环。
+
 ### 编译产物
 
 ```bash
@@ -256,12 +270,16 @@ npx dsh-agent-roster compile --roster examples/rosters/core-review --write
 requires:
   skills: [frontend-skill]
   toolPolicies: [member-safe]
+  documents:
+    - path: docs/runbook.md
+      sha256: 3f2a…            # 可选：钉住内容，而不只是文件名
 onMissing: refuse        # refuse（默认）| degraded
 ```
 
-- 只声明**能核对**的两类：技能是否装进目录、策略 id 是否在部署里声明过。
+- 只声明**能核对**的三类：技能是否装进目录、策略 id 是否在部署里声明过、文档是否在（写了 sha256 就连内容一起核）。
 - 三态：`present` / `missing` / `unknown`；只有 `missing` 触发 `onMissing`，`unknown`（证据源缺席）不算通过。
 - `refuse` 时 `roster_create` 不出参数并说明缺什么；`degraded` 出参数但逐条标注。
+- 文档路径相对**档案库根**（不是档案目录），`..` 与绝对路径一律拒绝。文件不在是 `missing`；文件在但内容与写死的 sha256 对不上，同样是 `missing`（`why: sha-mismatch`）。文档**永远不会拼进** `executionPrompt`——它是证据，不是人设正文。
 
 ## 档案空间（`space.yaml`）
 
@@ -416,8 +434,8 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 |---|---|
 | 格式 | `unknown-field`、`unknown-format`、`multiple-roster-files`、`duplicate-roster-id`、`duplicate-role` |
 | 角色与拼装 | `missing-part`、`prompt-part-too-long`、`include-syntax`、`missing-include`、`unsafe-include`、`include-nested` |
-| 编排 | `gate-unverifiable`、`gate-without-stage`、`empty-stage` |
-| 能力 | `capability-policy-missing`、`capability-skills-unverified`、`capability-cross-check-skipped` |
+| 编排 | `gate-unverifiable`、`gate-without-stage`、`empty-stage`、`onfail-unknown-stage`、`onfail-immediate`、`onfail-dangling`、`onfail-unbounded` |
+| 能力 | `capability-policy-missing`、`capability-skills-unverified`、`capability-cross-check-skipped`、`invalid-document-path`、`invalid-document-sha` |
 | 空间 | `space-roster-missing`、`space-roster-undeclared`、`space-roster-archived`、`multiple-space-files`、`space-origin-not-allowed` |
 | 账本 | `no-origin-ledger`、`origin-ledger-broken`、`clone-unsafe-path`、`clone-snippet-missing` |
 | 会话 | `session-controller-unavailable`、`session-create-failed`、`session-rename-failed`、`prompt-not-queued` |

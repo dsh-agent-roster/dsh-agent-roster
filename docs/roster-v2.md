@@ -137,6 +137,8 @@ gates:
 - `verify` 是可执行判据：跑什么命令、期望哪个退出码。判定者必须先跑它，跑不过就是不过。
 - `requires` 保留，但降级为**补充说明**：它描述「命令之外还想让人看什么」，不能替代 `verify`。
 - 没有 `verify` 的门在组装校验阶段就被拒（`gate-unverifiable`），不会流进编译产物。
+- 门可以带**失败回边** `onFail: {to, maxRounds}`：没过时回到 `to`，最多重试 `maxRounds` 轮（1~5）。`to` 必须是已声明的阶段、不能在本门 `after` 里（`onfail-immediate`）、必须被另一个门覆盖（`onfail-dangling`）；两条回边互相指时环上轮数乘积 ≤ 5（`onfail-unbounded`）。
+- `after` 只声明先后，不构成机器可判定的环；能判定的是经过 `onFail` 的重试环。
 
 ## 6. 编译产物：`dist/<id>-<ver>.json`
 

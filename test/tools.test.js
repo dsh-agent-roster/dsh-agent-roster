@@ -12,6 +12,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 import { isLossless } from "../lib/json.js";
@@ -22,6 +24,7 @@ const examples = path.join(root, "examples");
 
 /** 用最小的假 ctx 注册工具，返回 name → tool 的映射。 */
 function register(overrides = {}) {
+  const { services = {}, ...config } = overrides;
   const tools = new Map();
   const disposers = [];
   const ctx = {
@@ -34,8 +37,11 @@ function register(overrides = {}) {
     effect(fn) {
       disposers.push(fn());
     },
+    get(name) {
+      return services[name];
+    },
   };
-  registerRosterTools(ctx, { rosterDirs: ["rosters"], knownToolPolicies: [], agentTeamsStateDir: ".agent-teams", ...overrides }, { version: "0.1.0" });
+  registerRosterTools(ctx, { rosterDirs: ["rosters"], knownToolPolicies: [], agentTeamsStateDir: ".agent-teams", ...config }, { version: "0.1.0" });
   return { tools, disposers };
 }
 
@@ -163,4 +169,58 @@ test("roster_index 能真的跑起来：工具体里引用的函数都 import �
   assert.match(firstLine, /^\[roster_index\] /);
   assert.deepEqual(value.collections, []);
   assert.deepEqual(value.indexes, []);
+});
+
+test("队长核对：会话实际模型与档案声明不一致时，如实报 differ（不拿部署默认值冒充）", async () => {
+  const stateDir = mkdtempSync(path.join(tmpdir(), "dsh-captain-session-"));
+  mkdirSync(path.join(stateDir, "demo"), { recursive: true });
+  writeFileSync(
+    path.join(stateDir, "demo", "team.json"),
+    JSON.stringify(
+      {
+        id: "demo",
+        name: "demo",
+        phase: "ready",
+        description: "roster:core-review@1.2.0",
+        captainSessionId: "session-1",
+        members: [],
+        tasks: [],
+      },
+      null,
+      2,
+    ),
+  );
+  const services = {
+    sessionController: {
+      async list() {
+        return {
+          items: [
+            {
+              sessionId: "session-1",
+              origin: "main",
+              cwd: root,
+              updatedAt: 1,
+              running: false,
+              blank: false,
+              projections: {
+                values: {
+                  modelSelection: {
+                    lastUsed: { provider: "deepseek", model: "deepseek-v4-pro", reasoningEffort: "high" },
+                  },
+                },
+              },
+            },
+          ],
+        };
+      },
+    },
+  };
+  const { tools } = register({ services });
+  const { value } = await call(tools, "roster_verify", { ref: "core-review", path: examples, stateDir });
+  const captain = value.captain.find((item) => item.rosterId === "core-review");
+  assert.ok(captain !== undefined);
+  const model = captain.checks.find((item) => item.field === "session.model");
+  assert.equal(model.status, "differ");
+  assert.equal(model.declared, "deepseek-v4.1-flash");
+  assert.equal(model.actual, "deepseek-v4-pro");
 });

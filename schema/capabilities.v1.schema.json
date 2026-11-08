@@ -51,6 +51,14 @@
           "items": {
             "$ref": "#/$defs/policyRequirement"
           }
+        },
+        "documents": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/documentRequirement"
+          },
+          "description": "要指到的具体文档（手册、runbook）。只核对在不在、内容对不对得上，永不拼进人设。"
         }
       }
     },
@@ -119,6 +127,30 @@
           }
         }
       ]
+    },
+    "documentRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "相对档案库根的路径；不许 .. 或绝对路径。"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "可选：内容哈希，防漂移。"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 200
+        }
+      }
     }
   }
 }
