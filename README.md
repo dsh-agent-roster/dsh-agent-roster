@@ -16,7 +16,7 @@ A roster is a file on disk: who is on the team, what each member owns, which mod
 
 ## Install
 
-Requirements: DSH provides the `tools` service; Node.js ≥ 22.19. Runtime dependencies are declared (`yaml`, `@deepseek-ai/schemastery`); `@deepseek-ai/dsh-tools` is a peer.
+Requirements: DSH provides the `tools` service; Node.js ≥ 22.19. Runtime dependencies are declared (`yaml`, `@deepseek-ai/schemastery`); `@deepseek-ai/dsh-tools` is a peer (accepted range spans the 0.1, 0.2.0, 0.2.1, 0.2.2 and 0.3 prerelease lines; the suite and both smokes run against 0.2.2-rc.1).
 
 ```
 @stofone/dsh-agent-roster

@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-11-09
+
+### Changed
+
+- **Adapted to DSH `0.2.2-rc.1`.** The `@deepseek-ai/dsh-tools` peer range now includes `^0.2.2-rc.1`, and the dev dependency plus both smoke halves run against `0.2.2-rc.1`. The full suite (375) passes on it. The four host contracts this plugin depends on were re-read in the installed bundle and still hold: `sessionController.prompt(request, signal)` requires an `AbortSignal`, `create` attaches a Session to a workspace only when `workspaceId` is sent, workspace entities expose `id` (not `workspaceId`), and Session titles / `modelSelection` still live under `projections.values`.
+
 ## [1.9.0] - 2026-11-09
 
 ### Added
@@ -903,10 +909,11 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.9.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.9.1...main
 [1.8.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.2...v1.8.3
 [1.8.4]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.3...v1.8.4
 [1.9.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.4...v1.9.0
+[1.9.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.9.0...v1.9.1
 [1.8.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.1...v1.8.2
 [1.8.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.7.2...v1.8.0

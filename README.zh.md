@@ -16,7 +16,7 @@
 
 ## 安装
 
-前置：DSH 提供 `tools` 服务；Node.js ≥ 22.19。运行依赖已声明（`yaml`、`@deepseek-ai/schemastery`），`@deepseek-ai/dsh-tools` 是 peer。
+前置：DSH 提供 `tools` 服务；Node.js ≥ 22.19。运行依赖已声明（`yaml`、`@deepseek-ai/schemastery`），`@deepseek-ai/dsh-tools` 是 peer（接受范围覆盖 0.1、0.2.0、0.2.1、0.2.2、0.3 各条预发布线；测试与两段冒烟跑的是 0.2.2-rc.1）。
 
 ```
 @stofone/dsh-agent-roster
