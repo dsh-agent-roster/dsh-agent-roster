@@ -30,6 +30,7 @@ import { buildPanelSnapshot, installCollection, installSpace, loadRemotePanel, r
 import { createTtlCache, fetchCollection } from "./lib/remote.js";
 import { searchRosters } from "./lib/search.js";
 import { registerRosterTools } from "./lib/tools.js";
+import { installCaptainInjector } from "./lib/captain-inject.js";
 import { deleteRosterDocument, findLibraryRoot, readRosterDocument, writeRosterDocument } from "./lib/write.js";
 
 const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
@@ -65,6 +66,15 @@ export const Config = z.object({
     .string()
     .default(".agent-teams")
     .description("dsh-agent-teams 的状态目录（只读，用于核对成员实际字段）。相对路径以工作区为基准。")
+    .volatile(),
+  injectCaptainPersona: z
+    .boolean()
+    .default(true)
+    .description(
+      "把档案 captain 段的人设嵌进队长会话的 system prompt（与 dsh-agent-teams 给成员做的是同一件事，" +
+        "同名 section 遮蔽部署 persona，每个模型步重读档案）。关掉后队长只拿到起始消息里的那份人设，" +
+        "长会话压缩后可能丢失。",
+    )
     .volatile(),
   language: z
     .union([z.const("auto"), z.const("zh"), z.const("en")])
@@ -108,6 +118,14 @@ export function apply(ctx, config) {
 
   registerRosterTools(ctx, settings, { version: pkg.version });
   ctx.logger?.info?.(`dsh-agent-roster ${pkg.version}: registered 11 tools`);
+
+  // 队长人设的会话级嵌入：与成员侧同构，补上 agent-teams 结构上不管的那一半。
+  // 失败只记日志、绝不阻断会话创建——注入是增强，不是建会话的前置条件。
+  const stopInjector = installCaptainInjector(ctx, settings, {
+    roots: () => resolveRoots(ctx, settings),
+    logger: ctx.logger,
+  });
+  ctx.effect?.(() => stopInjector, "dsh-agent-roster: captain persona injector");
 
   // 面板路由：读快照 / 读单份档案原文 / 保存 / 删除 / 导入。
   // 没有 webServer 也不影响工具可用性。

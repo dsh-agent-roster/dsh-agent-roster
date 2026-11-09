@@ -2,6 +2,18 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.10.0] - 2026-11-09
+
+### Added
+
+- The captain persona now reaches the session the same way a member's does: on `agent/created`, when the session is a team captain, the plugin registers a `deployment:persona-prefix` system-prompt section (the exact name `dsh-agent-teams` uses for members), so it shadows the deployment persona instead of appending to it. `text` is a function, re-read on every model step — editing the roster takes effect immediately, and a disappearing file keeps the last good text instead of shadowing with an empty string. `roster_verify` reports `attached` / `not attached`.
+- New config `injectCaptainPersona` (default `true`). Off: the captain persona is only in the kick-off message.
+- `roster_verify` prints where the captain persona came from: roster id, characters, `#sha8`, `file`/`inline`, and the session it is attached to.
+
+### Changed
+
+- `applyCaptain` marks the session it just created, so the injector only waits for the team of a session this plugin created; subagent sessions are never polled.
+
 ## [Unreleased]
 
 ## [1.9.2] - 2026-11-09
@@ -922,10 +934,11 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.9.2...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.10.0...main
 [1.8.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.2...v1.8.3
 [1.8.4]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.3...v1.8.4
 [1.9.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.4...v1.9.0
+[1.10.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.9.2...v1.10.0
 [1.9.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.9.1...v1.9.2
 [1.9.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.9.0...v1.9.1
 [1.8.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.1...v1.8.2

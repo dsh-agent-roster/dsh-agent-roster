@@ -109,7 +109,7 @@ captain:                     # 可选：记录队长（= 创建团队的那个�
 | `title` / `description` / `license` / `maintainers` / `tags` | 否 | 展示与检索元数据 |
 | `defaults` | 否 | 成员继承的 `provider` / `model` / `reasoningEffort` |
 | `members` | 是 | 1–32 个 |
-| `captain` | 否 | 只描述、不创建；应用时人设会注入会话。人设与 preset 不同源，`roster_verify` 报 `needs-config`（需落 profile preset），不报 `differ` |
+| `captain` | 否 | 不创建会话、不写团队状态；人设由插件注入队长会话的 system prompt（会话级 section，与成员侧同构）。`roster_verify` 报「已嵌入 / 未嵌入」，与部署 preset 的 persona 差距仍报 `needs-config` |
 
 成员键：`name`、`role`、`systemPrompt`（必填），以及 `provider`、`model`、`reasoningEffort`、`toolPolicy`、`fallback`、`toolScope`、`maxTokens`、`title`、`tags`、`notes`、`description`、`aliases`、`skills`、`examples`。
 
@@ -258,7 +258,9 @@ npx dsh-agent-roster compile --roster examples/rosters/core-review --write
 |---|---|---|
 | **direct** | `name`、`role`、`systemPrompt`、`provider`、`model`、`reasoningEffort`、`toolPolicy` | 传给 `agent_teams_add_member` |
 | **config** | 档案库目录、团队状态目录、语言、索引源等 | 插件自己的配置，不进团队 |
-| **declaration** | `description`、`aliases`、`skills`、`examples`、`tags`、`notes`、`captain` | 只做文档与校验；`skills` 永不自动加载，`captain` 只描述（应用时人设注入会话） |
+| **declaration** | `description`、`aliases`、`skills`、`examples`、`tags`、`notes` | 只做文档与校验；`skills` 永不自动加载 |
+
+`captain` 是独立一段：它不是成员字段，也不进 `agent_teams_add_member`；人设由插件在队长会话上注册 `deployment:persona-prefix` section 注入，模型仍来自部署。
 
 `roster_create` 输出的每个字段都带这一类标注；`roster_verify` 只比对运行时实际存下的值。
 
@@ -354,8 +356,19 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 
 - **新建会话**：选工作区（下拉，重名时补一级目录）+ 会话名；建好后自动改名。选中项以宿主的 `workspaceId` 发出（不是只给目录），会话因此会登记到该空间；只给目录时也会先按路径解析成工作区 id。
 - **已有会话**：只显示「空间 · 会话名」，不显示 id 与路径。
-- 队长人设若在档案里声明，会原样注入提示词；模型仍来自部署，插件不写运行时。
+- 队长人设走两条路：起始消息里原样带一份（一次性），以及会话建立后注入 `deployment:persona-prefix` section（每轮生效）。详见下节。模型仍来自部署，插件不写运行时。
 - 队长应用（`/apply`）与工具都只**排队**提示词，建队由会话里的模型调用 `agent_teams_*` 完成。
+
+### 队长人设怎么进会话
+
+成员的人设由 `dsh-agent-teams` 在**成员子会话**上注册一个与部署 persona 同名的 `systemPrompt.section`（`deployment:persona-prefix`），靠同名遮蔽生效；队长是顶层会话，不在它的管辖里。本插件补上这另一半：
+
+- 在队长会话的 ctx 上注册**同一个 section 名**，内容是档案里的队长人设（v1 的 `captain.systemPrompt` / `captain.personaPrefix`，v2 的 `captain.persona` 文件正文）。
+- `text` 传的是函数，宿主每个模型步都会求值 ⇒ 改档案立即生效，不用重启、不用重建会话；文件读失败时沿用上一次的好值，**绝不用空串遮蔽部署 persona**。
+- 归属不靠猜：读团队的 `captainSessionId`，再看团队 `description` 里的 `roster:<id>@<ver>#<sha8>` 找到档案。新会话是「先建会话、队长再建团队」，所以团队晚落盘时会短暂轮询（30 分钟内），落盘即挂上。
+- 这是**进程内的 contribution**，不是写进磁盘的 preset：插件停用就回到部署 persona；跨重启仍在，因为重启后 `agent/created` 会重新解析团队并挂上。
+- `roster_verify` 会额外打印一行「队长人设：已嵌入 <id>（N 字符 · #sha8 · 来源 file/inline）→ 会话 …」；插件启用前就存在的会话会显示「未嵌入」，此时会话只按起始消息里那份人设工作。
+- 不想用就把 `injectCaptainPersona` 设为 `false`；行为回到「只有起始消息」。
 
 ### 收藏
 
@@ -418,13 +431,14 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 |---|---|---|
 | `rosterDirs` | `[]` | 档案库目录。留空 = 全局库 `$DSH_HOME/agent-roster`；绝对路径或 `~` 开头同样是全局的；只有相对路径按工作区解析。第一项是工具默认目录 |
 | `knownToolPolicies` | `[]` | 部署已声明的 toolPolicy id；填了才做交叉校验 |
-| `agentTeamsStateDir` | `.agent-teams` | 只读：`roster_verify` 与「团队」页签的状态目录 |
+| `agentTeamsStateDir` | `.agent-teams` | 只读：`roster_verify`、`roster_team` 与会话注入的状态目录 |
+| `injectCaptainPersona` | `true` | 把档案 captain 段的人设注入队长会话的 system prompt（同名 section 遮蔽部署 persona，每个模型步重读）。关掉后只剩起始消息里那份 |
 | `language` | `"auto"` | `auto` 跟随 DSH，或固定 `zh` / `en` |
 | `indexes` | `[]` | 公共源：`https` 的 `registry.json` 或 `npm:pkg`；留空 = 官方源；`false` = 不连远端 |
 | `region` | `"auto"` | 下载区：`china` 走腾讯 npm 镜像；`auto` 等同 `global`，不探测 |
 | `registryMirror` | `""` | 自定义镜像地址（可带子路径），留空用下载区预置 |
 
-七项都是 volatile：改完不需要重启，但运行中的宿主重新注册工具时才生效。
+八项都是 volatile：改完不需要重启，但运行中的宿主重新注册工具时才生效。
 
 ## 诊断
 
@@ -447,14 +461,14 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 - `roster_create` 的成员参数可直接喂给 `agent_teams_add_member`；每个字段标注 direct / config / declaration。
 - 溯源行 `roster:<id>@<version>#<sha8>` 建议写进 `agent_teams_create` 的 `description`；`roster_verify` 会解析它并回显 `match` / `differ` / `id-only` / `absent`。
 - `roster_verify` 读 `team.json` 的持久化字段；人设（`executionPrompt`）**会**持久化（DSH 0.2.2 实测，bridge 的 `stateKey` 就是它）。输出里的「未核实」只表示拿不到回执，不是「设计上不持久化」。
-- 队长人设与部署 preset 的 persona 是两份文本：`roster_verify` 对差距报 `needs-config`（需落配置），并给出 `profiles/<name>/cordis.patch.yml` 与 preset 名；改完重启 `dsh web`。
+- **队长人设现在真的进会话了**：插件在队长会话上注册与成员侧同名的 `deployment:persona-prefix` section（每轮重读档案），`roster_verify` 报「已嵌入 / 未嵌入」而不是 `differ`。它与部署 preset 的 persona 仍是两份文本：如果还要让「插件不在时也生效」，需要把正文落进 profile preset，`roster_verify` 对那份差距报 `needs-config` 并给出 `profiles/<name>/cordis.patch.yml` 与 preset 名。
 - `toolFilter` 是策略物化后的结果，team.json 不存，故显示「无法核对」；要核对策略定义得在部署侧。
 - 插件不写团队状态，也不做 transfer。
 
 ## 开发
 
 ```bash
-node --test                 # 380 个测试
+node --test                 # 386 个测试
 npm run smoke               # 宿主侧 11 个工具 + 客户端两槽位
 npm run check:locale        # 中英词典键对齐
 npx dsh-agent-roster validate --dir examples
@@ -463,7 +477,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## 验证状态
 
-- 全仓 **380/380**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
+- 全仓 **386/386**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
 - CI `registry`（Node 22）重算索引、重编示例，并在 `dist/` 与源码不一致时失败。
 - 实机 e2e（独立 `DSH_HOME` + 端口 3099）：`agent-teams`（4 人）、`metagpt-company`（4 人）、`openmanus`（3 人）三套档案分别真的建出团队，`roster_verify` 均 `faithful` 全中、`drift 0`；溯源行含内容哈希。
 - 已知边界：`dist/` 不随 clone 拉取；按合集安装（`/install`）会把档案摊平成 v1 文档，整空间拉取（`clone` / `/install-space`）才保留 v2 布局与账本；`toolFilter` 无法从 team.json 核对；升级后需重启 `dsh web`。

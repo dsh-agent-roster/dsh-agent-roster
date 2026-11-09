@@ -108,7 +108,7 @@ captain:                     # optional: what the session that creates the team 
 | `title` / `description` / `license` / `maintainers` / `tags` | no | display and discovery metadata |
 | `defaults` | no | `provider` / `model` / `reasoningEffort` inherited by members |
 | `members` | yes | 1–32 |
-| `captain` | no | declaration only; its persona is injected into the session when applied |
+| `captain` | no | never creates a session and never writes team state; its persona is injected into the captain session's system prompt (a session-scoped section, same as members). `roster_verify` reports attached / not attached; a gap against the deployment preset persona is still `needs-config` |
 
 Member keys: `name`, `role`, `systemPrompt` (required), plus `provider`, `model`, `reasoningEffort`, `toolPolicy`, `fallback`, `toolScope`, `maxTokens`, `title`, `tags`, `notes`, `description`, `aliases`, `skills`, `examples`.
 
@@ -257,7 +257,9 @@ A persona body may place a shared block inline, **on a line of its own**:
 |---|---|---|
 | **direct** | `name`, `role`, `systemPrompt`, `provider`, `model`, `reasoningEffort`, `toolPolicy` | passed to `agent_teams_add_member` |
 | **config** | library directories, team state directory, language, index sources | plugin configuration, not team state |
-| **declaration** | `description`, `aliases`, `skills`, `examples`, `tags`, `notes`, `captain`, `tools.scope` | documentation and validation only; `skills` never auto-loads, `captain` only describes (its persona is injected on apply) |
+| **declaration** | `description`, `aliases`, `skills`, `examples`, `tags`, `notes`, `tools.scope` | documentation and validation only; `skills` never auto-loads |
+
+`captain` is its own section: not a member field, never sent to `agent_teams_add_member`; the plugin registers a `deployment:persona-prefix` section on the captain session to inject it. The model still comes from the deployment.
 
 `roster_create` labels every emitted field with its class; `roster_verify` compares only what the runtime persisted.
 
@@ -355,9 +357,20 @@ The row button and the `roster_team` tool share one `applyCaptain` path:
 
 - **New session**: pick a workspace (dropdown; duplicates are disambiguated with one parent directory) and type a session name; the session is renamed after creation. The choice is sent as the host `workspaceId` (not just a directory), so the session is accounted in that workspace; a bare directory is resolved to a workspace id first.
 - **Existing session**: shown as “workspace · session name”, never an id or a path.
-- If the roster declares a captain persona, it is injected into the kick-off prompt verbatim; the model still comes from the deployment, and the plugin writes no runtime state.
+- The captain persona takes two paths: verbatim in the kick-off prompt (one-shot), and a `deployment:persona-prefix` section registered on the session (every turn). See the next section. The model still comes from the deployment, and the plugin writes no runtime state.
 - `roster_verify` compares the declared captain route with **the model the captain session actually selected** (`session.*`), not with the deployment default; if the session cannot be read, the check is `unknown` rather than a pass.
 - Both the panel and the tool only **queue** the prompt; the model in that session calls `agent_teams_*` to build the team.
+
+### How the captain persona reaches the session
+
+Member personas work because `dsh-agent-teams` registers a `systemPrompt.section` named `deployment:persona-prefix` on each **member child session**; a same-named section shadows the deployment persona. The captain is a top-level session, outside its remit, so this plugin adds the other half:
+
+- It registers the **same section name** on the captain session's ctx, with the roster persona (v1 `captain.systemPrompt` / `captain.personaPrefix`, v2 `captain.persona` file body).
+- `text` is a function, evaluated by the host on every model step, so edits take effect immediately and no restart or session rebuild is needed; on a read failure the last good text is kept — **never an empty string that would shadow the deployment persona**.
+- Ownership is resolved, not guessed: read the team's `captainSessionId`, then the `roster:<id>@<ver>#<sha8>` provenance in the team description to find the roster. A new session creates the session first and the team second, so a short poll (up to 30 minutes) attaches as soon as the team lands.
+- It is an in-process contribution, not a preset written to disk: disabling the plugin returns the session to the deployment persona. A restart re-resolves the team on `agent/created` and reattaches.
+- `roster_verify` prints an extra line: `captain persona: attached <id> (N chars · #sha8 · file/inline) → session …`. Sessions created before the plugin was enabled show `not attached`, and keep working off the kick-off message.
+- Set `injectCaptainPersona` to `false` to opt out; behaviour falls back to the kick-off message only.
 
 ### Favourites
 
@@ -420,13 +433,14 @@ All are exact routes behind the host `connection` fence; a wrong method is 405. 
 |---|---|---|
 | `rosterDirs` | `[]` | library directories. Empty = global library `$DSH_HOME/agent-roster`; absolute or `~` paths are global too; only relative paths resolve per workspace. The first entry is the tools’ default |
 | `knownToolPolicies` | `[]` | toolPolicy ids declared by the deployment; cross-checking only happens when set |
-| `agentTeamsStateDir` | `.agent-teams` | read-only state directory for `roster_verify` and the Teams tab |
+| `agentTeamsStateDir` | `.agent-teams` | read-only state directory for `roster_verify`, `roster_team`, and captain injection |
+| `injectCaptainPersona` | `true` | inject the roster captain persona into the captain session's system prompt (same-named section shadows the deployment persona, re-read every step). Off: kick-off message only |
 | `language` | `"auto"` | `auto` follows DSH, or pin `zh` / `en` |
 | `indexes` | `[]` | public sources: an `https` `registry.json` or `npm:pkg`; empty = official source; `false` = local only |
 | `region` | `"auto"` | download region: `china` uses the Tencent npm mirror; `auto` means `global` (no probing) |
 | `registryMirror` | `""` | custom mirror URL (sub-paths allowed); empty uses the region preset |
 
-All seven are volatile: changes apply without a restart, but the running host re-registers tools on its own schedule.
+All eight are volatile: changes apply without a restart, but the running host re-registers tools on its own schedule.
 
 ## Diagnostics
 
@@ -449,14 +463,14 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 - `roster_create` member arguments feed `agent_teams_add_member` directly; every field is labelled direct / config / declaration.
 - The provenance line `roster:<id>@<version>#<sha8>` is meant for `agent_teams_create`’s `description`; `roster_verify` parses it and reports `match` / `differ` / `id-only` / `absent`.
 - `roster_verify` reads persisted fields in `team.json`; the persona (`executionPrompt`) **is** persisted there (verified on DSH 0.2.2 — the bridge `stateKey` is exactly that). “Unverified” in the report means “no receipt was available”, not “designed not to persist”.
-- The captain persona and the deployment preset persona are two different texts: `roster_verify` reports the gap as `needs-config`, together with `profiles/<name>/cordis.patch.yml` and the preset name. Restart `dsh web` after editing.
+- **The captain persona is now actually in the session**: the plugin registers a `deployment:persona-prefix` section on the captain session (re-read per turn) and `roster_verify` reports attached / not attached instead of `differ`. It remains a different text from the deployment preset persona: if you also want it to survive with the plugin disabled, land it in a profile preset; `roster_verify` reports that gap as `needs-config` with `profiles/<name>/cordis.patch.yml` and the preset name.
 - `toolFilter` is the materialised deny list and is not stored in `team.json`, so it is reported as “unverified”; check policy definitions on the deployment side.
 - The plugin never writes team state and has no transfer operation.
 
 ## Development
 
 ```bash
-node --test                 # 380 tests
+node --test                 # 388 tests
 npm run smoke               # host: 11 tools; client: two slots
 npm run check:locale        # zh/en dictionary key parity
 npx dsh-agent-roster validate --dir examples
