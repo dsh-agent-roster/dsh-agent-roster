@@ -53,12 +53,25 @@ test("verifyCaptain 声明与部署一致时记 match", () => {
   );
 });
 
-test("verifyCaptain 部署不一致时记 differ（要改部署，不是改档案）", () => {
+test("verifyCaptain 运行时字段不一致时记 differ（要改部署，不是改档案）", () => {
+  const deployed = { profiles: [parseDeployedProfile(PATCH, "web")] };
+  const verified = verifyCaptain({ provider: "tsingmicro", model: "deepseek-v4-pro" }, deployed);
+  assert.equal(verified.ok, false);
+  const model = verified.checks.find((check) => check.field === "model");
+  assert.equal(model.status, "differ");
+});
+
+test("verifyCaptain 的人设差距记 needs-config，不记 differ", () => {
+  // 人设正文与 preset 的 persona 前缀不同源：这需要的动作是「落配置」，不是「改档案」。
+  // 报 differ 会让这条判据永远红，红灯一多就没人看了。
   const deployed = { profiles: [parseDeployedProfile(PATCH, "web")] };
   const verified = verifyCaptain({ provider: "tsingmicro", model: "deepseek-v4.1-flash", personaPrefix: "别的" }, deployed);
-  assert.equal(verified.ok, false);
+  assert.equal(verified.ok, true);
   const persona = verified.checks.find((check) => check.field === "personaPrefix");
-  assert.equal(persona.status, "differ");
+  assert.equal(persona.status, "needs-config");
+  assert.equal(persona.fix.file, "profiles/web/cordis.patch.yml");
+  assert.equal(persona.fix.preset, "preset-standard");
+  assert.equal(persona.fix.restart, true);
 });
 
 test("verifyCaptain 读不到部署配置时记 unknown，不假装通过", () => {

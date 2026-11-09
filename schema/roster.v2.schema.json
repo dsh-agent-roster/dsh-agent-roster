@@ -275,7 +275,8 @@
           "$ref": "#/$defs/route"
         },
         "persona": {
-          "$ref": "#/$defs/relativePath"
+          "$ref": "#/$defs/relativePath",
+          "description": "队长人设文件的相对路径。正文在应用时原文注入会话的起始提示词（对该会话优先）；要让它在每一轮都生效，需要落到 profile preset 的 persona——roster_verify 对此报 needs-config，而不是 differ。"
         },
         "notes": {
           "type": "string",

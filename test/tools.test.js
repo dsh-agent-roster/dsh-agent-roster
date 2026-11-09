@@ -224,3 +224,10 @@ test("队长核对：会话实际模型与档案声明不一致时，如实报 d
   assert.equal(model.declared, "deepseek-v4.1-flash");
   assert.equal(model.actual, "deepseek-v4-pro");
 });
+
+test("roster_verify：空库且没给 path 时，提示改用 path=", async () => {
+  const { tools } = register();
+  const { text } = await call(tools, "roster_verify", { ref: "money-lab" });
+  assert.match(text, /没有档案或成员叫 "money-lab"/);
+  assert.match(text, /path=/);
+});

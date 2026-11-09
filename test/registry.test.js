@@ -259,7 +259,7 @@ test("档案没人声明 toolPolicy 时，不提交叉校验被跳过", () => {
   }
 });
 
-test("有档案声明 toolPolicy 时，只发一条档案库级提示，不按档案重复", () => {
+test("有档案声明 toolPolicy 且没配已知列表时，只发一条档案库级警告，不按档案重复", () => {
   const library = makeLibrary({
     "guarded/roster.json": rosterDocument({
       roster: "guarded",
@@ -274,8 +274,9 @@ test("有档案声明 toolPolicy 时，只发一条档案库级提示，不按�
     const scan = scanRosterLibrary({ rootDir: library.rootDir });
     const skipped = scan.diagnostics.filter((item) => item.code === "tool-policy-cross-check-skipped");
     assert.equal(skipped.length, 1, "两份档案也只能有一条");
-    assert.equal(skipped[0].severity, "info");
-    assert.equal(scan.stats.warnings, 0, "这不是警告，不该抬高警告计数");
+    assert.equal(skipped[0].severity, "warn");
+    assert.match(skipped[0].reason, /写错的 id/);
+    assert.equal(scan.stats.warnings, 1, "无法核对就是警告；它不是通过");
   } finally {
     library.cleanup();
   }

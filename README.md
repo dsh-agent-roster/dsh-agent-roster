@@ -438,6 +438,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 | Roles and assembly | `missing-part`, `prompt-part-too-long`, `include-syntax`, `missing-include`, `unsafe-include`, `include-nested` |
 | Orchestration | `gate-unverifiable`, `gate-without-stage`, `empty-stage`, `onfail-unknown-stage`, `onfail-immediate`, `onfail-dangling`, `onfail-unbounded` |
 | Capabilities | `capability-policy-missing`, `capability-skills-unverified`, `capability-cross-check-skipped`, `invalid-document-path`, `invalid-document-sha` |
+| Policy | `tool-policy-cross-check-skipped` (a warning when `knownToolPolicies` is unset: a typo'd id passes too, because there is nothing to check it against) |
 | Spaces | `space-roster-missing`, `space-roster-undeclared`, `space-roster-archived`, `multiple-space-files`, `space-origin-not-allowed` |
 | Ledger | `no-origin-ledger`, `origin-ledger-broken`, `clone-unsafe-path`, `clone-snippet-missing` |
 | Sessions | `session-controller-unavailable`, `session-create-failed`, `session-rename-failed`, `prompt-not-queued` |
@@ -447,14 +448,15 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 
 - `roster_create` member arguments feed `agent_teams_add_member` directly; every field is labelled direct / config / declaration.
 - The provenance line `roster:<id>@<version>#<sha8>` is meant for `agent_teams_create`’s `description`; `roster_verify` parses it and reports `match` / `differ` / `id-only` / `absent`.
-- `roster_verify` reads persisted fields in `team.json`; the persona (`executionPrompt`) is not persisted there, so it is reported as “not persisted”, never as “matches”.
+- `roster_verify` reads persisted fields in `team.json`; the persona (`executionPrompt`) **is** persisted there (verified on DSH 0.2.2 — the bridge `stateKey` is exactly that). “Unverified” in the report means “no receipt was available”, not “designed not to persist”.
+- The captain persona and the deployment preset persona are two different texts: `roster_verify` reports the gap as `needs-config`, together with `profiles/<name>/cordis.patch.yml` and the preset name. Restart `dsh web` after editing.
 - `toolFilter` is the materialised deny list and is not stored in `team.json`, so it is reported as “unverified”; check policy definitions on the deployment side.
 - The plugin never writes team state and has no transfer operation.
 
 ## Development
 
 ```bash
-node --test                 # 364 tests
+node --test                 # 380 tests
 npm run smoke               # host: 11 tools; client: two slots
 npm run check:locale        # zh/en dictionary key parity
 npx dsh-agent-roster validate --dir examples

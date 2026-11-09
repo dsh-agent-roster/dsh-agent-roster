@@ -4,6 +4,19 @@
 
 ## [Unreleased]
 
+## [1.9.2] - 2026-11-09
+
+### Fixed
+
+- **`roster_create` said “needs config: 0” when the captain needed two.** The summary counted only member fields; `captain.route` and `captain.persona` live in `compiled.declarations` and were dropped on the floor. Member fields and roster/captain/orchestration declarations are now counted separately and de-duplicated, and `tools.scope` appears under “declared” as it should.
+- **The captain persona was a permanently red check.** A roster's persona text can never equal a deployment preset's persona prefix, so reporting the gap as `differ` trained readers to ignore the red. It is now `needs-config`: the report prints `⚠ 需落配置`, names `profiles/<name>/cordis.patch.yml` and the preset, and says to restart `dsh web`. `differ` is reserved for runtime fields the host actually carries.
+- **The “unverified” note claimed `executionPrompt` is not persisted.** It is persisted (verified on DSH 0.2.2; it is the bridge's `stateKey`). The note now says unverified means “no receipt”, and the false example is gone.
+- **Two silent spots are now visible.** `roster_verify` with no `path` on an empty library suggests `path=`; a declared `toolPolicy` without `knownToolPolicies` is a warning (a typo'd id passes there too), not an info nobody reads.
+
+### Changed
+
+- Tests 375 → 380.
+
 ## [1.9.1] - 2026-11-09
 
 ### Changed
@@ -909,10 +922,11 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.9.1...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.9.2...main
 [1.8.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.2...v1.8.3
 [1.8.4]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.3...v1.8.4
 [1.9.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.4...v1.9.0
+[1.9.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.9.1...v1.9.2
 [1.9.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.9.0...v1.9.1
 [1.8.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.1...v1.8.2
 [1.8.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.0...v1.8.1

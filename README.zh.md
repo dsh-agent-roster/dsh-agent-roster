@@ -109,7 +109,7 @@ captain:                     # 可选：记录队长（= 创建团队的那个�
 | `title` / `description` / `license` / `maintainers` / `tags` | 否 | 展示与检索元数据 |
 | `defaults` | 否 | 成员继承的 `provider` / `model` / `reasoningEffort` |
 | `members` | 是 | 1–32 个 |
-| `captain` | 否 | 只描述、不创建；应用时人设会注入会话 |
+| `captain` | 否 | 只描述、不创建；应用时人设会注入会话。人设与 preset 不同源，`roster_verify` 报 `needs-config`（需落 profile preset），不报 `differ` |
 
 成员键：`name`、`role`、`systemPrompt`（必填），以及 `provider`、`model`、`reasoningEffort`、`toolPolicy`、`fallback`、`toolScope`、`maxTokens`、`title`、`tags`、`notes`、`description`、`aliases`、`skills`、`examples`。
 
@@ -436,6 +436,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 | 角色与拼装 | `missing-part`、`prompt-part-too-long`、`include-syntax`、`missing-include`、`unsafe-include`、`include-nested` |
 | 编排 | `gate-unverifiable`、`gate-without-stage`、`empty-stage`、`onfail-unknown-stage`、`onfail-immediate`、`onfail-dangling`、`onfail-unbounded` |
 | 能力 | `capability-policy-missing`、`capability-skills-unverified`、`capability-cross-check-skipped`、`invalid-document-path`、`invalid-document-sha` |
+| 策略 | `tool-policy-cross-check-skipped`（没配 `knownToolPolicies` 时是 warn：写错的 id 也会通过，无法核对） |
 | 空间 | `space-roster-missing`、`space-roster-undeclared`、`space-roster-archived`、`multiple-space-files`、`space-origin-not-allowed` |
 | 账本 | `no-origin-ledger`、`origin-ledger-broken`、`clone-unsafe-path`、`clone-snippet-missing` |
 | 会话 | `session-controller-unavailable`、`session-create-failed`、`session-rename-failed`、`prompt-not-queued` |
@@ -445,14 +446,15 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 
 - `roster_create` 的成员参数可直接喂给 `agent_teams_add_member`；每个字段标注 direct / config / declaration。
 - 溯源行 `roster:<id>@<version>#<sha8>` 建议写进 `agent_teams_create` 的 `description`；`roster_verify` 会解析它并回显 `match` / `differ` / `id-only` / `absent`。
-- `roster_verify` 读 `team.json` 的持久化字段；人设（`executionPrompt`）**不在** team.json 里，所以显示为「未持久化」而不是「一致」。
+- `roster_verify` 读 `team.json` 的持久化字段；人设（`executionPrompt`）**会**持久化（DSH 0.2.2 实测，bridge 的 `stateKey` 就是它）。输出里的「未核实」只表示拿不到回执，不是「设计上不持久化」。
+- 队长人设与部署 preset 的 persona 是两份文本：`roster_verify` 对差距报 `needs-config`（需落配置），并给出 `profiles/<name>/cordis.patch.yml` 与 preset 名；改完重启 `dsh web`。
 - `toolFilter` 是策略物化后的结果，team.json 不存，故显示「无法核对」；要核对策略定义得在部署侧。
 - 插件不写团队状态，也不做 transfer。
 
 ## 开发
 
 ```bash
-node --test                 # 364 个测试
+node --test                 # 380 个测试
 npm run smoke               # 宿主侧 11 个工具 + 客户端两槽位
 npm run check:locale        # 中英词典键对齐
 npx dsh-agent-roster validate --dir examples
@@ -461,7 +463,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## 验证状态
 
-- 全仓 **364/364**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
+- 全仓 **380/380**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
 - CI `registry`（Node 22）重算索引、重编示例，并在 `dist/` 与源码不一致时失败。
 - 实机 e2e（独立 `DSH_HOME` + 端口 3099）：`agent-teams`（4 人）、`metagpt-company`（4 人）、`openmanus`（3 人）三套档案分别真的建出团队，`roster_verify` 均 `faithful` 全中、`drift 0`；溯源行含内容哈希。
 - 已知边界：`dist/` 不随 clone 拉取；按合集安装（`/install`）会把档案摊平成 v1 文档，整空间拉取（`clone` / `/install-space`）才保留 v2 布局与账本；`toolFilter` 无法从 team.json 核对；升级后需重启 `dsh web`。
