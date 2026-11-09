@@ -2,6 +2,19 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.13.5] - 2026-11-09
+
+### Added
+
+- `roster_team` takes `model: {provider, model, reasoningEffort?}` — the tool path now matches the panel's “captain model” picker. A model the deployment does not serve is refused early with `model-unavailable` (and the known list), instead of surfacing as `model-not-applied` after a session was already created.
+- `roster_team` reports the engine (`target`) it actually used, in both the status line and the readable text.
+
+### Changed
+
+- `roster_verify` says plainly that engines without a `team.json` (the official experimental line) cannot be verified, rather than looking like a normal run with zero teams.
+
+Tests 410 → 411.
+
 ## [1.13.4] - 2026-11-09
 
 ### Added
@@ -109,8 +122,6 @@ Nine host-contract bugs (a missing `AbortSignal`, `workspaceId` read from the wr
 ### Changed
 
 - `applyCaptain` marks the session it just created, so the injector only waits for the team of a session this plugin created; subagent sessions are never polled.
-
-## [Unreleased]
 
 ## [1.9.2] - 2026-11-09
 
@@ -1030,7 +1041,7 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.2...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.5...main
 [1.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.1...v1.13.0
 [1.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.0...v1.13.1
 [1.13.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.1...v1.13.2

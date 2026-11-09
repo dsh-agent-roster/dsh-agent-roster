@@ -133,6 +133,63 @@ test("新工具：空间、搜索、编译预览、更新检查、建团队", as
   assert.equal(index.value.collections[0].pulled.present, false);
 });
 
+test("roster_team：引擎与模型入参都透传，未知模型先拦", async () => {
+  const calls = [];
+  const sessionController = {
+    async create(request) {
+      calls.push(["create", request]);
+      return { sessionId: "session-test" };
+    },
+    async rename(request) {
+      calls.push(["rename", request]);
+      return { title: request.title };
+    },
+    async selectModel(request) {
+      calls.push(["selectModel", request]);
+      return { selected: { provider: request.provider, model: request.model, reasoningEffort: request.reasoningEffort ?? "" } };
+    },
+    async prompt(request, signal) {
+      signal.throwIfAborted();
+      calls.push(["prompt", request]);
+      return {};
+    },
+    async list() {
+      return { items: [] };
+    },
+  };
+  const llm = {
+    listProviders: () => [{ id: "tsing", displayName: "Tsing" }],
+    listModels: async () => [{ id: "deepseek-v4.1-flash", name: "flash" }],
+  };
+  const workspaceRegistry = { list: () => [{ id: "ws-1", path: root, title: "示例" }] };
+  const { tools } = register({ services: { sessionController, llm, workspaceRegistry } });
+
+  const ok = await call(tools, "roster_team", {
+    id: "core-review",
+    path: examples,
+    target: "agent-teams",
+    model: { provider: "tsing", model: "deepseek-v4.1-flash" },
+    sessionName: "probe-team",
+  });
+  assert.equal(ok.value.ok, true);
+  assert.equal(ok.value.target, "agent-teams");
+  assert.match(ok.value.text, /团队引擎：agent-teams/);
+  assert.match(ok.value.text, /队长模型：tsing\/deepseek-v4\.1-flash/);
+  const selection = calls.find((entry) => entry[0] === "selectModel");
+  assert.ok(selection, "必须真的切模型");
+  assert.equal(selection[1].provider, "tsing");
+  assert.equal(selection[1].model, "deepseek-v4.1-flash");
+
+  const bad = await call(tools, "roster_team", {
+    id: "core-review",
+    path: examples,
+    model: { provider: "tsing", model: "no-such-model" },
+  });
+  assert.equal(bad.value.ok, false);
+  assert.equal(bad.value.code, "model-unavailable");
+  assert.match(bad.value.text, /本部署不服务 tsing\/no-such-model/);
+});
+
 test("找不到档案时也是同一套状态行，而不是自由文本", async () => {
   const { tools } = register();
   const show = await call(tools, "roster_show", { ref: "no-such-roster", path: examples });

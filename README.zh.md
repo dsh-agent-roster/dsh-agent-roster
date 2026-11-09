@@ -372,7 +372,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 | Agent Teams | `@nanmicoder/dsh-agent-teams` | 成员逐字段建（provider/model/persona/toolPolicy 都进运行时），团队有记录、可 `roster_verify` |
 | Experimental Agent Team | `@deepseek-ai/dsh-experimental-agent-team` + `-tool-agent-team` | 每个会话本身就是隐式团队的 Lead，没有“创建团队”这一步；提示词走 `spawn_teammate` + `list_agents`。**不接受成员模型/人设/toolPolicy**，团队名不存在（会话名即标识） |
 
-未安装的引擎仍出现在下拉里，但禁选并标「未安装」——依赖不静默；全都不可用时提交按钮禁用。探测语义是“这个 profile 里能解析到这个包”，不是“已经启用”，真正是否挂载由宿主决定。`POST /apply` 的 `target` 是闭集（未知值 400 `unknown-target`），`roster_team` 同样接受 `target`。
+未安装的引擎仍出现在下拉里，但禁选并标「未安装」——依赖不静默；全都不可用时提交按钮禁用。探测语义是“这个 profile 里能解析到这个包”，不是“已经启用”，真正是否挂载由宿主决定。`POST /apply` 的 `target` 是闭集（未知值 400 `unknown-target`），`roster_team` 同样接受 `target`。两者也都接受 `model` 覆盖 `{provider, model, reasoningEffort?}`：面板只列本部署真服务的模型，`roster_team` 对不可用的模型直接报 `model-unavailable`，不让 `selectModel` 到更晚才失败。
 
 ### 队长人设怎么进会话
 
@@ -404,7 +404,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 | `roster_search` | 跨本机与订阅来源搜索（多词为「且」；远端最多 8 个来源，超出报 info） | `query`、`path?`、`remote?`、`limit?` |
 | `roster_compile` | 编译预览（不写盘） | `ref`、`path?` |
 | `roster_changes` | 逐文件更新检查（七态） | `path?`、`refresh?` |
-| `roster_team` | 从档案创建团队（新会话或已有会话） | `id`、`teamName?`、`mode?`、`workspace?`、`sessionName?`、`sessionId?`、`target?`、`path?` |
+| `roster_team` | 从档案创建团队（新会话或已有会话） | `id`、`teamName?`、`mode?`、`workspace?`、`sessionName?`、`sessionId?`、`target?`、`model?`、`path?` |
 
 写操作只走 CLI 与面板 HTTP 路由；工具层保持只读。
 
@@ -484,7 +484,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 ## 开发
 
 ```bash
-node --test                 # 410 个测试
+node --test                 # 411 个测试
 npm run smoke               # 宿主侧 11 个工具 + 客户端两槽位
 npm run check:host         # 宿主契约（单测里的假件证明不了它）
 npm run e2e                    # 起一个一次性宿主，问它真正看见了什么（不调模型，约 9 秒）
@@ -497,7 +497,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## 验证状态
 
-- 全仓 **410/410**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
+- 全仓 **411/411**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
 - CI `registry`（Node 22）重算索引、重编示例，并在 `dist/` 与源码不一致时失败。
 - **脚本化 e2e**（`npm run e2e`）：把工作区打包、装进生产 profile 的**临时副本**，在空闲端口起一个一次性 `dsh web`，然后只问运行中的宿主：版本、库与队长投影、`hostTeamTargets`、`hostModels`、`/catalog`、未知引擎 400、未知档案 404、收藏往返——17 项断言，不调模型，约 9 秒。`--depth=apply` 才真建一支队并检查 `team.json`（慢、会调用模型）。`--depth=persona` 在 apply 之上再解码队长会话日志：团队落盘前的第一步系统提示词里**没有**档案人设，落盘后的系统提示词里**有**、且部署人设前缀**已消失**——证明注入走的是同名 section 遮蔽，不是往起始消息里塞一段。生产 profile 只读。
 - 已知边界：`npm run e2e` 复制的是**生产 profile 的快照**（含已装插件），因此它验证「宿主怎么加载我们」，不替代针对单个模块的单测；`dist/` 不随 clone 拉取；按合集安装（`/install`）会把档案摊平成 v1 文档，整空间拉取（`clone` / `/install-space`）才保留 v2 布局与账本；`toolFilter` 无法从 team.json 核对；升级后需重启 `dsh web`。
