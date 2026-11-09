@@ -168,6 +168,42 @@ test("serializeRoster：同目录诊断跟着档案走，别处的不带", () =>
   assert.equal("systemPrompt" in projection.members, false);
 });
 
+test("serializeRoster：队长段进面板投影，建团才知道这份档案有队长", () => {
+  const roster = {
+    id: "core-review",
+    version: "1.0.0",
+    title: "t",
+    description: "d",
+    file: "rosters/core-review/roster.yaml",
+    tags: [],
+    maintainers: [],
+    defaults: {},
+    members: [],
+    captain: {
+      name: "core-review-lead-captain",
+      roleRef: "core-review-lead-captain@1.0.0",
+      description: "主会话即队长",
+      provider: "deepseek",
+      model: "deepseek-v4.1-flash",
+      reasoningEffort: "high",
+      personaPrefix: "派活前先复述目标",
+    },
+  };
+  const projection = serializeRoster(roster, []);
+  assert.deepEqual(projection.captain, {
+    name: "core-review-lead-captain",
+    roleRef: "core-review-lead-captain@1.0.0",
+    description: "主会话即队长",
+    provider: "deepseek",
+    model: "deepseek-v4.1-flash",
+    reasoningEffort: "high",
+    personaPrefix: "派活前先复述目标",
+    personaChars: 8,
+  });
+  assert.equal(serializeRoster({ ...roster, captain: null }, []).captain, null);
+  assert.equal(serializeRoster({ ...roster, captain: undefined }, []).captain, null);
+});
+
 test("快照：库根下挂着的空间（拉取整个空间的结果）会被单独展开", () => {
   const rootDir = mkdtempSync(nodePath.join(tmpdir(), "dsh-nested-"));
   try {

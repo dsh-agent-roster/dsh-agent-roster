@@ -2,6 +2,16 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.13.1] - 2026-11-09
+
+### Fixed
+
+- **The panel said a roster had no captain section when it did.** `serializeRoster` (the projection the panel and `/apply` read) dropped the `captain` block, so `core-review` and `money-lab` were shown as “没有 captain 段：仍可建团，但不会切换队长模型” even though both declare one. The projection now carries `captain` (`name`, `roleRef`, `description`, `provider`, `model`, `reasoningEffort`, `personaPrefix`, `personaChars`); rosters without one still report `null`.
+
+### Changed
+
+- Tests 406 → 407 (`serializeRoster` keeps the captain block; `null`/`undefined` stay `null`).
+
 ## [1.13.0] - 2026-11-09
 
 ### Added
@@ -988,8 +998,9 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.1...main
 [1.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.1...v1.13.0
+[1.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.0...v1.13.1
 [1.12.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.0...v1.12.1
 [1.12.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.10.0...v1.11.0

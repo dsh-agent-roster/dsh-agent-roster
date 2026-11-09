@@ -484,7 +484,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 ## 开发
 
 ```bash
-node --test                 # 406 个测试
+node --test                 # 407 个测试
 npm run smoke               # 宿主侧 11 个工具 + 客户端两槽位
 npm run check:locale        # 中英词典键对齐
 npx dsh-agent-roster validate --dir examples
@@ -493,7 +493,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## 验证状态
 
-- 全仓 **406/406**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
+- 全仓 **407/407**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
 - CI `registry`（Node 22）重算索引、重编示例，并在 `dist/` 与源码不一致时失败。
 - 实机 e2e（独立 `DSH_HOME` + 端口 3099）：`agent-teams`（4 人）、`metagpt-company`（4 人）、`openmanus`（3 人）三套档案分别真的建出团队，`roster_verify` 均 `faithful` 全中、`drift 0`；溯源行含内容哈希。
 - 已知边界：`dist/` 不随 clone 拉取；按合集安装（`/install`）会把档案摊平成 v1 文档，整空间拉取（`clone` / `/install-space`）才保留 v2 布局与账本；`toolFilter` 无法从 team.json 核对；升级后需重启 `dsh web`。
