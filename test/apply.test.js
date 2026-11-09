@@ -364,3 +364,34 @@ test("角色式队长：人设从角色正文解析，进入起始消息（真�
   const prompt = controller.calls.find((call) => call[0] === "prompt")[1].content[0].text;
   assert.match(prompt, /派活前先复述目标与验收标准/);
 });
+
+test("应用队长：可以用面板选的模型覆盖档案里的 route", async () => {
+  const controller = fakeController();
+  const result = await applyCaptain({
+    sessionController: controller,
+    roster: roster(),
+    mode: "new",
+    cwd: "/tmp/ws",
+    model: { provider: "tsing", model: "deepseek-v4-pro" },
+  });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  const selection = controller.calls.find((call) => call[0] === "selectModel");
+  assert.deepEqual(selection?.[1], {
+    sessionId: result.sessionId,
+    provider: "tsing",
+    model: "deepseek-v4-pro",
+    // 档案的 reasoningEffort 仍沿用：覆盖的是"哪个模型"，不是"想多深"。
+    reasoningEffort: "high",
+  });
+  assert.equal(result.model.provider, "tsing");
+  assert.equal(result.model.model, "deepseek-v4-pro");
+});
+
+test("应用队长：没有覆盖时仍按档案的 route 选模型", async () => {
+  const controller = fakeController();
+  const result = await applyCaptain({ sessionController: controller, roster: roster(), mode: "new", cwd: "/tmp/ws" });
+  assert.equal(result.ok, true);
+  const selection = controller.calls.find((call) => call[0] === "selectModel");
+  assert.equal(selection?.[1].provider, "tsingmicro");
+  assert.equal(selection?.[1].model, "deepseek-v4.1-flash");
+});

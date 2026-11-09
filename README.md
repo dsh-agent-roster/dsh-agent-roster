@@ -362,6 +362,7 @@ The row button and the `roster_team` tool share one `applyCaptain` path:
 - **Existing session**: shown as “workspace · session name”, never an id or a path.
 - The captain persona takes two paths: verbatim in the kick-off prompt (one-shot), and a `deployment:persona-prefix` section registered on the session (every turn). See the next section. The model still comes from the deployment, and the plugin writes no runtime state.
 - `roster_verify` compares the declared captain route with **the model the captain session actually selected** (`session.*`), not with the deployment default; if the session cannot be read, the check is `unknown` rather than a pass.
+- **Captain model**: the dropdown lists the provider/model pairs this deployment actually serves (from the host model catalog). A roster's `captain.route` was written on its author's machine and may not exist here — when the declared pair is present it stays selected; when it is missing the option is disabled with an explanation and “deployment default (no switch)” is chosen instead. The picked pair travels as `model` to `/apply` and overrides the roster route; `reasoningEffort` still comes from the roster.
 - Both the panel and the tool only **queue** the prompt; the model in that session calls `agent_teams_*` to build the team.
 
 ### Team engines
@@ -484,7 +485,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 ## Development
 
 ```bash
-node --test                 # 399 tests
+node --test                 # 406 tests
 npm run smoke               # host: 11 tools; client: two slots
 npm run check:locale        # zh/en dictionary key parity
 npx dsh-agent-roster validate --dir examples
@@ -493,7 +494,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## Verification status
 
-- **399/399** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
+- **406/406** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
 - CI `registry` (Node 22) recomputes the index, recompiles the examples, and fails when `dist/` drifts from source.
 - Live e2e on an isolated `DSH_HOME` (port 3099): the `agent-teams` (4 members), `metagpt-company` (4) and `openmanus` (3) rosters each actually built a team; `roster_verify` reported every member faithful, `drift 0`, and the provenance line carried the content hash.
 - Known boundaries: `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.

@@ -774,7 +774,7 @@ window.__ModuleLoader__.load({
      * 所以这个对话框做的是端到端的前半段——把成员、队长模型、建团步骤一次交给一个会话，
      * 后半段（建队、加成员、核对）在那个会话里发生；结果回团队页签与 `roster_verify` 看。
      */
-    function TeamCreateDialog({ roster, sessions, workspaces, targets, onClose, onToast, onCreated }) {
+    function TeamCreateDialog({ roster, sessions, workspaces, targets, models, onClose, onToast, onCreated }) {
       useTranslation();
       // 默认新会话：快速建团不该劫持用户正在聊的这个。
       const [mode, setMode] = useState("new");
@@ -815,8 +815,30 @@ window.__ModuleLoader__.load({
         captain !== null && captain.provider !== undefined && captain.model !== undefined && captain.provider !== "" && captain.model !== ""
           ? `${captain.provider}/${captain.model}`
           : null;
+      // 档案里的队长路由是"作者那台部署"的模型；这台机器未必有。
+      // 宿主目录到了以后：声明的模型在 → 沿用；不在 → 默认部署模型并当场说明，
+      // 不让用户在提交后才收到 model-not-applied。
+      const modelList = useMemo(() => {
+        const catalog = Array.isArray(models) ? models : [];
+        return catalog.flatMap((entry) =>
+          (Array.isArray(entry.models) ? entry.models : []).map((item) => ({
+            key: `${entry.provider}/${item.id}`,
+            provider: entry.provider,
+            model: item.id,
+            label: `${entry.provider} · ${item.name}（${item.id}）`,
+          })),
+        );
+      }, [models]);
+      const declaredAvailable =
+        declaredModel !== null && modelList.some((item) => item.key === declaredModel);
+      const [modelKey, setModelKey] = useState(declaredAvailable ? declaredModel : "");
       // 宿主没有工作区注册表时 defaultWorkspace 为 null：仍然允许建会话（落宿主默认目录），
       // 但绝不因此静默换一个"空间"——payload 里既没有 workspaceId 也没有 cwd，由宿主决定。
+      const [modelTouched, setModelTouched] = useState(false);
+      useEffect(() => {
+        if (modelTouched) return;
+        setModelKey(declaredAvailable ? declaredModel : "");
+      }, [declaredAvailable, declaredModel, modelTouched]);
       const canSubmit = !busy && !noEngine && (mode === "new" ? sessionName.trim() !== "" : sessionId !== "");
 
       async function submit() {
@@ -825,6 +847,8 @@ window.__ModuleLoader__.load({
         setError(null);
         try {
           const payload = { rosterId: roster.id, teamName: teamName.trim(), mode, target: targetId };
+          const pickedModel = modelList.find((item) => item.key === modelKey);
+          if (pickedModel !== undefined) payload.model = { provider: pickedModel.provider, model: pickedModel.model };
           if (typeof roster.rootDir === "string" && roster.rootDir !== "") payload.rootDir = roster.rootDir;
           if (mode === "existing") payload.sessionId = sessionId;
           else {
@@ -892,6 +916,37 @@ window.__ModuleLoader__.load({
                 ),
           ),
         ),
+        h(
+          Field,
+          { label: t("teamCreate.model"), hint: t("teamCreate.modelHint") },
+          h(
+            "select",
+            {
+              className: "rstr-select",
+              value: modelKey,
+              onChange: (event) => {
+                setModelTouched(true);
+                setModelKey(event.target.value);
+              },
+            },
+            modelList.length === 0
+              ? h("option", { value: "" }, t("teamCreate.modelUnknown"))
+              : [
+                  h("option", { key: "", value: "" }, t("teamCreate.modelDefault")),
+                  declaredModel !== null && !declaredAvailable
+                    ? h(
+                        "option",
+                        { key: declaredModel, value: declaredModel, disabled: true },
+                        t("teamCreate.modelUnavailable", { model: declaredModel }),
+                      )
+                    : null,
+                  ...modelList.map((item) => h("option", { key: item.key, value: item.key }, item.label)),
+                ],
+          ),
+        ),
+        declaredModel !== null && !declaredAvailable && modelList.length > 0
+          ? h("p", { className: "rstr-hint rstr-warn" }, t("teamCreate.modelMissing", { model: declaredModel }))
+          : null,
         targetHasTeamName
           ? h(
               Field,
@@ -2483,6 +2538,7 @@ window.__ModuleLoader__.load({
               sessions: snapshot?.sessions?.sessions ?? [],
               workspaces: snapshot?.hostWorkspaces ?? [],
               targets: snapshot?.hostTeamTargets ?? [],
+              models: snapshot?.hostModels ?? [],
               onClose: () => setCreatingTeam(null),
               onToast: setToast,
               onCreated: () => {

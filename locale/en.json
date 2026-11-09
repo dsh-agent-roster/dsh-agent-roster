@@ -343,6 +343,12 @@
     "engineNone": "No team plugin is installed on this machine",
     "engineMissing": "not installed",
     "noTeamName": "This engine has no team name: the session name is the team's identity.",
-    "noMemberSpecs": "This engine only takes a name and an initial task: member model, persona and toolPolicy from the roster will not apply (the captain persona is still injected)."
+    "noMemberSpecs": "This engine only takes a name and an initial task: member model, persona and toolPolicy from the roster will not apply (the captain persona is still injected).",
+    "model": "Captain model",
+    "modelHint": "The model in the roster comes from the author’s deployment; pick another one here when this machine lacks it. Default is not to switch.",
+    "modelDefault": "Deployment default (no switch)",
+    "modelUnknown": "Model catalog unavailable",
+    "modelUnavailable": "Declared: {model} (not provided here)",
+    "modelMissing": "The roster declares {model}, which this deployment does not provide. The deployment default will be used; to run as written, provide that provider/model first."
   }
 }

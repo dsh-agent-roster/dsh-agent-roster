@@ -343,6 +343,12 @@
     "engineNone": "这台机器上没有可用的建团插件",
     "engineMissing": "未安装",
     "noTeamName": "这个引擎没有团队名：会话名就是团队标识。",
-    "noMemberSpecs": "这个引擎只接受成员名与初始任务：档案里的成员模型、人设、toolPolicy 不会生效（队长人设仍会注入）。"
+    "noMemberSpecs": "这个引擎只接受成员名与初始任务：档案里的成员模型、人设、toolPolicy 不会生效（队长人设仍会注入）。",
+    "model": "队长模型",
+    "modelHint": "档案声明的模型来自作者那台部署；这台机器上没有时可在这里改，默认不切换。",
+    "modelDefault": "部署默认（不切换）",
+    "modelUnknown": "读不到模型目录",
+    "modelUnavailable": "档案声明：{model}（本部署未提供）",
+    "modelMissing": "档案声明的 {model} 在本部署不存在，将使用部署默认模型；要按档案跑，请先在部署里提供该 provider/model。"
   }
 }

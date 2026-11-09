@@ -2,6 +2,21 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.13.0] - 2026-11-09
+
+### Added
+
+- **Captain model picker.** `/library` now reports `hostModels` — the provider/model pairs the running deployment actually serves, read from the host LLM catalog. The create-team dialog offers “deployment default (no switch)” plus every host model, and preselects the roster's declared route when it exists here.
+- `POST /apply` accepts `model: {provider, model, reasoningEffort?}` and uses it instead of the roster's `captain.route`; `reasoningEffort` still comes from the roster unless overridden. `roster_team` benefits from the same path.
+
+### Fixed
+
+- **`排队失败（model-not-applied）` was a dead end.** A roster's `captain.route` is written on its author's machine; here `deepseek-official/deepseek-flash` does not exist (the deployment serves `tsing/deepseek-v4.1-flash` and `tsing/deepseek-v4-pro`), so `selectModel` threw and the dialog only echoed the code. The declared-but-missing model is now shown disabled with an explanation *before* submit, and the default becomes the deployment model instead of a guaranteed failure.
+
+### Changed
+
+- Tests 399 → 406 (host catalog, override path, dialog guard).
+
 ## [1.12.1] - 2026-11-09
 
 ### Fixed
@@ -973,7 +988,8 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.1...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.0...main
+[1.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.1...v1.13.0
 [1.12.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.0...v1.12.1
 [1.12.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.10.0...v1.11.0

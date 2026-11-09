@@ -30,6 +30,7 @@ import { validateRoster2 } from "./lib/roster2.js";
 import { detectTeamTargets, TEAM_TARGET_IDS } from "./lib/team-targets.js";
 import { sendError, sendJson, createAuthGate, readJsonBody, requireMethod } from "./lib/http.js";
 import { buildPanelSnapshot, installCollection, installSpace, loadRemotePanel, resolveRoots } from "./lib/service.js";
+import { listHostModels } from "./lib/host-models.js";
 import { createTtlCache, fetchCollection } from "./lib/remote.js";
 import { searchRosters } from "./lib/search.js";
 import { registerRosterTools } from "./lib/tools.js";
@@ -152,7 +153,9 @@ export function apply(ctx, config) {
         const hostWorkspaces = listHostWorkspaces(ctx.get?.("workspaceRegistry"));
         // 团队引擎：下拉菜单要知道"这台机器上装了哪些建团插件"，而不是静默失败。
         const hostTeamTargets = detectTeamTargets();
-        sendJson(res, 200, { ...snapshot, remote, sessions, hostWorkspaces, hostTeamTargets });
+        // 模型目录也是"附属信息"：读不到就返回空数组，界面显示"读不到"，不要编。
+        const hostModels = await listHostModels(ctx.get?.("llm"));
+        sendJson(res, 200, { ...snapshot, remote, sessions, hostWorkspaces, hostTeamTargets, hostModels });
       },
       "library route",
     );
@@ -549,6 +552,16 @@ export function apply(ctx, config) {
           teamName: typeof input.teamName === "string" ? input.teamName.trim().slice(0, 120) : "",
           // 引擎只影响提示词（怎么建团队），不影响会话/模型/团队状态。
           target,
+          // 队长模型可以被面板覆盖：档案写的是作者那台部署的 provider/model，
+          // 换机器后可能不存在；覆盖项来自 /library 的 hostModels。
+          model: input.model && typeof input.model === "object"
+            ? {
+                provider: typeof input.model.provider === "string" ? input.model.provider : "",
+                model: typeof input.model.model === "string" ? input.model.model : "",
+                reasoningEffort:
+                  typeof input.model.reasoningEffort === "string" ? input.model.reasoningEffort : "",
+              }
+            : null,
         });
         const status = result.ok ? 200 : result.code === "session-controller-unavailable" ? 503 : 400;
         sendJson(res, status, result);

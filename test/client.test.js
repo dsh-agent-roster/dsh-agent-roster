@@ -284,7 +284,7 @@ test("从档案创建团队：行上有入口，对话框默认新会话，团�
   const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
   assert.match(source, /t\("roster\.createTeam"\)/);
   assert.match(source, /onClick: \(\) => onCreateTeam\(roster\)/);
-  assert.match(source, /function TeamCreateDialog\(\{ roster, sessions, workspaces, targets, onClose, onToast, onCreated \}\)/);
+  assert.match(source, /function TeamCreateDialog\(\{ roster, sessions, workspaces, targets, models, onClose, onToast, onCreated \}\)/);
   // 快速建团不该劫持用户正在聊的会话：默认必须是新会话。
   assert.match(source, /const \[mode, setMode\] = useState\("new"\)/);
   assert.match(source, /const payload = \{ rosterId: roster\.id, teamName: teamName\.trim\(\), mode, target: targetId \}/);
@@ -396,4 +396,17 @@ test("应用失败时把宿主给的 reason 也显示出来，不只报一个 co
   const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
   assert.match(source, /reason: typeof response\.body\?\.reason === "string" \? response\.body\.reason : ""/);
   assert.match(source, /result\.reason \? `\$\{result\.code\} — \$\{result\.reason\}` : result\.code/);
+});
+
+test("创建团队：队长模型可以在提交前改，档案声明的模型不在部署里时当场说明", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  // 目录由 /library 的 hostModels 提供；读不到时显示"读不到"，不编选项。
+  assert.match(source, /models: snapshot\?\.hostModels \?\? \[\]/);
+  assert.match(source, /const modelList = useMemo\(\(\) => \{/);
+  assert.match(source, /t\("teamCreate\.modelUnknown"\)/);
+  // 档案声明但没有的模型：选项禁选 + 警示，而不是提交后报 model-not-applied。
+  assert.match(source, /value: declaredModel, disabled: true/);
+  assert.match(source, /t\("teamCreate\.modelMissing", \{ model: declaredModel \}\)/);
+  // 选中项随 payload 发给 /apply。
+  assert.match(source, /payload\.model = \{ provider: pickedModel\.provider, model: pickedModel\.model \}/);
 });
