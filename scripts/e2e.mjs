@@ -7,8 +7,9 @@
 // `dsh web` on a spare port, loads the packed plugin into a copy of a real
 // profile, and asks the running host what it sees.
 //
-//   npm run e2e                 # panel depth: no model calls, ~15 s
-//   npm run e2e -- --depth=apply # also create a real team (slow, costs model calls)
+//   npm run e2e                    # panel depth: no model calls, ~15 s
+//   npm run e2e -- --depth=apply   # also create a real team (slow, costs model calls)
+//   npm run e2e -- --depth=persona # apply depth, then read the captain's system prompts
 //
 // Safety: the production profile is only read.  Everything is written under
 // a temporary DSH_HOME that is deleted on exit unless --keep is passed.
@@ -17,6 +18,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:net";
 import fs from "node:fs";
 import os from "node:os";
+import zlib from "node:zlib";
 import nodePath from "node:path";
 
 const REPO = nodePath.resolve(nodePath.dirname(new URL(import.meta.url).pathname), "..");
@@ -29,8 +31,13 @@ function arg(name, fallback) {
 }
 const flag = (name) => process.argv.includes(`--${name}`);
 const DEPTH = arg("depth", "panel");
+if (!["panel", "apply", "persona"].includes(DEPTH)) {
+  console.error(`e2e: unknown depth "${DEPTH}" (panel | apply | persona)`);
+  process.exit(2);
+}
+const BUILDS_A_TEAM = DEPTH === "apply" || DEPTH === "persona";
 const KEEP = flag("keep");
-const TIMEOUT_MS = Number(arg("timeout", DEPTH === "apply" ? "1200000" : "120000"));
+const TIMEOUT_MS = Number(arg("timeout", BUILDS_A_TEAM ? "1200000" : "120000"));
 
 let activeHome = "";
 let activeChild = null;
@@ -69,6 +76,65 @@ function check(name, condition, detail = "") {
     failed += 1;
     checks.push(`  FAIL ${name}${detail === "" ? "" : ` — ${detail}`}`);
   }
+}
+
+
+// The captain's persona is injected as a system-prompt section.  Reading the
+// session log is the only way to tell that apart from the kick-off message,
+// which carries a copy as a fallback: the section shows up in system/message,
+// the message shows up once at the start.
+const DEPLOYMENT_PREFIX = "You are a coding agent powered by";
+
+function readSystemMessages(home, sessionId) {
+  const sessions = nodePath.join(home, "sessions");
+  if (!fs.existsSync(sessions)) return [];
+  for (const entry of fs.readdirSync(sessions)) {
+    const file = nodePath.join(sessions, entry, sessionId, "session.v4.jsonl.zstd");
+    if (!fs.existsSync(file)) continue;
+    const text = zlib.zstdDecompressSync(fs.readFileSync(file)).toString("utf8");
+    const messages = [];
+    for (const line of text.split("\n")) {
+      if (line === "") continue;
+      let record;
+      try {
+        record = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      if (record.type !== "system/message") continue;
+      const content = record.data?.message?.content ?? [];
+      messages.push(content.map((part) => part.text ?? "").join("\n"));
+    }
+    return messages;
+  }
+  return [];
+}
+
+
+function lastToolCalls(home, sessionId, limit = 5) {
+  const sessions = nodePath.join(home, "sessions");
+  if (!fs.existsSync(sessions)) return "";
+  for (const entry of fs.readdirSync(sessions)) {
+    const file = nodePath.join(sessions, entry, sessionId, "session.v4.jsonl.zstd");
+    if (!fs.existsSync(file)) continue;
+    const text = zlib.zstdDecompressSync(fs.readFileSync(file)).toString("utf8");
+    const names = [];
+    for (const line of text.split("\n")) {
+      if (!line.includes('"tool/call"')) continue;
+      const match = /"name":"([^"]+)"/.exec(line);
+      if (match !== null) names.push(match[1]);
+    }
+    return names.slice(-limit).join(" → ");
+  }
+  return "";
+}
+
+function fixturePersonaLine() {
+  const file = nodePath.join(REPO, "examples", "roles", "core-review-lead-captain", "AGENT.md");
+  if (!fs.existsSync(file)) return "";
+  const text = fs.readFileSync(file, "utf8");
+  const body = text.startsWith("---") ? text.replace(/^---[\s\S]*?\n---\n?/, "") : text;
+  return body.split("\n").map((line) => line.trim()).find((line) => line !== "") ?? "";
 }
 
 function freePort() {
@@ -149,7 +215,7 @@ async function main() {
     fs.rmSync(installed, { recursive: true, force: true });
     run("cp", ["-a", nodePath.join(extract, "package"), installed]);
 
-    if (DEPTH === "apply") {
+    if (BUILDS_A_TEAM) {
       const credentials = nodePath.join(PROD_HOME, ".credentials.yaml");
       if (fs.existsSync(credentials)) {
         fs.copyFileSync(credentials, nodePath.join(home, ".credentials.yaml"));
@@ -238,38 +304,79 @@ async function main() {
     const coreAfter = (afterFavorite.body.workspaces ?? []).find((workspace) => workspace.rootDir === lib)?.rosters?.find((roster) => roster.id === "core-review");
     check("favorite shows up in the next snapshot", coreAfter?.favorite === true);
 
-    if (DEPTH === "apply") {
+    if (BUILDS_A_TEAM) {
       const teamName = `e2e-${Date.now().toString(36)}`;
       const workspace = nodePath.join(home, "ws");
       fs.mkdirSync(workspace, { recursive: true });
       // Pick a model the deployment actually serves: the fixture's declared
-      // route belongs to another machine, and selectModel fails closed.
-      const served = (library.body.hostModels ?? []).find((provider) => (provider.models ?? []).length > 0);
-      const model = served === undefined ? null : { provider: served.provider, model: served.models[0].id };
+      // route belongs to another machine, and selectModel fails closed.  Prefer
+      // the provider that serves the roster's declared model — falling back to
+      // "whatever is first" can land on a provider that accepts the call but
+      // never drives the tool loop to completion.
+      const declaredModel = core?.captain?.model ?? "";
+      const providers = (library.body.hostModels ?? []).filter((provider) => (provider.models ?? []).length > 0);
+      const matching = providers.find((provider) => provider.models.some((item) => item.id === declaredModel));
+      const served = matching ?? providers[0];
+      const model = served === undefined ? null : { provider: served.provider, model: (served.models.find((item) => item.id === declaredModel) ?? served.models[0]).id };
+      check("a served model is chosen for the captain", model !== null, declaredModel);
       const applied = await call("/plugins/dsh-agent-roster/apply", {
         method: "POST",
         body: JSON.stringify({ rosterId: "core-review", target: "agent-teams", teamName, mode: "new", cwd: workspace, model }),
       });
       check("apply is queued", applied.status === 200 && applied.body.ok === true, JSON.stringify(applied.body));
       // team.json is written when the team is created; the members arrive one
-      // add_member call at a time, so wait for the count, not for the file.
+      // add_member call at a time.  Member materialisation needs the deployment
+      // to serve the roster's member route, which is a separate contract from
+      // the captain persona — so only the apply depth insists on it.
       const expected = Array.isArray(core?.members) ? core.members.length : Number(core?.members ?? 0);
       check("fixture roster declares its members", expected > 0, String(expected));
       const teamFile = nodePath.join(workspace, ".agent-teams", teamName, "team.json");
       const team = await waitFor(() => {
         if (!fs.existsSync(teamFile)) return null;
         try {
-          const parsed = JSON.parse(fs.readFileSync(teamFile, "utf8"));
-          return (parsed.members ?? []).length >= expected ? parsed : null;
+          return JSON.parse(fs.readFileSync(teamFile, "utf8"));
         } catch {
           return null;
         }
-      }, TIMEOUT_MS, 2_000);
-      check("the captain session wrote team.json", fs.existsSync(teamFile));
-      check("team has the roster's members", (team?.members ?? []).length === expected, `${(team?.members ?? []).length} of ${expected}`);
+      }, 300_000, 1_000);
+      check("the captain session wrote team.json", team !== null);
       if (team !== null) {
         check("team records the captain session", typeof team.captainSessionId === "string" && team.captainSessionId.startsWith("session-"));
         check("team description carries the roster provenance", /roster:core-review@\d+\.\d+\.\d+#[0-9a-f]{8}/.test(team.description ?? ""), team.description);
+
+        if (DEPTH === "apply") {
+          const filled = await waitFor(() => {
+            try {
+              const parsed = JSON.parse(fs.readFileSync(teamFile, "utf8"));
+              return (parsed.members ?? []).length >= expected ? parsed : null;
+            } catch {
+              return null;
+            }
+          }, TIMEOUT_MS, 2_000);
+          const stalled = filled === null ? lastToolCalls(home, team.captainSessionId) : "";
+          check("team has the roster's members", (filled?.members ?? []).length === expected, `${(filled?.members ?? []).length} of ${expected}${stalled === "" ? "" : `; last tool calls: ${stalled}`}`);
+        }
+
+        if (DEPTH === "persona") {
+          const personaLine = fixturePersonaLine();
+          check("the fixture declares a captain persona line", personaLine !== "", personaLine);
+          // The section is attached when the team lands; the next assembled
+          // prompt then carries it.  Wait for that prompt instead of guessing a
+          // step number.
+          const persona = await waitFor(() => {
+            const messages = readSystemMessages(home, team.captainSessionId);
+            return messages.some((text) => text.includes(personaLine)) ? messages : null;
+          }, 600_000, 2_000);
+          const messages = persona ?? readSystemMessages(home, team.captainSessionId);
+          check("the captain session records system prompts", messages.length >= 2, String(messages.length));
+          const carrying = messages.filter((text) => text.includes(personaLine));
+          check("the roster persona reaches the captain's system prompt", carrying.length > 0, `${carrying.length} of ${messages.length}`);
+          check("the roster persona is absent before the team exists", !(messages[0] ?? "").includes(personaLine));
+          if ((messages[0] ?? "").includes(DEPLOYMENT_PREFIX)) {
+            const stillDeployed = carrying.filter((text) => text.includes(DEPLOYMENT_PREFIX)).length;
+            check("the injected persona replaces the deployment persona", carrying.length > 0 && stillDeployed === 0, `${stillDeployed} of ${carrying.length} still carry the deployment prefix`);
+          }
+        }
       }
     }
   } finally {

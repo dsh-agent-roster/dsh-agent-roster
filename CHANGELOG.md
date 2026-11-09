@@ -2,6 +2,16 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.13.4] - 2026-11-09
+
+### Added
+
+- **`npm run e2e -- --depth=persona`** — the check I had been doing by hand. On top of `--depth=apply` it decodes the captain's `session.v4.jsonl.zstd` and asserts the shape of the injection: the first `system/message` (written before `team.json` exists) contains no roster persona, a later one contains the fixture's persona line and no longer carries the deployment prefix (`You are a coding agent powered by …`). That is the difference between *replacing the persona section* and *appending a line to the kick-off message*, which no unit test can see.
+
+### Why
+
+I verified the captain persona by hand on a live team once (step 1: deployment persona, no roster persona; step 6: roster persona, deployment persona gone). A manual check that is not scripted is a check that stops happening. The scripted version rebuilds that comparison from the session log every run.
+
 ## [1.13.3] - 2026-11-09
 
 ### Added
