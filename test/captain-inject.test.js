@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import nodePath from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   CAPTAIN_SECTION,
@@ -16,6 +17,7 @@ import {
   markCaptainCandidate,
   personaSourceOf,
   personaTextOf,
+  resolveCaptainPersona,
   resetCaptainInjector,
 } from "../lib/captain-inject.js";
 
@@ -288,4 +290,15 @@ test("installCaptainInjector：先有 agent/created 后登记，也能补挂（a
   assert.equal(agent.sections[0].text(), "你是这支团队的队长。");
   dispose();
   resetCaptainInjector();
+});
+
+test("personaSourceOf：真实样例里队长是角色引用，人设取角色组装正文", () => {
+  const repoRoot = fileURLToPath(new URL("..", import.meta.url));
+  const rosterDir = nodePath.join(repoRoot, "examples/rosters/core-review");
+  const source = personaSourceOf(rosterDir);
+  assert.equal(source?.kind, "role");
+  // 角色正文要按同一套规则展开（body + parts + {{> …}}），与成员读到的同一份。
+  assert.match(personaTextOf(source), /派活前先复述目标与验收标准/);
+  // 起始消息与注入层同源：解析函数给出同一段正文。
+  assert.equal(resolveCaptainPersona(rosterDir)?.text, personaTextOf(source));
 });

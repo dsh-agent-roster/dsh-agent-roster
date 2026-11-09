@@ -457,8 +457,8 @@ test("apply：有 sessionController 时切模型并把建团队提示词排进�
   assert.equal(result.body.sessionId, "s-new");
   assert.deepEqual(
     calls.map((call) => call[0]),
-    ["create", "prompt"],
-    "core-review 没有声明队长路由时不切模型",
+    ["create", "selectModel", "prompt"],
+    "core-review 的队长 route 来自角色库，应用时必须切模型",
   );
 });
 

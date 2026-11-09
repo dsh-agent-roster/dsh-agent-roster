@@ -2,6 +2,22 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.11.0] - 2026-11-09
+
+### Fixed
+
+- **Role-based captains had no persona.** Real archives (`examples/`, and the reviewers' own libraries) almost always declare `captain.role` instead of `captain.persona`, and the injector only read the latter — so those rosters resolved to "no persona" and attached nothing. The captain persona now resolves exactly like a member's: `captain.persona` file first, then the **assembled body** of the role named by `captain.role` (`AGENT.md` body + `parts` + `{{> …}}`), then the v1 inline fields.
+- **Applying a captain dropped its `captain` block.** The panel snapshot (and therefore `POST /apply`) carried no `captain` at all — no persona, no route — so role-based captains were applied without selecting their declared model, and the kick-off message had no persona. `/apply` now re-reads the roster from disk before composing the prompt (and before selecting the model), so what is applied is the file, not the view. A roster whose declared model is unavailable now fails closed with `model-not-applied` instead of quietly proceeding.
+
+### Changed
+
+- `roster_verify` reports the injection source as `file` / `role` / `inline`, so "attached" can be traced to the exact rule that produced the text.
+- The `needs-config` wording now says the persona is already injected into the captain session on every model step; writing it into a preset is only for surviving with the plugin switched off.
+
+### Changed
+
+- Tests 386 → 390 (`examples/rosters/core-review` is used as the real-sample fixture for role resolution, in both the injector and the apply path).
+
 ## [1.10.0] - 2026-11-09
 
 ### Added

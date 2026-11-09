@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import nodePath from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   applyCaptain,
@@ -337,4 +339,28 @@ test("applyCaptain 只给目录时也把会话登记进对应工作区", async (
   assert.equal(result.ok, true);
   const create = controller.calls.find((call) => call[0] === "create");
   assert.deepEqual(create[1], { workspaceId: "ws-a" }, "目录能对上工作区时改发 workspaceId");
+});
+
+test("角色式队长：人设从角色正文解析，进入起始消息（真实样例）", async () => {
+  const repoRoot = fileURLToPath(new URL("..", import.meta.url));
+  const rosterDir = nodePath.join(repoRoot, "examples/rosters/core-review");
+  const controller = fakeController();
+  const result = await applyCaptain({
+    sessionController: controller,
+    roster: {
+      id: "core-review",
+      title: "核心评审",
+      file: "rosters/core-review/roster.yaml",
+      rootDir: nodePath.join(repoRoot, "examples"),
+      members: [],
+      captain: { role: "core-review-lead-captain@1.0.0", provider: "deepseek", model: "deepseek-v4.1-flash" },
+    },
+    rosterDir,
+    mode: "new",
+    cwd: "/tmp/ws",
+    sessionTitle: "core-review",
+  });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  const prompt = controller.calls.find((call) => call[0] === "prompt")[1].content[0].text;
+  assert.match(prompt, /派活前先复述目标与验收标准/);
 });

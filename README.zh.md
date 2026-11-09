@@ -363,12 +363,13 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 
 成员的人设由 `dsh-agent-teams` 在**成员子会话**上注册一个与部署 persona 同名的 `systemPrompt.section`（`deployment:persona-prefix`），靠同名遮蔽生效；队长是顶层会话，不在它的管辖里。本插件补上这另一半：
 
-- 在队长会话的 ctx 上注册**同一个 section 名**，内容是档案里的队长人设（v1 的 `captain.systemPrompt` / `captain.personaPrefix`，v2 的 `captain.persona` 文件正文）。
+- 在队长会话的 ctx 上注册**同一个 section 名**，内容是档案里的队长人设。取值与成员同一套规则：v2 先看 `captain.persona` 文件，没有就看 `captain.role` 指向角色的**组装正文**（`AGENT.md` 的 body + parts + `{{> …}}`；真实档案里队长几乎都是角色引用），v1 看 `captain.systemPrompt` / `captain.personaPrefix`。
 - `text` 传的是函数，宿主每个模型步都会求值 ⇒ 改档案立即生效，不用重启、不用重建会话；文件读失败时沿用上一次的好值，**绝不用空串遮蔽部署 persona**。
 - 归属不靠猜：读团队的 `captainSessionId`，再看团队 `description` 里的 `roster:<id>@<ver>#<sha8>` 找到档案。新会话是「先建会话、队长再建团队」，所以团队晚落盘时会短暂轮询（30 分钟内），落盘即挂上。
 - 这是**进程内的 contribution**，不是写进磁盘的 preset：插件停用就回到部署 persona；跨重启仍在，因为重启后 `agent/created` 会重新解析团队并挂上。
-- `roster_verify` 会额外打印一行「队长人设：已嵌入 <id>（N 字符 · #sha8 · 来源 file/inline）→ 会话 …」；插件启用前就存在的会话会显示「未嵌入」，此时会话只按起始消息里那份人设工作。
+- `roster_verify` 会额外打印一行「队长人设：已嵌入 <id>（N 字符 · #sha8 · 来源 file/role/inline）→ 会话 …」；插件启用前就存在的会话会显示「未嵌入」，此时会话只按起始消息里那份人设工作。
 - 不想用就把 `injectCaptainPersona` 设为 `false`；行为回到「只有起始消息」。
+- 应用队长（面板「创建团队」/ `roster_team` / `POST /apply`）时，服务端会**重新读盘上的档案**再拼起始消息——面板快照是给界面用的，不带 `captain` 正文与 route；只靠快照会让角色式队长的 route 与人设在这一跳被静默丢掉。
 
 ### 收藏
 
@@ -468,7 +469,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 ## 开发
 
 ```bash
-node --test                 # 386 个测试
+node --test                 # 390 个测试
 npm run smoke               # 宿主侧 11 个工具 + 客户端两槽位
 npm run check:locale        # 中英词典键对齐
 npx dsh-agent-roster validate --dir examples
@@ -477,7 +478,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## 验证状态
 
-- 全仓 **386/386**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
+- 全仓 **390/390**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
 - CI `registry`（Node 22）重算索引、重编示例，并在 `dist/` 与源码不一致时失败。
 - 实机 e2e（独立 `DSH_HOME` + 端口 3099）：`agent-teams`（4 人）、`metagpt-company`（4 人）、`openmanus`（3 人）三套档案分别真的建出团队，`roster_verify` 均 `faithful` 全中、`drift 0`；溯源行含内容哈希。
 - 已知边界：`dist/` 不随 clone 拉取；按合集安装（`/install`）会把档案摊平成 v1 文档，整空间拉取（`clone` / `/install-space`）才保留 v2 布局与账本；`toolFilter` 无法从 team.json 核对；升级后需重启 `dsh web`。

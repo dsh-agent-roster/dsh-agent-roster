@@ -13,12 +13,14 @@
  * @module dsh-agent-roster
  */
 import { readFileSync } from "node:fs";
+import nodePath from "node:path";
 
 import z from "@deepseek-ai/schemastery";
 
 import { configView } from "./lib/config-view.js";
 import { applyCaptain, listHostWorkspaces, listSessions } from "./lib/apply.js";
 import { collectLibrary } from "./lib/library.js";
+import { scanRosterLibrary } from "./lib/registry.js";
 import { addFavorites, readFavorites, setFavorite } from "./lib/favorites.js";
 import { acceptLocal, applyFastForward, checkOrigin } from "./lib/origin.js";
 import { parseDocumentText } from "./lib/parse.js";
@@ -511,9 +513,21 @@ export function apply(ctx, config) {
           sendJson(res, 404, { ok: false, error: { code: "roster-not-found" }, known: rosters.map((item) => item.id) });
           return;
         }
+        // 面板快照里的 roster 是给界面用的（不含 captain 正文与 route）；应用队长要用磁盘上
+        // 那一份，否则角色式队长的 route/persona 会在这一跳被丢掉——那正是「发了档案却没生效」。
+        const scanned = scanRosterLibrary({
+          rootDir: roster.rootDir,
+          knownToolPolicies: settings.knownToolPolicies ?? null,
+        });
+        const raw = scanned.rosters.find((item) => item.id === rosterId) ?? roster;
+        const rosterDir =
+          typeof raw.file === "string" && raw.file !== ""
+            ? nodePath.join(roster.rootDir, nodePath.dirname(raw.file))
+            : "";
         const result = await applyCaptain({
           sessionController: ctx.get?.("sessionController"),
-          roster,
+          roster: { ...raw, rootDir: roster.rootDir },
+          rosterDir,
           mode: input.mode === "new" ? "new" : "existing",
           sessionId: typeof input.sessionId === "string" ? input.sessionId : "",
           cwd: typeof input.cwd === "string" ? input.cwd : "",
