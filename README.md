@@ -361,6 +361,17 @@ The row button and the `roster_team` tool share one `applyCaptain` path:
 - `roster_verify` compares the declared captain route with **the model the captain session actually selected** (`session.*`), not with the deployment default; if the session cannot be read, the check is `unknown` rather than a pass.
 - Both the panel and the tool only **queue** the prompt; the model in that session calls `agent_teams_*` to build the team.
 
+### Team engines
+
+Creating a team starts by choosing **which team plugin builds it**; the dropdown lists what this machine actually has:
+
+| Engine | Packages | What it can carry |
+|---|---|---|
+| Agent Teams | `@nanmicoder/dsh-agent-teams` | per-member fields (provider/model/persona/toolPolicy all reach the runtime), a team record, `roster_verify` |
+| Experimental Agent Team | `@deepseek-ai/dsh-experimental-agent-team` + `-tool-agent-team` | every session is already the Lead of an implicit team, so there is no create step; the prompt uses `spawn_teammate` + `list_agents`. It **cannot take member model/persona/toolPolicy**, and there is no team name (the session name is the identity) |
+
+Engines that are not installed stay in the dropdown but are disabled and marked “not installed” — the dependency is never silent; when none is available the submit button is disabled. Detection means “this profile can resolve the package”, not “it is enabled”; whether it is mounted is the host's call. `POST /apply` takes a closed-set `target` (unknown → 400 `unknown-target`), and `roster_team` accepts `target` too.
+
 ### How the captain persona reaches the session
 
 Member personas work because `dsh-agent-teams` registers a `systemPrompt.section` named `deployment:persona-prefix` on each **member child session**; a same-named section shadows the deployment persona. The captain is a top-level session, outside its remit, so this plugin adds the other half:
@@ -390,7 +401,7 @@ Favourites live in `.dsh-roster-favorites.json` at the library root (`dsh-agent-
 | `roster_search` | search across local and subscribed sources (words are ANDed; remote scans at most 8 sources and reports truncation) | `query`, `path?`, `remote?`, `limit?` |
 | `roster_compile` | compilation preview (writes nothing) | `ref`, `path?` |
 | `roster_changes` | per-file update check (seven states) | `path?`, `refresh?` |
-| `roster_team` | create a team from a roster (new or existing session) | `id`, `teamName?`, `mode?`, `workspace?`, `sessionName?`, `sessionId?`, `path?` |
+| `roster_team` | create a team from a roster (new or existing session) | `id`, `teamName?`, `mode?`, `workspace?`, `sessionName?`, `sessionId?`, `target?`, `path?` |
 
 Writing goes through the CLI and the panel’s HTTP routes only; the tool layer stays read-only.
 
@@ -470,7 +481,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 ## Development
 
 ```bash
-node --test                 # 390 tests
+node --test                 # 396 tests
 npm run smoke               # host: 11 tools; client: two slots
 npm run check:locale        # zh/en dictionary key parity
 npx dsh-agent-roster validate --dir examples
@@ -479,7 +490,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## Verification status
 
-- **390/390** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
+- **396/396** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
 - CI `registry` (Node 22) recomputes the index, recompiles the examples, and fails when `dist/` drifts from source.
 - Live e2e on an isolated `DSH_HOME` (port 3099): the `agent-teams` (4 members), `metagpt-company` (4) and `openmanus` (3) rosters each actually built a team; `roster_verify` reported every member faithful, `drift 0`, and the provenance line carried the content hash.
 - Known boundaries: `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.

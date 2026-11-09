@@ -27,6 +27,7 @@ import { parseDocumentText } from "./lib/parse.js";
 import { ROSTER2_KIND } from "./lib/format-v2.js";
 import { validateRoster } from "./lib/validate.js";
 import { validateRoster2 } from "./lib/roster2.js";
+import { detectTeamTargets, TEAM_TARGET_IDS } from "./lib/team-targets.js";
 import { sendError, sendJson, createAuthGate, readJsonBody, requireMethod } from "./lib/http.js";
 import { buildPanelSnapshot, installCollection, installSpace, loadRemotePanel, resolveRoots } from "./lib/service.js";
 import { createTtlCache, fetchCollection } from "./lib/remote.js";
@@ -149,7 +150,9 @@ export function apply(ctx, config) {
         const sessions = await listSessions(ctx.get?.("sessionController"));
         // 新建团队会话要选"空间"：这是宿主的工作区注册表，不是档案空间（space.yaml）。
         const hostWorkspaces = listHostWorkspaces(ctx.get?.("workspaceRegistry"));
-        sendJson(res, 200, { ...snapshot, remote, sessions, hostWorkspaces });
+        // 团队引擎：下拉菜单要知道"这台机器上装了哪些建团插件"，而不是静默失败。
+        const hostTeamTargets = detectTeamTargets();
+        sendJson(res, 200, { ...snapshot, remote, sessions, hostWorkspaces, hostTeamTargets });
       },
       "library route",
     );
@@ -492,6 +495,12 @@ export function apply(ctx, config) {
           return;
         }
         const input = body.value !== null && typeof body.value === "object" ? body.value : {};
+        // 团队引擎是闭集：未知 id 直接 400，不猜一个替代去建团。
+        const target = typeof input.target === "string" ? input.target : "";
+        if (target !== "" && !TEAM_TARGET_IDS.includes(target)) {
+          sendError(res, 400, "unknown-target");
+          return;
+        }
         const rosterId = typeof input.rosterId === "string" ? input.rosterId : "";
         if (rosterId === "") {
           sendError(res, 400, "missing-roster");
@@ -538,6 +547,8 @@ export function apply(ctx, config) {
           sessionTitle: typeof input.sessionTitle === "string" ? input.sessionTitle.trim().slice(0, 120) : "",
           // 团队名只进提示词，不写任何团队状态；超长按 120 截断，与档案标题同量级。
           teamName: typeof input.teamName === "string" ? input.teamName.trim().slice(0, 120) : "",
+          // 引擎只影响提示词（怎么建团队），不影响会话/模型/团队状态。
+          target,
         });
         const status = result.ok ? 200 : result.code === "session-controller-unavailable" ? 503 : 400;
         sendJson(res, status, result);

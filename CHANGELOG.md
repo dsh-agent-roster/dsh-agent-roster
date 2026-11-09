@@ -2,6 +2,18 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.12.0] - 2026-11-09
+
+### Added
+
+- **Team engines.** Creating a team now starts with a dropdown of the team plugins installed on this machine. The panel sends the choice as `target`; `POST /apply` rejects unknown targets with `unknown-target`, and `roster_team` accepts the same parameter. Missing engines stay visible but disabled and marked “not installed”, so the dependency on `dsh-agent-teams` is no longer silent — and when nothing is available the submit button is disabled.
+- **Experimental agent-team adapter.** `@deepseek-ai/dsh-experimental-agent-team` (with `-tool-agent-team`) has no create step: every session is the Lead of an implicit team, so the prompt switches to `spawn_teammate` + `list_agents`. The prompt states plainly that member model/persona/toolPolicy cannot be passed and that the session name is the team identity; the captain persona is still injected by this plugin, because that mechanism is engine-independent.
+- `/library` now exposes `hostTeamTargets` (id, label, availability, missing packages and the capability matrix) so the panel can render the dropdown without guessing.
+
+### Changed
+
+- Tests 390 → 396; both READMEs document the engines and their capability differences.
+
 ## [1.11.0] - 2026-11-09
 
 ### Fixed
@@ -950,7 +962,9 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.10.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.0...main
+[1.12.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.11.0...v1.12.0
+[1.11.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.10.0...v1.11.0
 [1.8.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.2...v1.8.3
 [1.8.4]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.3...v1.8.4
 [1.9.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.4...v1.9.0

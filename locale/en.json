@@ -337,6 +337,12 @@
     "failed": "Could not queue ({code})",
     "workspace": "Space",
     "sessionName": "Session name",
-    "sessionNamePlaceholder": "Defaults to the team name"
+    "sessionNamePlaceholder": "Defaults to the team name",
+    "engine": "Team engine",
+    "engineHint": "Creates the team the way the chosen plugin does; engines that are not installed are marked.",
+    "engineNone": "No team plugin is installed on this machine",
+    "engineMissing": "not installed",
+    "noTeamName": "This engine has no team name: the session name is the team's identity.",
+    "noMemberSpecs": "This engine only takes a name and an initial task: member model, persona and toolPolicy from the roster will not apply (the captain persona is still injected)."
   }
 }

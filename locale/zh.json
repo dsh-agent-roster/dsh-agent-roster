@@ -337,6 +337,12 @@
     "failed": "排队失败（{code}）",
     "workspace": "空间",
     "sessionName": "会话名",
-    "sessionNamePlaceholder": "缺省用团队名"
+    "sessionNamePlaceholder": "缺省用团队名",
+    "engine": "团队引擎",
+    "engineHint": "按所选插件的方式建团；未安装的引擎会标出来。",
+    "engineNone": "这台机器上没有可用的建团插件",
+    "engineMissing": "未安装",
+    "noTeamName": "这个引擎没有团队名：会话名就是团队标识。",
+    "noMemberSpecs": "这个引擎只接受成员名与初始任务：档案里的成员模型、人设、toolPolicy 不会生效（队长人设仍会注入）。"
   }
 }

@@ -127,6 +127,12 @@ test("library：200 + 快照里能看到示例库的两份档案", async () => {
   assert.equal(typeof result.body.teams, "object");
   assert.equal(typeof result.body.captain, "object");
   assert.equal(typeof result.body.sessions, "object");
+  // 团队引擎：面板下拉要知道装了哪些建团插件，而不是静默失败。
+  assert.deepEqual(
+    result.body.hostTeamTargets.map((item) => item.id),
+    ["agent-teams", "experimental-agent-team"],
+  );
+  assert.equal(result.body.hostTeamTargets.every((item) => typeof item.available === "boolean"), true);
 });
 
 test("library：方法不符返回 405 且声明 allow", async () => {
@@ -399,6 +405,18 @@ test("apply：方法不符是 405，缺 rosterId 是 400", async () => {
   const missing = await call(host, "/plugins/dsh-agent-roster/apply", makeReq({ method: "POST", body: {} }));
   assert.equal(missing.status, 400);
   assert.equal(missing.body.error.code, "missing-roster");
+});
+
+test("apply：未知团队引擎是 400，不猜一个替代", async () => {
+  const host = makeHost();
+  apply(host.ctx, CONFIG);
+  const result = await call(
+    host,
+    "/plugins/dsh-agent-roster/apply",
+    makeReq({ method: "POST", body: { rosterId: "core-review", target: "swarm-nope" } }),
+  );
+  assert.equal(result.status, 400);
+  assert.equal(result.body.error.code, "unknown-target");
 });
 
 test("apply：不存在的档案是 404，并列出已知档案", async () => {

@@ -774,7 +774,7 @@ window.__ModuleLoader__.load({
      * 所以这个对话框做的是端到端的前半段——把成员、队长模型、建团步骤一次交给一个会话，
      * 后半段（建队、加成员、核对）在那个会话里发生；结果回团队页签与 `roster_verify` 看。
      */
-    function TeamCreateDialog({ roster, sessions, workspaces, onClose, onToast, onCreated }) {
+    function TeamCreateDialog({ roster, sessions, workspaces, targets, onClose, onToast, onCreated }) {
       useTranslation();
       // 默认新会话：快速建团不该劫持用户正在聊的这个。
       const [mode, setMode] = useState("new");
@@ -793,6 +793,23 @@ window.__ModuleLoader__.load({
       }, [workspaceKey, defaultWorkspace]);
       const [busy, setBusy] = useState(false);
       const [error, setError] = useState(null);
+      // 团队引擎：下拉里列出这台部署上的建团插件；未安装的项保留在列表里，
+      // 但禁选并写明原因——依赖不静默，是这次改版的目的。
+      const targetList = Array.isArray(targets) ? targets : [];
+      const firstAvailable = targetList.find((item) => item.available === true) ?? targetList[0] ?? null;
+      const [targetId, setTargetId] = useState(firstAvailable?.id ?? "agent-teams");
+      const chosenTarget = targetList.find((item) => item.id === targetId) ?? null;
+      const targetHasTeamName = chosenTarget?.capabilities?.teamName !== false;
+      const targetHasMemberSpecs = chosenTarget?.capabilities?.memberSpecs !== false;
+      const noEngine = targetList.length > 0 && targetList.every((item) => item.available !== true);
+      // 目标列表是快照里后到的：当前选中项若不可用，自动落到第一个可用项。
+      useEffect(() => {
+        if (targetList.length === 0) return;
+        const current = targetList.find((item) => item.id === targetId);
+        if (current !== undefined && current.available === true) return;
+        const fallback = targetList.find((item) => item.available === true);
+        if (fallback !== undefined) setTargetId(fallback.id);
+      }, [targets, targetId]);
       const captain = roster.captain ?? null;
       const declaredModel =
         captain !== null && captain.provider !== undefined && captain.model !== undefined && captain.provider !== "" && captain.model !== ""
@@ -800,14 +817,14 @@ window.__ModuleLoader__.load({
           : null;
       // 宿主没有工作区注册表时 defaultWorkspace 为 null：仍然允许建会话（落宿主默认目录），
       // 但绝不因此静默换一个"空间"——payload 里既没有 workspaceId 也没有 cwd，由宿主决定。
-      const canSubmit = !busy && (mode === "new" ? sessionName.trim() !== "" : sessionId !== "");
+      const canSubmit = !busy && !noEngine && (mode === "new" ? sessionName.trim() !== "" : sessionId !== "");
 
       async function submit() {
         if (!canSubmit) return;
         setBusy(true);
         setError(null);
         try {
-          const payload = { rosterId: roster.id, teamName: teamName.trim(), mode };
+          const payload = { rosterId: roster.id, teamName: teamName.trim(), mode, target: targetId };
           if (typeof roster.rootDir === "string" && roster.rootDir !== "") payload.rootDir = roster.rootDir;
           if (mode === "existing") payload.sessionId = sessionId;
           else {
@@ -856,14 +873,40 @@ window.__ModuleLoader__.load({
         h("p", { className: "rstr-hint" }, t("teamCreate.hint")),
         h(
           Field,
-          { label: t("teamCreate.teamName") },
-          h("input", {
-            className: "rstr-input",
-            value: teamName,
-            onChange: (event) => setTeamName(event.target.value),
-            placeholder: roster.id,
-          }),
+          { label: t("teamCreate.engine"), hint: t("teamCreate.engineHint") },
+          h(
+            "select",
+            {
+              className: "rstr-select",
+              value: targetId,
+              onChange: (event) => setTargetId(event.target.value),
+            },
+            targetList.length === 0
+              ? h("option", { value: "" }, t("teamCreate.engineNone"))
+              : targetList.map((item) =>
+                  h(
+                    "option",
+                    { key: item.id, value: item.id, disabled: item.available !== true },
+                    item.available === true ? item.label : `${item.label} · ${t("teamCreate.engineMissing")}`,
+                  ),
+                ),
+          ),
         ),
+        targetHasTeamName
+          ? h(
+              Field,
+              { label: t("teamCreate.teamName") },
+              h("input", {
+                className: "rstr-input",
+                value: teamName,
+                onChange: (event) => setTeamName(event.target.value),
+                placeholder: roster.id,
+              }),
+            )
+          : h("p", { className: "rstr-hint" }, t("teamCreate.noTeamName")),
+        targetHasMemberSpecs
+          ? null
+          : h("p", { className: "rstr-hint rstr-warn" }, t("teamCreate.noMemberSpecs")),
         h(
           Field,
           { label: t("teamCreate.target") },
@@ -2439,6 +2482,7 @@ window.__ModuleLoader__.load({
               roster: creatingTeam,
               sessions: snapshot?.sessions?.sessions ?? [],
               workspaces: snapshot?.hostWorkspaces ?? [],
+              targets: snapshot?.hostTeamTargets ?? [],
               onClose: () => setCreatingTeam(null),
               onToast: setToast,
               onCreated: () => {
