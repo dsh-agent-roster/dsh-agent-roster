@@ -1,6 +1,6 @@
 {
   "name": "@stofone/dsh-agent-roster",
-  "version": "1.13.1",
+  "version": "1.13.2",
   "description": "多 Agent 团队的静态成员档案定义与校验层：档案库在面板里看得见、改得动，团队成员的人设、模型与工具边界固化成可校验、可版本化的文件，并在 dsh-agent-teams 创建成员时把档案桥接给运行时。",
   "type": "module",
   "main": "index.js",
@@ -80,7 +80,8 @@
     "test": "node --test",
     "smoke": "node scripts/host-smoke.mjs && node scripts/client-smoke.mjs",
     "check:locale": "node scripts/check-locale.mjs",
-    "validate": "node bin/cli.mjs validate"
+    "validate": "node bin/cli.mjs validate",
+    "check:host": "node scripts/host-contracts.mjs"
   },
   "dsh": {
     "bundle": {

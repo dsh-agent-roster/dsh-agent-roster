@@ -2,6 +2,17 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.13.2] - 2026-11-09
+
+### Added
+
+- **`npm run check:host`** — reads the installed host bundle and asserts the four contracts we depend on (`prompt(request, signal)`, `create` attaching only through `workspaceId`, `WorkspaceEntity.id`, `get path()/get title()`). Unit tests use hand-written fakes, so they can only prove “the code matches our assumptions”; this gate proves “our assumptions match the host”. It caught the two shapes we had already got wrong once (`AbortSignal`, `workspaceId`).
+- **Projection guard** (`test/projection.test.js`): scans the real `examples/` and `orgs/` libraries and fails when a roster field is neither in the panel projection nor in a documented omit list. This is the class of bug that hid the captain block from the panel for three releases.
+
+### Changed
+
+- Tests 407 → 410; README release checklist gains the host-contract step.
+
 ## [1.13.1] - 2026-11-09
 
 ### Fixed
@@ -998,9 +1009,10 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.1...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.2...main
 [1.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.1...v1.13.0
 [1.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.0...v1.13.1
+[1.13.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.1...v1.13.2
 [1.12.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.0...v1.12.1
 [1.12.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.10.0...v1.11.0
