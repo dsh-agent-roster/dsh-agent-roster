@@ -2,6 +2,17 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.12.1] - 2026-11-09
+
+### Fixed
+
+- **“Pulling the whole space” wrote nothing and still reported success.** Registry coordinates are written `github:owner/repo`, and `clone` pasted that string straight into `raw.githubusercontent.com` URLs. Every fetch 404'd, the space degraded to `layout: flat`, the flat roster path 404'd too, and the result was a directory holding only `space.yaml` and a ledger — with `ok: true`. The prefix is now stripped before any URL is built (clone, ledger re-checks and commit resolution), and a pull that fetches zero rosters fails with `clone-no-rosters` instead of leaving an “installed” empty space.
+- **A space pulled under the library root was invisible.** “Pull the whole space” lands a space at `<root>/<space-id>/`, but the snapshot and the save/apply whitelist only looked at the root itself, so the panel showed the remote roster as “not installed” and saving into it would have hit `unknown-root`. Nested spaces are now discovered one level down (`nested: true`, `parentRootDir`), skipped by the roster-file scan, and accepted by the whitelist.
+
+### Changed
+
+- Tests 396 → 399.
+
 ## [1.12.0] - 2026-11-09
 
 ### Added
@@ -962,7 +973,8 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.1...main
+[1.12.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.0...v1.12.1
 [1.12.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.10.0...v1.11.0
 [1.8.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.8.2...v1.8.3

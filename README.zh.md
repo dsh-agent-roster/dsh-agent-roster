@@ -303,6 +303,9 @@ roles: [core-review-lead, reviewer]   # 可选：声明角色
 
 - `layout` 描述文件布局，不描述数量：`monorepo` 是 `rosters/<id>/roster.yaml`，`flat` 是 `<id>/roster.yaml`。
 - 登记与磁盘对账：缺 → error `space-roster-missing`；多 → warn `space-roster-undeclared`；归档但仍在 → info。
+- 库根可以只是"容器"：`clone` / 面板「拉取整个空间」把空间落在 `<库根>/<space-id>/`，面板与工具会把每座空间各自展开成一座库；库根本身不是空间，也不该把 `space.yaml` 放在库根冒充。
+- 来源坐标 `github:owner/repo` 与 `owner/repo` 等价：拼 `raw.githubusercontent.com` 前会先归一。
+- 一份档案都没拉到不是"成功"：会以 `clone-no-rosters` 失败，而不是留下一个只有 `space.yaml` 的空空间（那会让面板显示"已拉取"却一份档案都看不到）。
 - **仓库里写 `origin` 是 error**：来源就是仓库本身，再写一遍等于第二个真源。只有拉下来的本地副本可以带 `origin: {repo, ref, path}`。
 
 ### 整空间拉取
@@ -464,7 +467,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 | 能力 | `capability-policy-missing`、`capability-skills-unverified`、`capability-cross-check-skipped`、`invalid-document-path`、`invalid-document-sha` |
 | 策略 | `tool-policy-cross-check-skipped`（没配 `knownToolPolicies` 时是 warn：写错的 id 也会通过，无法核对） |
 | 空间 | `space-roster-missing`、`space-roster-undeclared`、`space-roster-archived`、`multiple-space-files`、`space-origin-not-allowed` |
-| 账本 | `no-origin-ledger`、`origin-ledger-broken`、`clone-unsafe-path`、`clone-snippet-missing` |
+| 账本 | `no-origin-ledger`、`origin-ledger-broken`、`clone-unsafe-path`、`clone-snippet-missing`、`clone-no-rosters`（一份档案都没拉到，按失败处理） |
 | 会话 | `session-controller-unavailable`、`session-create-failed`、`session-rename-failed`、`prompt-not-queued` |
 | 收藏/写入 | `favorites-unreadable`、`write-failed`、`delete-failed` |
 
@@ -480,7 +483,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 ## 开发
 
 ```bash
-node --test                 # 396 个测试
+node --test                 # 399 个测试
 npm run smoke               # 宿主侧 11 个工具 + 客户端两槽位
 npm run check:locale        # 中英词典键对齐
 npx dsh-agent-roster validate --dir examples
@@ -489,7 +492,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## 验证状态
 
-- 全仓 **396/396**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
+- 全仓 **399/399**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
 - CI `registry`（Node 22）重算索引、重编示例，并在 `dist/` 与源码不一致时失败。
 - 实机 e2e（独立 `DSH_HOME` + 端口 3099）：`agent-teams`（4 人）、`metagpt-company`（4 人）、`openmanus`（3 人）三套档案分别真的建出团队，`roster_verify` 均 `faithful` 全中、`drift 0`；溯源行含内容哈希。
 - 已知边界：`dist/` 不随 clone 拉取；按合集安装（`/install`）会把档案摊平成 v1 文档，整空间拉取（`clone` / `/install-space`）才保留 v2 布局与账本；`toolFilter` 无法从 team.json 核对；升级后需重启 `dsh web`。

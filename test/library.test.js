@@ -6,6 +6,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import nodePath from "node:path";
 import { tmpdir } from "node:os";
 
@@ -52,10 +53,17 @@ test("快照：绝对路径是全局库，不按工作区翻倍", () => {
 
 test("快照：没配目录时用全局默认库 <DSH_HOME>/agent-roster", () => {
   const payload = snapshot({ knownToolPolicies: null, agentTeamsStateDir: ".agent-teams" });
-  assert.equal(payload.workspaces.length, 1);
+  // 真实全局库里可能已经「拉取整个空间」过（<root>/<space-id>/），那是嵌套库，
+  // 不该影响"默认根是哪一座"这条断言；这里只看不嵌套的那一条。
+  const base = payload.workspaces.filter((workspace) => workspace.nested !== true);
+  assert.equal(base.length, 1);
   assert.equal(payload.rosterDirs[0], "");
-  assert.equal(payload.workspaces[0].scope, "global");
-  assert.equal(payload.workspaces[0].rootDir, globalRosterRoot());
+  assert.equal(base[0].scope, "global");
+  assert.equal(base[0].rootDir, globalRosterRoot());
+  assert.ok(
+    payload.workspaces.every((workspace) => workspace.nested !== true || workspace.parentRootDir === globalRosterRoot()),
+    "嵌套库必须把自己的父根写在报告里",
+  );
 });
 
 test("快照：空目录不是错误，也不会有 error 级诊断", () => {
@@ -158,4 +166,32 @@ test("serializeRoster：同目录诊断跟着档案走，别处的不带", () =>
   assert.equal(projection.diagnostics.length, 1);
   assert.equal(projection.diagnostics[0].code, "invalid-name");
   assert.equal("systemPrompt" in projection.members, false);
+});
+
+test("快照：库根下挂着的空间（拉取整个空间的结果）会被单独展开", () => {
+  const rootDir = mkdtempSync(nodePath.join(tmpdir(), "dsh-nested-"));
+  try {
+    const spaceDir = nodePath.join(rootDir, "alpha");
+    mkdirSync(nodePath.join(spaceDir, "demo"), { recursive: true });
+    writeFileSync(
+      nodePath.join(spaceDir, "space.yaml"),
+      ["kind: dsh-agent-roster/space@1", "space: alpha", "layout: flat", "rosters:", "  - id: demo", ""].join("\n"),
+      "utf8",
+    );
+    writeFileSync(nodePath.join(spaceDir, "demo", "roster.json"), JSON.stringify(rosterDocument({ roster: "demo" })), "utf8");
+
+    const payload = snapshot({ rosterDirs: [rootDir], knownToolPolicies: null, agentTeamsStateDir: ".agent-teams" });
+    const base = payload.workspaces.filter((workspace) => workspace.nested !== true);
+    const nested = payload.workspaces.filter((workspace) => workspace.nested === true);
+    assert.equal(base.length, 1);
+    assert.deepEqual(base[0].rosters, [], "库根本身没有档案");
+    assert.equal(nested.length, 1);
+    assert.equal(nested[0].rootDir, spaceDir);
+    assert.equal(nested[0].parentRootDir, rootDir);
+    assert.equal(nested[0].space?.id, "alpha");
+    assert.equal(nested[0].rosters[0].id, "demo");
+    assert.deepEqual(nested[0].diagnostics.filter((item) => item.severity === "error"), []);
+  } finally {
+    rmSync(rootDir, { recursive: true, force: true });
+  }
 });

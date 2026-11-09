@@ -304,6 +304,9 @@ roles: [core-review-lead, reviewer]   # optional role declarations
 
 - `layout` describes file placement, not counts: `monorepo` is `rosters/<id>/roster.yaml`, `flat` is `<id>/roster.yaml`.
 - Declared vs disk: missing → error `space-roster-missing`; extra → warn `space-roster-undeclared`; archived but still present → info.
+- A library root can be just a container: `clone` / “pull the whole space” lands a space under `<root>/<space-id>/`, and the panel and tools expand each space as its own library. The root itself is not a space — do not put a `space.yaml` there.
+- Repository coordinates `github:owner/repo` and `owner/repo` are equivalent; the prefix is stripped before building `raw.githubusercontent.com` URLs.
+- Pulling zero rosters is not success: it fails with `clone-no-rosters` instead of leaving a `space.yaml`-only directory (which would look installed while showing nothing).
 - **`origin` is an error inside a repository**: the source is the repository itself, and a second copy would be a second source of truth. Only pulled local copies may carry `origin: {repo, ref, path}`.
 
 ### Pulling a whole space
@@ -465,7 +468,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 | Capabilities | `capability-policy-missing`, `capability-skills-unverified`, `capability-cross-check-skipped`, `invalid-document-path`, `invalid-document-sha` |
 | Policy | `tool-policy-cross-check-skipped` (a warning when `knownToolPolicies` is unset: a typo'd id passes too, because there is nothing to check it against) |
 | Spaces | `space-roster-missing`, `space-roster-undeclared`, `space-roster-archived`, `multiple-space-files`, `space-origin-not-allowed` |
-| Ledger | `no-origin-ledger`, `origin-ledger-broken`, `clone-unsafe-path`, `clone-snippet-missing` |
+| Ledger | `no-origin-ledger`, `origin-ledger-broken`, `clone-unsafe-path`, `clone-snippet-missing`, `clone-no-rosters` (nothing was pulled, so the clone fails) |
 | Sessions | `session-controller-unavailable`, `session-create-failed`, `session-rename-failed`, `prompt-not-queued` |
 | Favourites / writes | `favorites-unreadable`, `write-failed`, `delete-failed` |
 
@@ -481,7 +484,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 ## Development
 
 ```bash
-node --test                 # 396 tests
+node --test                 # 399 tests
 npm run smoke               # host: 11 tools; client: two slots
 npm run check:locale        # zh/en dictionary key parity
 npx dsh-agent-roster validate --dir examples
@@ -490,7 +493,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## Verification status
 
-- **396/396** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
+- **399/399** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
 - CI `registry` (Node 22) recomputes the index, recompiles the examples, and fails when `dist/` drifts from source.
 - Live e2e on an isolated `DSH_HOME` (port 3099): the `agent-teams` (4 members), `metagpt-company` (4) and `openmanus` (3) rosters each actually built a team; `roster_verify` reported every member faithful, `drift 0`, and the provenance line carried the content hash.
 - Known boundaries: `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.

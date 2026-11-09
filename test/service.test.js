@@ -172,9 +172,15 @@ describe("resolveRoots", () => {
 
   it("defaults to the global library under DSH_HOME", () => {
     const roots = resolveRoots({ get: () => undefined }, { rosterDirs: [] });
-    assert.equal(roots.length, 1);
-    assert.equal(roots[0].rootDir, globalRosterRoot());
-    assert.equal(roots[0].workspacePath, "", "全局库不属于任何工作区");
+    const base = roots.filter((root) => root.nested !== true);
+    assert.equal(base.length, 1);
+    assert.equal(base[0].rootDir, globalRosterRoot());
+    assert.equal(base[0].workspacePath, "", "全局库不属于任何工作区");
+    // 「拉取整个空间」会把空间落在 <root>/<space-id>/：这些也要进白名单，
+    // 否则面板看得到、保存/应用却报 unknown-root。
+    for (const nested of roots.filter((root) => root.nested === true)) {
+      assert.equal(nested.parentRootDir, globalRosterRoot());
+    }
   });
 });
 

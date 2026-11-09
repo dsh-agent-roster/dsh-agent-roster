@@ -218,3 +218,67 @@ test("clone：正文引用到的 snippets 一并拉下来，本地编译才不�
 test("snippetPathsOf：只收独占一行、且属于 snippets/ 的引用", () => {
   assert.deepEqual(snippetPathsOf("a\n{{> snippets/units.md}}\n{{> parts/x.md}}\n请读 {{> snippets/y.md}}\n"), ["snippets/units.md"]);
 });
+
+test("clone：registry 坐标带 `github:` 前缀时先归一，不会退化成空拉取", async () => {
+  const rootDir = mkdtempSync(nodePath.join(tmpdir(), "dsh-clone-"));
+  try {
+    const files = {
+      "space.yaml": [
+        "kind: dsh-agent-roster/space@1",
+        "space: demo-space",
+        "layout: monorepo",
+        "rosters:",
+        "  - id: core-review",
+        "",
+      ].join("\n"),
+      "rosters/core-review/roster.yaml": ROSTER.monorepo("core-review", "reviewer"),
+      "roles/reviewer/AGENT.md": AGENT("reviewer"),
+    };
+    const inner = fetchStub(files, "demo/space");
+    const seen = [];
+    const result = await cloneSpace({
+      rootDir,
+      spaceId: "demo-space",
+      repo: "github:demo/space",
+      fetchImpl: async (url, init) => {
+        seen.push(url);
+        return inner(url, init);
+      },
+    });
+    assert.equal(result.ok, true, JSON.stringify(result.diagnostics));
+    assert.equal(result.layout, "monorepo");
+    assert.ok(
+      seen.every((url) => !url.includes("github:")),
+      "拼给 raw.githubusercontent 的 URL 不该带 github: 前缀",
+    );
+    assert.ok(existsSync(nodePath.join(rootDir, "demo-space", "rosters", "core-review", "roster.yaml")));
+  } finally {
+    rmSync(rootDir, { recursive: true, force: true });
+  }
+});
+
+test("clone：一份档案都没拉到就是失败，不是「成功但空」", async () => {
+  const rootDir = mkdtempSync(nodePath.join(tmpdir(), "dsh-clone-"));
+  try {
+    const files = {
+      "space.yaml": [
+        "kind: dsh-agent-roster/space@1",
+        "space: demo-space",
+        "layout: monorepo",
+        "rosters:",
+        "  - id: core-review",
+        "",
+      ].join("\n"),
+    };
+    const result = await cloneSpace({
+      rootDir,
+      spaceId: "demo-space",
+      repo: "demo/space",
+      fetchImpl: fetchStub(files),
+    });
+    assert.equal(result.ok, false, "只拉到 space.yaml 不能算成功");
+    assert.ok(result.diagnostics.some((item) => item.code === "clone-no-rosters"));
+  } finally {
+    rmSync(rootDir, { recursive: true, force: true });
+  }
+});
