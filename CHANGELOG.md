@@ -2,6 +2,17 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.13.3] - 2026-11-09
+
+### Added
+
+- **`npm run e2e`** — the check that the unit tests structurally cannot be: it packs the working tree, installs it into a temporary copy of the production profile, boots a throwaway `dsh web` on a free port, and asks the *running host* what it sees (reported version, the fixture library and its captain projection, `hostTeamTargets`, `hostModels`, `/catalog`, a 400 for an unknown engine, a 404 for an unknown roster, a favourites round-trip). 17 assertions, no model calls, about 9 seconds; the production profile is only read and the temporary home is deleted.
+- `--depth=apply` extends it to a real team: it picks a model the deployment actually serves, applies, and waits for the member count before checking `team.json` (captain session, provenance line). Slow and costs model calls, so it is opt-in.
+
+### Why
+
+Nine host-contract bugs (a missing `AbortSignal`, `workspaceId` read from the wrong field, a projection that dropped `captain`, a `github:` prefix that made a pull look successful) each shipped on a green suite: the fakes encoded what we assumed the host looked like. `check:host` pins the four contracts we can read from the installed bundle; `e2e` covers the rest by loading the plugin the way a user does.
+
 ## [1.13.2] - 2026-11-09
 
 ### Added

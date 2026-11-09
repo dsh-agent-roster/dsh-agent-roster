@@ -488,6 +488,8 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 node --test                 # 410 tests
 npm run smoke               # host: 11 tools; client: two slots
 npm run check:host         # host contracts the unit tests fake
+npm run e2e                 # boot a throwaway host and ask what it actually sees (~9 s, no model calls)
+npm run e2e -- --depth=apply # the same, then really build a team (slower, calls the model)
 npm run check:locale        # zh/en dictionary key parity
 npx dsh-agent-roster validate --dir examples
 npx dsh-agent-roster registry validate --file index/registry.json
@@ -497,8 +499,8 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 - **410/410** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
 - CI `registry` (Node 22) recomputes the index, recompiles the examples, and fails when `dist/` drifts from source.
-- Live e2e on an isolated `DSH_HOME` (port 3099): the `agent-teams` (4 members), `metagpt-company` (4) and `openmanus` (3) rosters each actually built a team; `roster_verify` reported every member faithful, `drift 0`, and the provenance line carried the content hash.
-- Known boundaries: `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.
+- **Scripted e2e** (`npm run e2e`): packs the working tree, installs it into a temporary copy of the production profile, boots a throwaway `dsh web` on a free port, and asks the running host what it sees — version, libraries and the captain projection, `hostTeamTargets`, `hostModels`, `/catalog`, a 400 for an unknown engine, a 404 for an unknown roster, a favourites round-trip: 17 assertions, no model calls, about 9 seconds. `--depth=apply` also builds a real team and checks `team.json` (slow, costs model calls). The production profile is only read.
+- Known boundaries: `npm run e2e` copies a snapshot of the production profile (with its installed plugins), so it verifies how the host loads us rather than replacing unit tests of individual modules; `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.
 
 ## License
 
