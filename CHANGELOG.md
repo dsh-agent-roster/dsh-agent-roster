@@ -2,6 +2,14 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.20.2] - 2026-11-10
+
+### Fixed
+
+- **`roster_capture` compared a reference with the name it expands to.** The archive stores `role: report-builder@1.0.0`; `team.json` stores the role file's display name (`工具工程师`). `roster_verify` already compared the expanded name, but `roster_capture` compared the raw reference, so a healthy team reported one `differ` per member while `verify` said 7/7 consistent. It now compares the expanded name like `verify` does, and keeps the reference as a note (`role core-review-lead@1.0.0（展开 队长）`) when it differs. `role` is not a mechanical field, so this never affected what could be written back — only the answer to "is there a difference".
+
+Tests 436 → 437.
+
 ## [1.20.1] - 2026-11-10
 
 ### Changed
@@ -1180,7 +1188,7 @@ point is now one search field above the tabs.
 [1.16.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.20.1...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.20.2...main
 [1.14.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.7...v1.14.0
 [1.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.1...v1.13.0
 [1.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.0...v1.13.1

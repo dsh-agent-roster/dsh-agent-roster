@@ -352,7 +352,7 @@ test("roster_capture：把运行时差异算出来，默认不写回", async () 
       description: "roster:core-review@1.0.0#abc12345",
       captainSessionId: "session-1",
       members: [
-        { name: "lead", role: "core-review-lead@1.0.0", provider: "deepseek-official", model: "deepseek-v4-pro", reasoningEffort: "high", executionPrompt: "runtime text" },
+        { name: "lead", role: "队长", provider: "deepseek-official", model: "deepseek-v4-pro", reasoningEffort: "high", executionPrompt: "runtime text" },
       ],
     }),
   );

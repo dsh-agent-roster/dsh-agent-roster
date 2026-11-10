@@ -422,7 +422,7 @@ Favourites live in `.dsh-roster-favorites.json` at the library root (`dsh-agent-
 
 A roster does not get fresher because the team ran well — the runtime consumes rosters in one direction. Two tools bring changes back:
 
-- `roster_capture`: compares `team.json` with the roster member by member (`provider`/`model`/`reasoningEffort`/`toolPolicy` by value; the persona only by the assembled hash and length). Read-only by default, and it lists what could be written back; `apply: true` writes the **mechanical fields** back to `roster.yaml`, bumps the patch version and recompiles `dist/`; `apply: true` plus `remember: true` also records “always write back from now on” (first as the `captureAutoApply` setting, then, if that cannot be written, into `.dsh-roster-preferences.json` at the library root). The persona is never written back: the runtime stores the assembled text, and writing it into the role file would flatten `parts` and `{{> …}}`; edit the role body instead.
+- `roster_capture`: compares `team.json` with the roster member by member (`role` by the **expanded role name**, with the reference kept as a note; `provider`/`model`/`reasoningEffort`/`toolPolicy` by value; the persona only by the assembled hash and length). Read-only by default, and it lists what could be written back; `apply: true` writes the **mechanical fields** back to `roster.yaml`, bumps the patch version and recompiles `dist/`; `apply: true` plus `remember: true` also records “always write back from now on” (first as the `captureAutoApply` setting, then, if that cannot be written, into `.dsh-roster-preferences.json` at the library root). The persona is never written back: the runtime stores the assembled text, and writing it into the role file would flatten `parts` and `{{> …}}`; edit the role body instead.
 - `roster_iterate`: finds the old team by its provenance line, optionally captures/applies, then creates a new session and queues the build prompt. The old team is left alone. When there are writable differences and `capture` is omitted, it returns the diff and **stops without creating a session**, so you can pick `capture: true` (write back, then iterate), `capture: true` + `remember: true` (write back and remember), or `capture: false` (iterate without touching the roster).
 
 Hand-over steps go in `handover.steps` (`timer.cancel`/`timer.create`/`wake.update`/`archive`/`notify`/`verify`/`note`, …). The tool writes them to `<library>/.dsh-handover/<roster>-YYYYMMDD-HHmmss.json` and renders a checklist at the end of the new captain’s kick-off message, for that captain to execute one by one. **The plugin carries, validates and delivers; it does not run them**: timers belong to the host `schedule` plugin, wake routing to the team scripts, archiving to the workspace API — none of that is inside the roster layer’s boundary; the `verify` field is the command the new captain should run afterwards. A non-note step without `verify` records a warning.
@@ -526,7 +526,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 Design notes: `docs/design.md` (module map, field homes, capability matrix, and the checklist of every place a change must land).
 
 ```bash
-node --test                 # 436 tests
+node --test                 # 437 tests
 npm run smoke               # host: 13 tools; client: two slots
 npm run check:host         # host contracts the unit tests fake
 npm run e2e                    # boot a throwaway host and ask what it actually sees (~9 s, no model calls)

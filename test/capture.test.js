@@ -20,7 +20,7 @@ function teamOf(overrides = {}) {
     members: [
       {
         name: "lead",
-        role: "core-review-lead@1.0.0",
+        role: "队长",
         provider: "deepseek-official",
         model: "deepseek-v4-pro",
         reasoningEffort: "medium",
@@ -46,9 +46,30 @@ test("captureTeam：逐字段比对，人设只比哈希", () => {
   const model = lead.fields.find((field) => field.field === "model");
   assert.equal(model.status, "differ");
   assert.equal(model.runtime, "deepseek-v4-pro");
+  // `role` 在档案里是引用，运行时是展开后的名字：比名字，引用只作注记。
+  const role = lead.fields.find((field) => field.field === "role");
+  assert.equal(role.status, "match");
+  assert.equal(role.declared, "队长");
+  assert.equal(role.runtime, "队长");
+  assert.equal(role.ref, "core-review-lead@1.0.0");
   // 运行时正文与档案拼装结果不同 ⇒ 人设不一致，但不写回
   assert.equal(lead.persona.status, "differ");
   assert.ok(report.summary.differ > 0);
+});
+
+test("captureTeam：运行时角色名与展开名不同才算差异，并把引用带出来", () => {
+  const report = captureTeam({
+    rosterDir: nodePath.join(examples, "rosters/core-review"),
+    rootDir: examples,
+    id: "core-review",
+    team: teamOf({ members: [{ name: "lead", role: "别的角色", executionPrompt: "一致" }] }),
+  });
+  const lead = report.members.find((member) => member.name === "lead");
+  const role = lead.fields.find((field) => field.field === "role");
+  assert.equal(role.status, "differ");
+  assert.equal(role.declared, "队长");
+  assert.equal(role.runtime, "别的角色");
+  assert.equal(role.ref, "core-review-lead@1.0.0");
 });
 
 test("captureTeam：运行时缺成员记 missing，多出来的进 undeclared", () => {

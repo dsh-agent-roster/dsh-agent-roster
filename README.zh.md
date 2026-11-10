@@ -421,7 +421,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 
 档案不会因为团队跑得好而自动变新——运行时单向消费档案。要把运行时的调整带回来，用两个工具：
 
-- `roster_capture`：把 `team.json` 与档案逐成员比一遍（`provider`/`model`/`reasoningEffort`/`toolPolicy` 比原值，人设只比拼装后的哈希与字数）。默认只读，并会把「可写回哪些字段」列出来问一句；`apply: true` 才把**机械字段**写回 `roster.yaml`，版本号 patch+1 并重编译 `dist/`；`apply: true` + `remember: true` 同时把「以后都自动写回」记下来（优先改配置 `captureAutoApply`，写不进配置就写进库根的 `.dsh-roster-preferences.json`）。人设写不回去：运行时存的是拼装结果，写回角色文件会把 `parts`/`{{> …}}` 结构压平——改人设请改角色正文。
+- `roster_capture`：把 `team.json` 与档案逐成员比一遍（`role` 比**展开后的角色名**，引用只作注记；`provider`/`model`/`reasoningEffort`/`toolPolicy` 比原值；人设只比拼装后的哈希与字数）。默认只读，并会把「可写回哪些字段」列出来问一句；`apply: true` 才把**机械字段**写回 `roster.yaml`，版本号 patch+1 并重编译 `dist/`；`apply: true` + `remember: true` 同时把「以后都自动写回」记下来（优先改配置 `captureAutoApply`，写不进配置就写进库根的 `.dsh-roster-preferences.json`）。人设写不回去：运行时存的是拼装结果，写回角色文件会把 `parts`/`{{> …}}` 结构压平——改人设请改角色正文。
 - `roster_iterate`：按溯源行找到旧团队 →（可选）先 capture/apply → 新建一个会话并排入建团提示。旧团队不删。有可写回差异而 `capture` 未指定时，它先返回差异并**停住、不建会话**，等你选：`capture: true`（写回再换代）、`capture: true` + `remember: true`（写回并记住以后都自动）、`capture: false`（不改档案直接换代）。
 
 交接步骤放在 `handover.steps`（`timer.cancel`/`timer.create`/`wake.update`/`archive`/`notify`/`verify`/`note` 等），工具把它写成 `<库根>/.dsh-handover/<档案>-YYYYMMDD-HHmmss.json`，并渲染成一段清单附在新队长起始消息末尾，由新队长逐条执行。**插件只承载、校验、交付，不代跑**：定时器属于宿主 `schedule`，唤醒路由属于团队脚本，归档走 workspace 接口，都不在档案层的能力边界内；`verify` 一栏写的是新队长执行后该用哪条命令确认。缺 `verify` 的步骤会记一条 warn。
@@ -525,7 +525,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 设计说明：`docs/design.md`（模块地图、字段归宿、能力矩阵，以及「加一个能力要改哪些地方」的落点清单）。
 
 ```bash
-node --test                 # 436 个测试
+node --test                 # 437 个测试
 npm run smoke               # 宿主侧 13 个工具 + 客户端两槽位
 npm run check:host         # 宿主契约（单测里的假件证明不了它）
 npm run e2e                    # 起一个一次性宿主，问它真正看见了什么（不调模型，约 9 秒）
