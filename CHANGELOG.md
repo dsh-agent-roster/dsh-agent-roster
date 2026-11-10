@@ -2,6 +2,14 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.18.2] - 2026-11-10
+
+### Fixed
+
+- **`update` could not see files that upstream had just added.** It compared only the paths recorded in the ledger, so a new `knowledge/` document (or a new roster) upstream left the local copy reporting "clean" forever — observed on the `examples` copy after 1.15.0 shipped `knowledge/project-map.md`. `checkOrigin` now also fetches the remote `space.yaml`, reads its `knowledge` / `rosters` declarations, and treats declared-but-unledgered files as `remote-only` (a local file with the same name is reported as `local-only` and left alone). Fast-forwarding the cover merges only the declaration section and keeps the local `origin:` block, which is the only record of where the copy came from.
+
+Tests 433 → 434.
+
 ## [1.18.0] - 2026-11-10
 
 ### Added

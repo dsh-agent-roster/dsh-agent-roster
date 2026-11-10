@@ -15,6 +15,7 @@ import {
   applyFastForward,
   changeState,
   checkOrigin,
+  declaredSpaceFiles,
   ORIGIN_FILE,
   readOrigin,
   sha256Of,
@@ -167,4 +168,30 @@ test("账本里的越界路径不算数：不比对、不写盘、不认账", as
 
   const accepted = acceptLocal(dir, [`../${name}`]);
   assert.deepEqual(accepted.updated, []);
+});
+
+test("远端新声明、账本没记的文件：能被发现并快进，且封面保留 origin", async () => {
+  const dir = tempDir();
+  const roster = "rosters/demo/roster.yaml";
+  const text = fs.readFileSync(path.join(dir, ...roster.split("/")), "utf8");
+  // 本地封面带着 origin，声明了旧的一份档案，还没有 knowledge 段
+  fs.writeFileSync(
+    path.join(dir, "space.yaml"),
+    `kind: dsh-agent-roster/space@1\nspace: demo\nlayout: monorepo\nrosters:\n  - id: demo\norigin:\n  repo: o/r\n  ref: main\n  path: ""\n`,
+  );
+  const remoteSpace = `kind: dsh-agent-roster/space@1\nspace: demo\nlayout: monorepo\nrosters:\n  - id: demo\nknowledge:\n  - path: knowledge/map.md\n    sha256: ${sha256Of("# map\n")}\n`;
+  assert.deepEqual(declaredSpaceFiles(remoteSpace), ["knowledge/map.md", "rosters/demo/roster.yaml"]);
+  writeOrigin(dir, { origin: { repo: "o/r", ref: "main", path: "" }, files: { [roster]: { sha256: sha256Of(text) } } });
+
+  const check = await checkOrigin(dir, { fetchImpl: fakeFetch({ [roster]: text, "space.yaml": remoteSpace, "knowledge/map.md": "# map\n" }) });
+  assert.equal(check.ok, true);
+  assert.equal(check.summary["remote-only"], 2); // 知识文件 + 封面
+  assert.equal(fs.existsSync(path.join(dir, "knowledge", "map.md")), false);
+
+  const applied = applyFastForward(dir, check.entries);
+  assert.equal(applied.ok, true);
+  assert.equal(fs.readFileSync(path.join(dir, "knowledge", "map.md"), "utf8"), "# map\n");
+  const cover = fs.readFileSync(path.join(dir, "space.yaml"), "utf8");
+  assert.match(cover, /knowledge:/);
+  assert.match(cover, /origin:/); // 本地来源记录不能被远端封面覆盖掉
 });

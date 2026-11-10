@@ -352,6 +352,8 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --write   # fast-forwar
 npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # accept local as the new baseline
 ```
 
+Beyond the files in the ledger, it also reads the remote `space.yaml` and picks up `knowledge/` and `rosters/` entries that exist upstream but not in the ledger — those used to report "clean" forever.
+
 Three-way comparison per file (ledger / disk / remote at the ref), seven states:
 
 | State | Meaning | `--write` |
@@ -526,7 +528,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 Design notes: `docs/design.md` (module map, field homes, capability matrix, and the checklist of every place a change must land).
 
 ```bash
-node --test                 # 433 tests
+node --test                 # 434 tests
 npm run smoke               # host: 13 tools; client: two slots
 npm run check:host         # host contracts the unit tests fake
 npm run e2e                    # boot a throwaway host and ask what it actually sees (~9 s, no model calls)
@@ -539,7 +541,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## Verification status
 
-- **433/433** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
+- **434/434** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
 - CI `registry` (Node 22) recomputes the index, recompiles the examples, and fails when `dist/` drifts from source.
 - **Scripted e2e** (`npm run e2e`): packs the working tree, installs it into a temporary copy of the production profile, boots a throwaway `dsh web` on a free port, and asks the running host what it sees — version, libraries and the captain projection, `hostTeamTargets`, `hostModels`, `/catalog`, a 400 for an unknown engine, a 404 for an unknown roster, a favourites round-trip: 17 assertions, no model calls, about 9 seconds. `--depth=apply` also builds a real team and checks `team.json` (slow, costs model calls). `--depth=persona` goes one step further and decodes the captain session log: the first system prompt (before the team exists) has no roster persona, while the later one has it and has lost the deployment prefix — that is what proves the injector shadows the section instead of appending a line to the kick-off message. The production profile is only read.
 - Known boundaries: `npm run e2e` copies a snapshot of the production profile (with its installed plugins), so it verifies how the host loads us rather than replacing unit tests of individual modules; `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.
