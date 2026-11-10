@@ -2,6 +2,14 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.23.1] - 2026-11-11
+
+### Changed
+
+- npm keywords now include `dsh-roster`, `team-roster`, `agent-roster` and `deepseek`, so the package is findable under the names people actually search for. No behaviour change.
+
+[1.23.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.23.0...v1.23.1
+
 ## [1.23.0] - 2026-11-11
 
 ### Added
