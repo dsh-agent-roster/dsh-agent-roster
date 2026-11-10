@@ -93,7 +93,8 @@
     "deployedDrifted": "In {teams} ({count} drifted)",
     "createTeam": "Create team",
     "favorite": "Favorite",
-    "unfavorite": "Unfavorite"
+    "unfavorite": "Unfavorite",
+    "formatLine": "Format {format} · {file}"
   },
   "member": {
     "prompt": "Prompt",

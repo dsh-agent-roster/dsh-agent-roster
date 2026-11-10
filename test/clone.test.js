@@ -117,6 +117,7 @@ test("clone：monorepo 空间按原布局落地，且本地能编译出人设", 
     assert.equal(scan.space?.id, "demo-space");
     assert.equal(scan.spaceCheck?.status, "ok");
     assert.equal(scan.rosters[0].format, "v2");
+    assert.equal(scan.rosters[0].documentFormat, "roster@2");
   } finally {
     rmSync(rootDir, { recursive: true, force: true });
   }

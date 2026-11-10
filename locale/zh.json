@@ -93,7 +93,8 @@
     "deployedDrifted": "在 {teams}（{count} 处不一致）",
     "createTeam": "创建团队",
     "favorite": "收藏",
-    "unfavorite": "取消收藏"
+    "unfavorite": "取消收藏",
+    "formatLine": "格式 {format} · {file}"
   },
   "member": {
     "prompt": "人设",

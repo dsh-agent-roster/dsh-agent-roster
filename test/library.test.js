@@ -163,6 +163,7 @@ test("serializeRoster：同目录诊断跟着档案走，别处的不带", () =>
     members: [],
   };
   const projection = serializeRoster(roster, scanDiagnostics);
+  assert.equal(projection.documentFormat, "roster@1");
   assert.equal(projection.diagnostics.length, 1);
   assert.equal(projection.diagnostics[0].code, "invalid-name");
   assert.equal("systemPrompt" in projection.members, false);

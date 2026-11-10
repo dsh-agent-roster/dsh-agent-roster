@@ -62,6 +62,8 @@ npx dsh-agent-roster compile --roster examples/rosters/core-review   # 只打印
 | **空间（v2）** | `<根>/roles/` + `<根>/rosters/`（+ 可选 `snippets/`、`space.yaml`） | 手写、`migrate`、`clone` |
 | **拉取副本** | 空间或平铺库 + `.dsh-roster-origin.json`（来源账本） | `clone` / 面板「拉取整个空间」 |
 
+两种档案版本语义同一套，只是磁盘形态不同；面板的档案详情与 `roster_list` / `roster_show` 都会标出 `format: roster@1 | roster@2`。**v1 已冻结**：只修 bug、不再加字段；需要角色复用、`{{> …}}` 引用、公共知识或编排时用 v2。按合集安装（`/install`）落的是摊平后的 v1，要保留空间布局请用整空间拉取。
+
 `space.yaml` 是**可选**的登记层：有它就有「声明了几份、实际几份、缺了谁、谁没登记」的核对；没有它，库仍按目录扫描，只是没有这层对账。收藏存在库根的 `.dsh-roster-favorites.json`（点文件，扫描器跳过）。
 
 ## 档案格式（v1，平铺库）
@@ -508,7 +510,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 ## 开发
 
 ```bash
-node --test                 # 424 个测试
+node --test                 # 425 个测试
 npm run smoke               # 宿主侧 11 个工具 + 客户端两槽位
 npm run check:host         # 宿主契约（单测里的假件证明不了它）
 npm run e2e                    # 起一个一次性宿主，问它真正看见了什么（不调模型，约 9 秒）
@@ -521,7 +523,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## 验证状态
 
-- 全仓 **424/424**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
+- 全仓 **425/425**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
 - CI `registry`（Node 22）重算索引、重编示例，并在 `dist/` 与源码不一致时失败。
 - **脚本化 e2e**（`npm run e2e`）：把工作区打包、装进生产 profile 的**临时副本**，在空闲端口起一个一次性 `dsh web`，然后只问运行中的宿主：版本、库与队长投影、`hostTeamTargets`、`hostModels`、`/catalog`、未知引擎 400、未知档案 404、收藏往返——17 项断言，不调模型，约 9 秒。`--depth=apply` 才真建一支队并检查 `team.json`（慢、会调用模型）。`--depth=persona` 在 apply 之上再解码队长会话日志：团队落盘前的第一步系统提示词里**没有**档案人设，落盘后的系统提示词里**有**、且部署人设前缀**已消失**——证明注入走的是同名 section 遮蔽，不是往起始消息里塞一段。生产 profile 只读。
 - 已知边界：`npm run e2e` 复制的是**生产 profile 的快照**（含已装插件），因此它验证「宿主怎么加载我们」，不替代针对单个模块的单测；`dist/` 不随 clone 拉取；按合集安装（`/install`）会把档案摊平成 v1 文档，整空间拉取（`clone` / `/install-space`）才保留 v2 布局与账本；`toolFilter` 无法从 team.json 核对；升级后需重启 `dsh web`。

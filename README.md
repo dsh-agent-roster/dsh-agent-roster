@@ -62,6 +62,8 @@ The repo ships two example libraries: [`examples/`](./examples) (v2) and [`examp
 | **Space (v2)** | `<root>/roles/` + `<root>/rosters/` (+ optional `snippets/`, `space.yaml`) | hand-written, `migrate`, `clone` |
 | **Pulled copy** | a space or flat library + `.dsh-roster-origin.json` (origin ledger) | `clone` / the panel’s “pull the whole space” |
 
+The two roster versions share one semantic model; only the on-disk shape differs. The panel detail and `roster_list` / `roster_show` report `format: roster@1 | roster@2`. **v1 is frozen**: bug fixes only, no new fields — use v2 when you need role reuse, `{{> …}}` references, shared knowledge or orchestration. A single-collection install (`/install`) writes the flattened v1 document; use the whole-space pull to keep the space layout.
+
 `space.yaml` is an **optional** declaration layer: with it you get “declared vs on disk vs missing vs undeclared”; without it the library is still scanned, just without that reconciliation. Favourites live in `.dsh-roster-favorites.json` at the library root (a dotfile; the scanner skips it).
 
 ## Roster format (v1, flat libraries)
@@ -509,7 +511,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 ## Development
 
 ```bash
-node --test                 # 424 tests
+node --test                 # 425 tests
 npm run smoke               # host: 11 tools; client: two slots
 npm run check:host         # host contracts the unit tests fake
 npm run e2e                    # boot a throwaway host and ask what it actually sees (~9 s, no model calls)
@@ -522,7 +524,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## Verification status
 
-- **424/424** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
+- **425/425** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
 - CI `registry` (Node 22) recomputes the index, recompiles the examples, and fails when `dist/` drifts from source.
 - **Scripted e2e** (`npm run e2e`): packs the working tree, installs it into a temporary copy of the production profile, boots a throwaway `dsh web` on a free port, and asks the running host what it sees — version, libraries and the captain projection, `hostTeamTargets`, `hostModels`, `/catalog`, a 400 for an unknown engine, a 404 for an unknown roster, a favourites round-trip: 17 assertions, no model calls, about 9 seconds. `--depth=apply` also builds a real team and checks `team.json` (slow, costs model calls). `--depth=persona` goes one step further and decodes the captain session log: the first system prompt (before the team exists) has no roster persona, while the later one has it and has lost the deployment prefix — that is what proves the injector shadows the section instead of appending a line to the kick-off message. The production profile is only read.
 - Known boundaries: `npm run e2e` copies a snapshot of the production profile (with its installed plugins), so it verifies how the host loads us rather than replacing unit tests of individual modules; `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.

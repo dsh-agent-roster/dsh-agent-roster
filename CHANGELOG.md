@@ -2,6 +2,19 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.16.0] - 2026-11-10
+
+### Added
+
+- **Every roster now says which on-disk form it is.** `roster_list` and `roster_show` report `documentFormat: roster@1 | roster@2`, and the panel detail line shows `格式 roster@2 · rosters/core-review/roster.yaml`. The values are derived at scan time (v2 branch, v1 loader, flattened compile artifacts), so they cannot drift from the files on disk.
+- A single-collection install (`/install`) now reports `format: "roster@1"`, `layout: "flat"` and a `hint` pointing at the whole-space pull. It was always the one place where a version appeared without being chosen, and it said nothing.
+
+### Changed
+
+- **v1 is frozen**: the flat single-file format keeps receiving bug fixes but no new fields. v2 is the only evolving roster format. Documented in both READMEs next to the three on-disk shapes.
+
+Tests 424 → 425.
+
 ## [1.15.0] - 2026-11-10
 
 ### Added
@@ -1084,6 +1097,7 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
+[1.16.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
 [Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...main
 [1.14.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.7...v1.14.0

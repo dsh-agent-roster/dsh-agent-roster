@@ -59,6 +59,7 @@ test("支持 YAML 档案", () => {
     const scan = scanRosterLibrary({ rootDir: library.rootDir });
     assert.equal(scan.stats.ok, 1, JSON.stringify(scan.diagnostics));
     assert.equal(scan.rosters[0].format, "yaml");
+    assert.equal(scan.rosters[0].documentFormat, "roster@1");
     assert.equal(scan.rosters[0].members[0].name, "writer");
   } finally {
     library.cleanup();

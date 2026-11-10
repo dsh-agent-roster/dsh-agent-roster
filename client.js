@@ -1141,7 +1141,11 @@ window.__ModuleLoader__.load({
                 ? null
                 : h(CaptainPanel, { roster, report: captainReport, sessions: sessions ?? [], workspaces, onToast }),
               h(DiagnosticList, { items: diagnostics }),
-              h("p", { className: "rstr-hint" }, `roster.file: ${roster.file}`),
+              h(
+                "p",
+                { className: "rstr-hint" },
+                t("roster.formatLine", { format: roster.documentFormat ?? "roster@1", file: roster.file }),
+              ),
               h(
                 "div",
                 { className: "rstr-row-detail-actions" },

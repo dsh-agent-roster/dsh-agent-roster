@@ -410,3 +410,13 @@ test("创建团队：队长模型可以在提交前改，档案声明的模型�
   // 选中项随 payload 发给 /apply。
   assert.match(source, /payload\.model = \{ provider: pickedModel\.provider, model: pickedModel\.model \}/);
 });
+
+test("档案详情说出磁盘形态：v1 单文件与 v2 空间不再隐形", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  assert.match(source, /roster\.documentFormat \?\? "roster@1"/);
+  assert.match(source, /t\("roster\.formatLine", \{ format:/);
+  const zh = JSON.parse(readFileSync(new URL("../locale/zh.json", import.meta.url), "utf8"));
+  const en = JSON.parse(readFileSync(new URL("../locale/en.json", import.meta.url), "utf8"));
+  assert.match(zh.roster.formatLine, /格式 \{format\}/);
+  assert.match(en.roster.formatLine, /Format \{format\}/);
+});

@@ -113,6 +113,10 @@ test("第一次拉取把档案写进本机档案库", async () => {
 
   assert.equal(result.ok, true);
   assert.equal(result.written, 1);
+  // 单份安装摊平成单文件档案：结果必须自报形态，并指向保留空间布局的那条路。
+  assert.equal(result.format, "roster@1");
+  assert.equal(result.layout, "flat");
+  assert.match(result.hint, /install-space|整空间/);
   assert.deepEqual(
     result.results.map((item) => [item.id, item.action]),
     [["alpha", "created"]],
