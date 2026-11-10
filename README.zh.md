@@ -436,10 +436,10 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 | `roster_verify` | 比对 `team.json` 里实际存下的值 | `ref`、`team?`、`path?` |
 | `roster_diff` | 两份档案的语义差异 | `from`、`to`、`path?` |
 | `roster_index` | 公共索引状态；collection 附 `pulled` / `space` / `layout` | `collection?`、`source?`、`refresh?` |
-| `roster_space` | 空间的登记 vs 在库、角色、来源与账本 commit | `path?` |
+| `roster_space` | 空间的登记 vs 在库、角色、来源与账本 commit；有账本时带 `changes` 段（更新摘要） | `path?`、`refresh?` |
 | `roster_search` | 跨本机与订阅来源搜索（多词为「且」；远端最多 8 个来源，超出报 info） | `query`、`path?`、`remote?`、`limit?` |
 | `roster_compile` | 编译预览（不写盘） | `ref`、`path?` |
-| `roster_changes` | 逐文件更新检查（七态） | `path?`、`refresh?` |
+| `roster_changes` | **[已废弃]** 逐文件更新检查；改用 `roster_space` 的 `changes`，2.0 移除 | `path?`、`refresh?` |
 | `roster_team` | 从档案创建团队（新会话或已有会话） | `id`、`teamName?`、`mode?`、`workspace?`、`sessionName?`、`sessionId?`、`target?`、`model?`、`path?` |
 | `roster_capture` | 比对 `team.json` 与档案；`apply:true` 才把机械字段写回，`remember:true` 记住以后都自动 | `id`、`team?`、`stateDir?`、`fields?`、`apply?`、`remember?`、`path?` |
 | `roster_iterate` | 从当前团队迭代出新会话：可选写回 + 交接清单 | `id`、`teamName?`、`sessionName?`、`workspace?`、`target?`、`model?`、`capture?`、`remember?`、`handover?`、`path?` |
@@ -525,7 +525,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 设计说明：`docs/design.md`（模块地图、字段归宿、能力矩阵，以及「加一个能力要改哪些地方」的落点清单）。
 
 ```bash
-node --test                 # 437 个测试
+node --test                 # 438 个测试
 npm run smoke               # 宿主侧 13 个工具 + 客户端两槽位
 npm run check:host         # 宿主契约（单测里的假件证明不了它）
 npm run e2e                    # 起一个一次性宿主，问它真正看见了什么（不调模型，约 9 秒）
@@ -538,7 +538,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## 验证状态
 
-- 全仓 **437/437**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
+- 全仓 **438/438**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
 - CI `registry`（Node 22）重算索引、重编示例，并在 `dist/` 与源码不一致时失败。
 - **脚本化 e2e**（`npm run e2e`）：把工作区打包、装进生产 profile 的**临时副本**，在空闲端口起一个一次性 `dsh web`，然后只问运行中的宿主：版本、库与队长投影、`hostTeamTargets`、`hostModels`、`/catalog`、未知引擎 400、未知档案 404、收藏往返——17 项断言，不调模型，约 9 秒。`--depth=apply` 才真建一支队并检查 `team.json`（慢、会调用模型）。`--depth=persona` 在 apply 之上再解码队长会话日志：团队落盘前的第一步系统提示词里**没有**档案人设，落盘后的系统提示词里**有**、且部署人设前缀**已消失**——证明注入走的是同名 section 遮蔽，不是往起始消息里塞一段。生产 profile 只读。
 - 已知边界：`npm run e2e` 复制的是**生产 profile 的快照**（含已装插件），因此它验证「宿主怎么加载我们」，不替代针对单个模块的单测；`dist/` 不随 clone 拉取；按合集安装（`/install`）会把档案摊平成 v1 文档，整空间拉取（`clone` / `/install-space`）才保留 v2 布局与账本；`toolFilter` 无法从 team.json 核对；升级后需重启 `dsh web`。

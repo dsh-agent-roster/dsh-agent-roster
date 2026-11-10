@@ -2,6 +2,14 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.21.0] - 2026-11-10
+
+### Changed
+
+- **One update answer, one entry point.** `roster_space` now carries the update picture: when the space has an origin ledger it returns a `changes` section (per-file states, `pending`, `fastForward`, `unverified`) and accepts `refresh` (default `true`, `false` compares against the ledger only). `roster_changes` stays as a deprecated alias of the same computation and will be removed in 2.0 — so the next tool count change is a removal, not another addition.
+
+Tests 437 → 438.
+
 ## [1.20.2] - 2026-11-10
 
 ### Fixed
@@ -1188,7 +1196,7 @@ point is now one search field above the tabs.
 [1.16.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.20.2...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.21.0...main
 [1.14.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.7...v1.14.0
 [1.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.1...v1.13.0
 [1.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.0...v1.13.1

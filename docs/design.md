@@ -121,7 +121,7 @@ lib/registry.js → lib/validate.js    → lib/compile2.js →  lib/bridge.js   
 | 建团队 | `roster_team` | `POST /apply` | — |
 | 引擎与模型 | `roster_team{target,model}` | `/apply{target,model}` | — |
 | 拉取 | — | `POST /install`、`/install-space` | `clone` |
-| 更新 | `roster_changes` | `POST /space-update` | `update` |
+| 更新 | `roster_space{refresh}`（`changes` 段；`roster_changes` 已废弃，2.0 移除） | `POST /space-update` | `update` |
 | 迭代 | `roster_capture`、`roster_iterate` | — | — |
 | 收藏 | — | `POST /favorites` | — |
 
@@ -164,6 +164,7 @@ lib/registry.js → lib/validate.js    → lib/compile2.js →  lib/bridge.js   
 > 就在**同一个提交**里把它补进对应小节——这份文档的维护方式就是“边改边补”，不是一次性写完。
 > 条目不适用的，写明为什么不适用，不要删掉：删掉等于下一次没人再想它。
 > 具体文件名与数量（24 份 `dist/`、13 个工具）会随版本漂移，以代码为准；清单只负责提醒“该想哪些地方”。
+> 工具数量只有在 2.0 移除废弃别名后才会下降；新增工具前先问“能不能并进已有工具的一节”。
 
 
 ### 9.1 加一个档案字段

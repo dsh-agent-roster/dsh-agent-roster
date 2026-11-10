@@ -437,10 +437,10 @@ Hand-over steps go in `handover.steps` (`timer.cancel`/`timer.create`/`wake.upda
 | `roster_verify` | compare against the values persisted in `team.json` | `ref`, `team?`, `path?` |
 | `roster_diff` | semantic diff between two rosters | `from`, `to`, `path?` |
 | `roster_index` | public index state; collections carry `pulled` / `space` / `layout` | `collection?`, `source?`, `refresh?` |
-| `roster_space` | declared vs on-disk rosters, roles, origin and ledger commit | `path?` |
+| `roster_space` | declared vs on-disk rosters, roles, origin and ledger commit; carries a `changes` section when a ledger exists | `path?`, `refresh?` |
 | `roster_search` | search across local and subscribed sources (words are ANDed; remote scans at most 8 sources and reports truncation) | `query`, `path?`, `remote?`, `limit?` |
 | `roster_compile` | compilation preview (writes nothing) | `ref`, `path?` |
-| `roster_changes` | per-file update check (seven states) | `path?`, `refresh?` |
+| `roster_changes` | **[deprecated]** per-file update check; use `roster_space`'s `changes` instead (removed in 2.0) | `path?`, `refresh?` |
 | `roster_team` | create a team from a roster (new or existing session) | `id`, `teamName?`, `mode?`, `workspace?`, `sessionName?`, `sessionId?`, `target?`, `model?`, `path?` |
 | `roster_capture` | compare `team.json` with the roster; `apply:true` writes mechanical fields back, `remember:true` records auto-apply | `id`, `team?`, `stateDir?`, `fields?`, `apply?`, `remember?`, `path?` |
 | `roster_iterate` | iterate from the current team into a new session: optional write-back plus a hand-over checklist | `id`, `teamName?`, `sessionName?`, `workspace?`, `target?`, `model?`, `capture?`, `remember?`, `handover?`, `path?` |
@@ -526,7 +526,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 Design notes: `docs/design.md` (module map, field homes, capability matrix, and the checklist of every place a change must land).
 
 ```bash
-node --test                 # 437 tests
+node --test                 # 438 tests
 npm run smoke               # host: 13 tools; client: two slots
 npm run check:host         # host contracts the unit tests fake
 npm run e2e                    # boot a throwaway host and ask what it actually sees (~9 s, no model calls)
@@ -539,7 +539,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## Verification status
 
-- **437/437** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
+- **438/438** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
 - CI `registry` (Node 22) recomputes the index, recompiles the examples, and fails when `dist/` drifts from source.
 - **Scripted e2e** (`npm run e2e`): packs the working tree, installs it into a temporary copy of the production profile, boots a throwaway `dsh web` on a free port, and asks the running host what it sees — version, libraries and the captain projection, `hostTeamTargets`, `hostModels`, `/catalog`, a 400 for an unknown engine, a 404 for an unknown roster, a favourites round-trip: 17 assertions, no model calls, about 9 seconds. `--depth=apply` also builds a real team and checks `team.json` (slow, costs model calls). `--depth=persona` goes one step further and decodes the captain session log: the first system prompt (before the team exists) has no roster persona, while the later one has it and has lost the deployment prefix — that is what proves the injector shadows the section instead of appending a line to the kick-off message. The production profile is only read.
 - Known boundaries: `npm run e2e` copies a snapshot of the production profile (with its installed plugins), so it verifies how the host loads us rather than replacing unit tests of individual modules; `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.

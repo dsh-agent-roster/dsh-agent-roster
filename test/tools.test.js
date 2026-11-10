@@ -12,12 +12,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 import { isLossless } from "../lib/json.js";
 import { registerRosterTools } from "../lib/tools.js";
+import { sha256Of, writeOrigin } from "../lib/origin.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const examples = path.join(root, "examples");
@@ -338,6 +339,23 @@ test("roster_verify：没注入时说出真实原因（找不到档案根），�
     dispose();
     resetCaptainInjector();
   }
+});
+
+test("roster_space：有账本时自带更新摘要（refresh:false 不连远端）", async () => {
+  const lib = mkdtempSync(path.join(tmpdir(), "space-changes-"));
+  cpSync(examples, lib, { recursive: true });
+  const text = readFileSync(path.join(lib, "space.yaml"), "utf8");
+  writeOrigin(lib, {
+    origin: { repo: "dsh-agent-roster/agent-roster-examples", ref: "main", path: "" },
+    commit: "abc1234",
+    files: { "space.yaml": { sha256: sha256Of(text), blob: "b1" } },
+  });
+  const { tools } = register();
+  const { value } = await call(tools, "roster_space", { path: lib, refresh: false });
+  assert.ok(value.changes, "有账本时应带出 changes");
+  assert.equal(value.changes.summary.clean, 1);
+  assert.equal(value.changes.pending, 0);
+  assert.match(value.text, /更新：待快进 0/);
 });
 
 test("roster_capture：把运行时差异算出来，默认不写回", async () => {
