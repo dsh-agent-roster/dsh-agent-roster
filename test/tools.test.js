@@ -288,3 +288,45 @@ test("roster_verify：空库且没给 path 时，提示改用 path=", async () =
   assert.match(text, /没有档案或成员叫 "money-lab"/);
   assert.match(text, /path=/);
 });
+
+test("roster_verify：没注入时说出真实原因（找不到档案根），不再把所有情况都算成“会话太老”", async () => {
+  const { installCaptainInjector, markCaptainCandidate, resetCaptainInjector } = await import("../lib/captain-inject.js");
+  resetCaptainInjector();
+  const stateDir = mkdtempSync(path.join(tmpdir(), "dsh-captain-miss-"));
+  mkdirSync(path.join(stateDir, "demo"), { recursive: true });
+  writeFileSync(
+    path.join(stateDir, "demo", "team.json"),
+    JSON.stringify(
+      { id: "demo", name: "demo", phase: "ready", description: "roster:core-review@1.2.0", captainSessionId: "session-miss", members: [], tasks: [] },
+      null,
+      2,
+    ),
+  );
+  const handlers = new Map();
+  let dispose = () => {};
+  try {
+    // 注入层只认配置根，而这里配的是空的——正是用户踩到的形态。
+    dispose = installCaptainInjector(
+      { on: (name, fn) => handlers.set(name, fn), off: () => {} },
+      { agentTeamsStateDir: stateDir },
+      { roots: () => [], watchIntervalMs: 5, watchTimeoutMs: 50 },
+    );
+    markCaptainCandidate("session-miss", { rosterRoot: "" });
+    handlers.get("agent/created")?.({
+      agent: {
+        id: "session-miss",
+        session: { header: { cwd: root } },
+        ctx: { systemPrompt: { section: () => () => {}, getSectionOrder: () => 0 } },
+      },
+    });
+    // 团队匹配要读会话列表；注入层的 miss 记录与它无关，但 verify 会先取会话。
+    const { tools } = register({ services: { sessionController: { list: async () => ({ items: [] }) } } });
+    const { text, value } = await call(tools, "roster_verify", { ref: "core-review", path: examples, stateDir });
+    assert.match(text, /找不到档案目录/);
+    const captain = value.captain.find((item) => item.rosterId === "core-review");
+    assert.equal(captain.personaMiss.reason, "roster-not-found");
+  } finally {
+    dispose();
+    resetCaptainInjector();
+  }
+});

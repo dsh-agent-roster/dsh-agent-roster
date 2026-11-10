@@ -395,3 +395,75 @@ test("应用队长：没有覆盖时仍按档案的 route 选模型", async () =
   assert.equal(selection?.[1].provider, "tsingmicro");
   assert.equal(selection?.[1].model, "deepseek-v4.1-flash");
 });
+
+test("applyCaptain 把这次用的档案根交给注入层：配置里没有，也能按 path 挂上人设", async () => {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const { installCaptainInjector, markCaptainCandidate, resetCaptainInjector } = await import("../lib/captain-inject.js");
+
+  resetCaptainInjector();
+  const lib = fs.mkdtempSync(nodePath.join(os.tmpdir(), "roster-apply-root-"));
+  fs.mkdirSync(nodePath.join(lib, "rosters", "agent-teams"), { recursive: true });
+  fs.writeFileSync(nodePath.join(lib, "rosters", "agent-teams", "lead.md"), "你是这支团队的队长。");
+  fs.writeFileSync(
+    nodePath.join(lib, "rosters", "agent-teams", "roster.yaml"),
+    ["kind: dsh-agent-roster/roster@2", "roster: agent-teams", "version: 1.0.0", "members: []", "captain:", "  persona: lead.md"].join("\n"),
+  );
+  const ws = fs.mkdtempSync(nodePath.join(os.tmpdir(), "roster-apply-ws-"));
+  fs.mkdirSync(nodePath.join(ws, ".agent-teams", "t1"), { recursive: true });
+  fs.writeFileSync(
+    nodePath.join(ws, ".agent-teams", "t1", "team.json"),
+    JSON.stringify({ id: "t1", name: "t1", phase: "ready", description: "roster:agent-teams@1.0.0#abcd1234", captainSessionId: "s-new", members: [], tasks: [] }),
+  );
+
+  const handlers = new Map();
+  const dispose = installCaptainInjector(
+    { on: (name, fn) => handlers.set(name, fn), off: () => {} },
+    { agentTeamsStateDir: ".agent-teams" },
+    { roots: () => [], watchIntervalMs: 5, watchTimeoutMs: 200 },
+  );
+  const sections = [];
+  const agent = {
+    id: "s-new",
+    session: { header: { cwd: ws } },
+    ctx: {
+      systemPrompt: {
+        section(section) {
+          sections.push(section);
+          return () => {};
+        },
+        getSectionOrder: () => 0,
+      },
+    },
+  };
+
+  const controller = fakeController({
+    async create() {
+      return { sessionId: "s-new" };
+    },
+    async rename() {
+      return { title: "t" };
+    },
+    async selectModel(selection) {
+      return { selected: { provider: "tsing", model: "deepseek-v4.1-flash", reasoningEffort: "" } };
+    },
+    async prompt() {},
+  });
+  const result = await applyCaptain({
+    sessionController: controller,
+    roster: roster({ captain: { provider: "tsing", model: "deepseek-v4.1-flash" } }),
+    rosterDir: nodePath.join(lib, "rosters", "agent-teams"),
+    mode: "new",
+    cwd: ws,
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.rosterRoot, lib);
+  // 注入层只认配置根（这里是空的）；候选根来自 apply 传的 path。
+  handlers.get("agent/created")({ agent });
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.equal(sections.length, 1);
+  assert.equal(sections[0].text(), "你是这支团队的队长。");
+  dispose();
+  resetCaptainInjector();
+  markCaptainCandidate("s-new");
+});

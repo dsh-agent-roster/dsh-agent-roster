@@ -9,6 +9,7 @@ import {
   CAPTAIN_SECTION,
   attachCaptainPersona,
   attachedCaptain,
+  captainMiss,
   captainTeamOf,
   findRosterDir,
   forgetCaptain,
@@ -301,4 +302,56 @@ test("personaSourceOf：真实样例里队长是角色引用，人设取角色�
   assert.match(personaTextOf(source), /派活前先复述目标与验收标准/);
   // 起始消息与注入层同源：解析函数给出同一段正文。
   assert.equal(resolveCaptainPersona(rosterDir)?.text, personaTextOf(source));
+});
+
+test("候选根：建会话时传的库不在 rosterDirs 里，也能挂上（roster_team --path 的真实用法）", async () => {
+  resetCaptainInjector();
+  const lib = tempRoot();
+  makeLibrary(lib);
+  const ws = tempRoot();
+  const agent = fakeAgent(ws, "session-path-root");
+
+  const handlers = new Map();
+  const ctx = {
+    on(name, fn) {
+      handlers.set(name, fn);
+    },
+    off() {},
+  };
+  // 配置根是空的：过去这里必然静默跳过。
+  const dispose = installCaptainInjector(ctx, { agentTeamsStateDir: ".agent-teams" }, {
+    roots: () => [],
+    watchIntervalMs: 5,
+    watchTimeoutMs: 1_000,
+  });
+
+  handlers.get("agent/created")({ agent });
+  assert.equal(agent.sections.length, 0);
+  markCaptainCandidate("session-path-root", { rosterRoot: lib });
+  makeTeam(ws, { sessionId: "session-path-root" });
+  await new Promise((resolve) => setTimeout(resolve, 80));
+  assert.equal(agent.sections.length, 1);
+  assert.equal(agent.sections[0].text(), "你是这支团队的队长。");
+  dispose();
+  resetCaptainInjector();
+});
+
+test("找不到档案根：记下原因并列搜过的根，只 warn 一次（不再静默）", () => {
+  resetCaptainInjector();
+  const ws = tempRoot();
+  makeTeam(ws, { sessionId: "session-miss" });
+  const agent = fakeAgent(ws, "session-miss");
+  const warnings = [];
+  const logger = { warn: (line) => warnings.push(line), info: () => {} };
+  const roots = [{ rootDir: "/nonexistent-roster-root", exists: true }];
+
+  assert.equal(attachCaptainPersona(agent, { stateDir: nodePath.join(ws, ".agent-teams"), roots, logger }), false);
+  assert.equal(attachCaptainPersona(agent, { stateDir: nodePath.join(ws, ".agent-teams"), roots, logger }), false);
+  const miss = captainMiss("session-miss");
+  assert.equal(miss.reason, "roster-not-found");
+  assert.equal(miss.rosterId, "demo");
+  assert.deepEqual(miss.roots, ["/nonexistent-roster-root"]);
+  assert.equal(warnings.length, 1, "轮询重试不该刷日志");
+  assert.match(warnings[0], /roster "demo" not found in roots \[\/nonexistent-roster-root\]/);
+  resetCaptainInjector();
 });

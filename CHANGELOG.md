@@ -2,6 +2,15 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.13.7] - 2026-11-10
+
+### Fixed
+
+- **The captain persona was read from `rosterDirs`, not from the library the session was created with.** `roster_team({path})` may point anywhere, but the injector resolved roots only from config, so building a team out of a library that was not in `rosterDirs` produced a session whose `system/message` kept the deployment persona — while the kick-off message still carried the roster's. The session now remembers the library root it was created from (`markCaptainCandidate(sessionId, { rosterRoot })`), expands pulled spaces under it, and falls back to `rosterDirs` only when there is no hint. `applyCaptain` returns that root and `roster_team` prints it as `人设注入根`.
+- **A failed injection was silent and then mis-explained.** `findRosterDir` returning null used to `return false` with no log, and `roster_verify` guessed "the session predates the plugin". It now records the real reason (`roster-not-found` / `persona-empty`), logs one warning per (reason, roots) pair — not one per 1.5 s poll — listing every root it searched, and `roster_verify` prints that reason instead of the stock sentence. Structured output gains `personaMiss`.
+
+Tests 411 → 415. No configuration change is needed: an existing `rosterDirs` deployment behaves exactly as before, and passing `path` no longer requires also adding that library to `rosterDirs`.
+
 ## [1.13.6] - 2026-11-10
 
 ### Fixed
