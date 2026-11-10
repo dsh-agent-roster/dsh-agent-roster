@@ -8,8 +8,8 @@ description: "划信任边界、定审计范围；不做具体挖掘。"
 tags:
   - "scope"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

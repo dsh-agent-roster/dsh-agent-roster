@@ -8,8 +8,8 @@ description: "确认评测要回答什么问题，定基线与不可接受的失
 tags:
   - "protocol"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

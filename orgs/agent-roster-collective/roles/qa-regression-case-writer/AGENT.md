@@ -8,8 +8,8 @@ description: "写前置、步骤、期望；并为每条配一个会失败的变
 tags:
   - "cases"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

@@ -8,8 +8,8 @@ description: "确认两套账的时间口径、币种与容忍度；不做匹配
 tags:
   - "method"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

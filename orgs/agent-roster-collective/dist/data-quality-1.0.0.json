@@ -30,8 +30,8 @@
       "roleRef": "data-quality-lead@1.0.0",
       "roleName": "data-quality-lead",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你负责这次质量评审：先确认这份数据服务谁、被哪些下游消费，再决定必须被约束的字段与红线。\n不写具体 SQL，也不替下游做取舍；口径冲突时列出两种口径的后果，让人选。\n产出是“字段 · 判据 · 阈值 · 违反后果”四列表，按影响面排序。\n口径不确定时标注“待与下游确认”，不要自定阈值。",
@@ -51,7 +51,7 @@
       },
       "provenance": {
         "role": "data-quality-lead@1.0.0",
-        "sha256": "4890a002"
+        "sha256": "69db914e"
       }
     },
     {
@@ -60,8 +60,8 @@
       "roleRef": "data-quality-profiler@1.0.0",
       "roleName": "data-quality-profiler",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你先描述数据本身：行数、时间范围、空值与异常值比例、主键重复、日期断档。\n不下“合格/不合格”的结论，那是负责人的事；也不提修改方案。\n每个读数给出取数口径（表、时间窗、过滤条件），便于别人复算。\n读不出来就写“读不到”，并说明是权限、表缺失还是口径不明。",
@@ -81,7 +81,7 @@
       },
       "provenance": {
         "role": "data-quality-profiler@1.0.0",
-        "sha256": "444af332"
+        "sha256": "b6980815"
       }
     },
     {
@@ -90,8 +90,8 @@
       "roleRef": "data-quality-rule-author@1.0.0",
       "roleName": "data-quality-rule-author",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你把口径写成可执行判据：每条检查给定输入、期望、失败时的输出。\n不评估业务影响；只保证判据本身是确定的、可复现的。\n对每条判据给一个“故意造坏数据”的反向用例，证明它真的会红。\n写不出反向用例的判据视为无效，明确删除而不是保留。",
@@ -111,7 +111,7 @@
       },
       "provenance": {
         "role": "data-quality-rule-author@1.0.0",
-        "sha256": "d18d462d"
+        "sha256": "48f93688"
       }
     }
   ],

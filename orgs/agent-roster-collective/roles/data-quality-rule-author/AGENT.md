@@ -8,8 +8,8 @@ description: "每条判据都能返回通过/失败，并给出反例怎么构�
 tags:
   - "checks"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

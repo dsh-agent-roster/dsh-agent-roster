@@ -8,8 +8,8 @@ description: "按时间记录动作与判断依据，事后直接变成复盘材
 tags:
   - "timeline"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

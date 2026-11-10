@@ -8,8 +8,8 @@ description: "逐个接口问“失败时调用方看到什么”，把部分成
 tags:
   - "reliability"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

@@ -8,8 +8,8 @@ description: "编排这次审查、拆任务、合并结论；不写具体代码
 tags:
   - "orchestration"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 tools:
   policy: "read-only"

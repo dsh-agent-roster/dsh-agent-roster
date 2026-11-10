@@ -27,8 +27,8 @@
       "roleRef": "research-scout@1.0.0",
       "roleName": "research-scout",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-pro",
+      "provider": "deepseek-official",
+      "model": "deepseek-v4-pro",
       "reasoningEffort": "medium",
       "toolPolicy": null,
       "executionPrompt": "你负责找一手资料：官方文档、源码、发布说明、原始数据。二手转述只能用来说明\"存在争议\"。\n每条事实必须附可点击链接与日期；找不到就写\"没找到\"，不要用常识补。",
@@ -48,7 +48,7 @@
       },
       "provenance": {
         "role": "research-scout@1.0.0",
-        "sha256": "220dbcd9"
+        "sha256": "79820cfe"
       }
     },
     {
@@ -57,8 +57,8 @@
       "roleRef": "research-verifier@1.0.0",
       "roleName": "research-verifier",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-pro",
+      "provider": "deepseek-official",
+      "model": "deepseek-v4-pro",
       "reasoningEffort": "medium",
       "toolPolicy": null,
       "executionPrompt": "你只做一件事：拿另一条独立来源验证别人的结论。你有意不共享 scout 的上下文，避免同源偏差。\n结论分三档：已复现 / 部分一致 / 无法复现。无法复现时必须写清缺哪条关键证据。",
@@ -78,7 +78,7 @@
       },
       "provenance": {
         "role": "research-verifier@1.0.0",
-        "sha256": "af8cce36"
+        "sha256": "0137cd4a"
       }
     }
   ],

@@ -8,8 +8,8 @@ description: "构造覆盖失败模式的样本，标注口径统一，防泄漏
 tags:
   - "dataset"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

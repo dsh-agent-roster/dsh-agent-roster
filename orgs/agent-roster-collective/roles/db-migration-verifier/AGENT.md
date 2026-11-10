@@ -8,8 +8,8 @@ description: "迁移前后对账：行数、金额、枚举分布、抽样逐行
 tags:
   - "verification"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

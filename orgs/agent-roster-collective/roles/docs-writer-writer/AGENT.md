@@ -8,8 +8,8 @@ description: "命令、参数、预期输出都写全；不写无法验证的形
 tags:
   - "writing"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

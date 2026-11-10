@@ -8,8 +8,8 @@ description: "写回滚步骤并在预发演练一次；不可回滚的变更单
 tags:
   - "rollback"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

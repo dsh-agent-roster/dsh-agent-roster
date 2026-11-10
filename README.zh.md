@@ -77,8 +77,8 @@ maintainers: [STofone]
 tags: [review, release]
 
 defaults:                    # 成员共享的路由默认值
-  provider: deepseek
-  model: deepseek-v4.1-flash
+  provider: deepseek-official
+  model: deepseek-flash
   reasoningEffort: high
 
 members:
@@ -91,12 +91,12 @@ members:
     role: 发布把关
     systemPrompt: |
       你核对变更、版本号与回滚方案。
-    model: deepseek-v4.1-pro
+    model: deepseek-v4-pro
 
 captain:                     # 可选：记录队长（= 创建团队的那个会话）应该是什么样
   name: lead
-  provider: tsingmicro
-  model: deepseek-v4.1-flash
+  provider: deepseek-official
+  model: deepseek-flash
   personaPrefix: |
     派活前先复述目标与验收标准。
 ```
@@ -131,8 +131,8 @@ title: "编排与取舍"
 description: "编排这次审查、拆任务、合并结论；不写具体代码"
 tags: ["orchestration"]
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 tools:
   policy: "read-only"
@@ -157,8 +157,8 @@ tags: [review, example]
 
 defaults:
   route:
-    provider: deepseek
-    model: deepseek-v4.1-flash
+    provider: deepseek-official
+    model: deepseek-flash
     reasoningEffort: high
 targets: [agent-teams/members]
 

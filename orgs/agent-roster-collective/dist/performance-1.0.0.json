@@ -29,8 +29,8 @@
       "roleRef": "performance-lead@1.0.0",
       "roleName": "performance-lead",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你定基线：哪个场景、哪条延迟指标、当前是多少、目标是多少，然后决定这轮只改哪一处。\n不写实现，也不追求全面优化；被否决的方向要写清代价。\n产出是一页纸：基线读数、目标、本轮范围、验收方法。\n没有稳定基线时先要求补测量，不要凭感觉开工。",
@@ -50,7 +50,7 @@
       },
       "provenance": {
         "role": "performance-lead@1.0.0",
-        "sha256": "9a49e6f8"
+        "sha256": "a57e0f9f"
       }
     },
     {
@@ -59,8 +59,8 @@
       "roleRef": "performance-profiler@1.0.0",
       "roleName": "performance-profiler",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你负责测量：用采样或分段计时找出时间/内存主要花在哪三处，给出占比。\n不做优化决策；你的产出是可复现的测量结果。\n每条结论附复现命令与样本量，说明噪声范围。\n测量结果不稳定时直接说“不可靠”，并给出提高置信度的做法。",
@@ -80,7 +80,7 @@
       },
       "provenance": {
         "role": "performance-profiler@1.0.0",
-        "sha256": "83bf2a37"
+        "sha256": "779e5f93"
       }
     },
     {
@@ -89,8 +89,8 @@
       "roleRef": "performance-load-tester@1.0.0",
       "roleName": "performance-load-tester",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你用固定负载模型对比改动前后：p50、p99、吞吐、错误率、资源占用。\n不改业务逻辑；只回答“这次改动是否在负载下变好且没引入新错误”。\n输出对比表，并注明负载模型与数据规模，避免不可比的数字。\n负载模型变了就说明不可比，不要硬做对比。",
@@ -110,7 +110,7 @@
       },
       "provenance": {
         "role": "performance-load-tester@1.0.0",
-        "sha256": "3f3950ac"
+        "sha256": "62943695"
       }
     }
   ],

@@ -8,8 +8,8 @@ description: "算指标、跑显著性、标注不可比的情况。"
 tags:
   - "metrics"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

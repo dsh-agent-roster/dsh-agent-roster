@@ -8,8 +8,8 @@ description: "空值率、分布、重复、时间断档；只描述事实，不
 tags:
   - "profiling"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

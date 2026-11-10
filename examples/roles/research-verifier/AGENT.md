@@ -7,8 +7,8 @@ title: "独立复现结论"
 tags:
   - "verification"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

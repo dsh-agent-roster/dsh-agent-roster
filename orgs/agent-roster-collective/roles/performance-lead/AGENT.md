@@ -8,8 +8,8 @@ description: "决定优化目标和“不改什么”；不写优化代码。"
 tags:
   - "baseline"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

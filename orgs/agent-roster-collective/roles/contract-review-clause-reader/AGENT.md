@@ -8,8 +8,8 @@ description: "找责任限制、赔偿、终止、续约、知识产权、争议
 tags:
   - "clauses"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

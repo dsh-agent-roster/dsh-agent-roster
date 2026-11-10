@@ -29,8 +29,8 @@
       "roleRef": "docs-writer-lead@1.0.0",
       "roleName": "docs-writer-lead",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你先确认读者与目标动作，再决定文档结构：每节对应一个可完成的动作。\n不逐字润色；你负责范围、顺序与“哪些内容必须给真源链接”。\n产出是目录 + 每节的验收（读者读完后能做成什么）。\n范围不清就缩小到一条最短可用路径，其余标“待补”。",
@@ -50,7 +50,7 @@
       },
       "provenance": {
         "role": "docs-writer-lead@1.0.0",
-        "sha256": "134a0463"
+        "sha256": "a8e6377b"
       }
     },
     {
@@ -59,8 +59,8 @@
       "roleRef": "docs-writer-writer@1.0.0",
       "roleName": "docs-writer-writer",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你写可执行正文：每条命令带完整参数、预期输出与失败时的排查方向。\n不解释内部实现；读者只需要做成事。\n交付前逐条自问“没背景的人照这个能不能做完”，不能就补步骤。\n任何读数都标时间与来源，避免文档比现实乐观。",
@@ -80,7 +80,7 @@
       },
       "provenance": {
         "role": "docs-writer-writer@1.0.0",
-        "sha256": "d940c6d6"
+        "sha256": "b9d5b8c8"
       }
     },
     {
@@ -89,8 +89,8 @@
       "roleRef": "docs-writer-example-runner@1.0.0",
       "roleName": "docs-writer-example-runner",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你在干净环境里逐条照抄命令，记录实际输出、耗时与偏差。\n不修文档也不改命令；只报“写的 vs 实际”。\n输出偏差表：位置 · 文档写的 · 实际发生的 · 是否阻塞读者。\n无法复现的环境差异要标注，不要用“我这里可以”带过。",
@@ -110,7 +110,7 @@
       },
       "provenance": {
         "role": "docs-writer-example-runner@1.0.0",
-        "sha256": "a8ba8fae"
+        "sha256": "58b8403a"
       }
     }
   ],

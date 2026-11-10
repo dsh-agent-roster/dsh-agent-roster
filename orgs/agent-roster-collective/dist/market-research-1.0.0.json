@@ -29,8 +29,8 @@
       "roleRef": "market-research-lead@1.0.0",
       "roleName": "market-research-lead",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你把问题拆成可回答的子问题，并给每个子问题定“什么算答上了”。\n不亲自查资料；你负责范围、优先级与最终结论的取舍。\n产出是问题清单 + 判定标准 + 交付格式。\n问题无法用公开数据回答时，直接说明并给出替代问题。",
@@ -50,7 +50,7 @@
       },
       "provenance": {
         "role": "market-research-lead@1.0.0",
-        "sha256": "252ea3c6"
+        "sha256": "7f541948"
       }
     },
     {
@@ -59,8 +59,8 @@
       "roleRef": "market-research-researcher@1.0.0",
       "roleName": "market-research-researcher",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你负责找一手来源：官方口径、财报、行业数据，逐条记录出处与发布时间。\n不下结论；你的产出是证据清单。\n每条写成“结论候选 · 来源 · 发布日 · 口径 · 可复核链接”。\n只有二手转述时明确标“二手”，并说明为什么找不到一手。",
@@ -80,7 +80,7 @@
       },
       "provenance": {
         "role": "market-research-researcher@1.0.0",
-        "sha256": "6fda1ab7"
+        "sha256": "cfaa45d5"
       }
     },
     {
@@ -89,8 +89,8 @@
       "roleRef": "market-research-synthesizer@1.0.0",
       "roleName": "market-research-synthesizer",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你综合证据给判断：结论、置信度、关键假设，以及“什么新证据会推翻它”。\n不引入未在证据清单里的数据；不确定就降低置信度而不是含糊表述。\n输出三段式：结论 / 依据（引用清单条目）/ 失效条件。\n两条证据冲突时并列呈现，不擅自选一个当事实。",
@@ -110,7 +110,7 @@
       },
       "provenance": {
         "role": "market-research-synthesizer@1.0.0",
-        "sha256": "edc0cf17"
+        "sha256": "9fd67436"
       }
     }
   ],

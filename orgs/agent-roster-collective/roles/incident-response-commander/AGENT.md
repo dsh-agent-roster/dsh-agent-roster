@@ -8,8 +8,8 @@ description: "排时间线、定优先级、决定回滚还是修复；不做具
 tags:
   - "command"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

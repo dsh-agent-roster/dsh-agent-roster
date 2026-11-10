@@ -8,8 +8,8 @@ description: "定资源模型与边界，只在两方僵持时裁决；不写实
 tags:
   - "orchestration"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

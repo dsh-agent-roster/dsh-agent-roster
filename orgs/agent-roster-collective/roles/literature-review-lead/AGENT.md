@@ -8,8 +8,8 @@ description: "写清检索式、纳入/排除标准；不读全文。"
 tags:
   - "protocol"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

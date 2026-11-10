@@ -8,8 +8,8 @@ description: "逐段对照原文，只报“信息不一致/语气失真/术语�
 tags:
   - "bilingual"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

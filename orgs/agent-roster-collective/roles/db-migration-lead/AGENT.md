@@ -8,8 +8,8 @@ description: "确认锁表时间、回滚脚本、数据校验口径；不写 DD
 tags:
   - "planning"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

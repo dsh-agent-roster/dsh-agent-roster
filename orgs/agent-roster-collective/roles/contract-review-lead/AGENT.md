@@ -8,8 +8,8 @@ description: "确认我方角色、可接受与不可接受的条款；不逐条
 tags:
   - "position"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

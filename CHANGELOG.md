@@ -2,6 +2,14 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.13.6] - 2026-11-10
+
+### Fixed
+
+- Every shipped example declared its route on a provider that does not exist (`deepseek`), and `research` also named a model that does not exist (`deepseek-v4.1-pro`). A freshly pulled space therefore looked fine and failed at `selectModel`. The fixtures now declare `deepseek-official/deepseek-flash` and `deepseek-official/deepseek-v4-pro` — the ids the official provider actually lists — across `examples/`, `examples-orchestration/` and the 21 rosters under `orgs/`, with `dist/` recompiled and the docs updated.
+
+Tests 411 → 411.
+
 ## [1.13.5] - 2026-11-09
 
 ### Added

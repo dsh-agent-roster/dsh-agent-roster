@@ -8,8 +8,8 @@ description: "审告警：能否行动、是否重复、是否该降级为看板
 tags:
   - "alerting"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

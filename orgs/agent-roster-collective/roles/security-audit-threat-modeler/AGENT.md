@@ -8,8 +8,8 @@ description: "按角色列权限与越权路径，找设计层面的缺口。"
 tags:
   - "threat-model"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

@@ -8,8 +8,8 @@ description: "维护术语表、决定哪些概念不翻译；不逐句润色。
 tags:
   - "terminology"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

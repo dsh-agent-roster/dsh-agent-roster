@@ -8,8 +8,8 @@ description: "按增长曲线算余量、成本与扩容触发点。"
 tags:
   - "capacity"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

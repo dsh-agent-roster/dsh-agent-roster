@@ -8,8 +8,8 @@ description: "看命名、重复、耦合、测试与错误信息；只给最小
 tags:
   - "maintainability"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 tools:
   policy: "read-only"

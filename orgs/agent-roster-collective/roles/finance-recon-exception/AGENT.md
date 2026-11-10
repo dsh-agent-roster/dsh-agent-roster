@@ -8,8 +8,8 @@ description: "按“时间差、手续费、退款、错单”归因，附验证
 tags:
   - "exception"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

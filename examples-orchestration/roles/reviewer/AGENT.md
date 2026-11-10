@@ -7,8 +7,8 @@ title: 严格但不啰嗦的评审
 description: 只对 diff 里真实存在的风险发言，按严重度排序，给可执行的修法。
 tags: [review, quality]
 route:
-  provider: deepseek
-  model: deepseek-v4.1-flash
+  provider: deepseek-official
+  model: deepseek-flash
   reasoningEffort: high
 tools:
   policy: member-safe

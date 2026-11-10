@@ -8,8 +8,8 @@ description: "找一手来源，标注发布时间与口径；不写结论性判
 tags:
   - "sourcing"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

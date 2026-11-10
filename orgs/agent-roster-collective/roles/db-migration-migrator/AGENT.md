@@ -8,8 +8,8 @@ description: "只写可重入的迁移与回填，分批次、可暂停、有进
 tags:
   - "implementation"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

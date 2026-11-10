@@ -29,8 +29,8 @@
       "roleRef": "contract-review-lead@1.0.0",
       "roleName": "contract-review-lead",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你先确认我方角色与商业目标，再定红线：哪些条款出现就不签。\n不逐条解释条款；你负责范围与最终建议（签 / 改 / 不签）。\n产出是红线清单 + 建议的谈判顺序。\n立场不明时先问“最坏情况下我们能承受什么”，不要默认接受。",
@@ -50,7 +50,7 @@
       },
       "provenance": {
         "role": "contract-review-lead@1.0.0",
-        "sha256": "b086fec1"
+        "sha256": "46657779"
       }
     },
     {
@@ -59,8 +59,8 @@
       "roleRef": "contract-review-clause-reader@1.0.0",
       "roleName": "contract-review-clause-reader",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你摘出关键条款：责任上限、赔偿、终止与续约、知识产权归属、保密、争议解决。\n不做商业判断；每条必须给条款编号与原文摘录。\n输出“条款 · 原文 · 位置 · 对我方的影响（有利/中性/不利）”。\n条款缺失同样重要：明确写“未见某类条款”，不要当作默认有利。",
@@ -80,7 +80,7 @@
       },
       "provenance": {
         "role": "contract-review-clause-reader@1.0.0",
-        "sha256": "cfd70c98"
+        "sha256": "4eef67b4"
       }
     },
     {
@@ -89,8 +89,8 @@
       "roleRef": "contract-review-risk-note@1.0.0",
       "roleName": "contract-review-risk-note",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你把条款翻译成后果：最坏情形下赔多少、被锁定多久、退出成本多少。\n不写法律意见书，也不替代律师；你给的是量化提示与修改方向。\n输出“风险 · 触发条件 · 最坏敞口 · 建议改法（一句话）”。\n无法量化时给区间并说明假设，不要给“风险较低”这种结论。",
@@ -110,7 +110,7 @@
       },
       "provenance": {
         "role": "contract-review-risk-note@1.0.0",
-        "sha256": "b589aa0d"
+        "sha256": "8e83f2ba"
       }
     }
   ],

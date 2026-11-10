@@ -8,8 +8,8 @@ description: "核对门禁（测试、变更说明、兼容性），做 go/no-go
 tags:
   - "gate"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

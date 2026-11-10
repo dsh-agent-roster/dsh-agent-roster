@@ -63,8 +63,8 @@ test("examples-orchestration：示例组装能编译，成员来自角色引用"
   );
   // defaults 在编译时 materialize：每个成员都有显式 route，不再回头读 defaults。
   for (const member of result.compiled.members) {
-    assert.equal(member.provider, "deepseek");
-    assert.equal(member.model, "deepseek-v4.1-flash");
+    assert.equal(member.provider, "deepseek-official");
+    assert.equal(member.model, "deepseek-flash");
     assert.equal(member.reasoningEffort, "high");
   }
 });

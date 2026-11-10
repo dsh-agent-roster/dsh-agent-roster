@@ -8,8 +8,8 @@ description: "按分诊结论写回复，含复现所需信息与替代方案。
 tags:
   - "response"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

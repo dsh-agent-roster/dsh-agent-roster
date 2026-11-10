@@ -8,8 +8,8 @@ description: "写症状、判定、处置、回滚；每步都有期望输出。
 tags:
   - "runbook"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

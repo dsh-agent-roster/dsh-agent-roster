@@ -29,8 +29,8 @@
       "roleRef": "finance-recon-lead@1.0.0",
       "roleName": "finance-recon-lead",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你先统一口径：时间窗、币种、含税与否、退款怎么记，再定容忍度。\n不逐笔匹配；你负责让两侧数字可比。\n产出是口径说明 + 容忍度 + 差异上报格式。\n口径对不齐时先停下，不要用总额凑平。",
@@ -50,7 +50,7 @@
       },
       "provenance": {
         "role": "finance-recon-lead@1.0.0",
-        "sha256": "c2c0d32e"
+        "sha256": "382c67b4"
       }
     },
     {
@@ -59,8 +59,8 @@
       "roleRef": "finance-recon-matcher@1.0.0",
       "roleName": "finance-recon-matcher",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你按金额、时间窗、单号匹配两侧记录，能对上的标注匹配依据。\n不解释差异原因；你只负责把未匹配项列干净。\n输出“已匹配 N 笔 · 左侧未匹配 · 右侧未匹配”，每条带金额与日期。\n模糊匹配拿不准时标“疑似”，不要强行配对。",
@@ -80,7 +80,7 @@
       },
       "provenance": {
         "role": "finance-recon-matcher@1.0.0",
-        "sha256": "f0491bab"
+        "sha256": "742dc1f9"
       }
     },
     {
@@ -89,8 +89,8 @@
       "roleRef": "finance-recon-exception@1.0.0",
       "roleName": "finance-recon-exception",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你给未匹配项归因：时间差、手续费、退款、重复记账、错单，每条附验证方法。\n不修改任何一侧数据；只产出归因与建议动作。\n输出“差异笔 · 金额 · 归因 · 证据 · 建议（调账/查单/忽略）”。\n归因不成立时保留“未知”，不要为了结案编原因。",
@@ -110,7 +110,7 @@
       },
       "provenance": {
         "role": "finance-recon-exception@1.0.0",
-        "sha256": "a67c8b7d"
+        "sha256": "2651eddc"
       }
     }
   ],

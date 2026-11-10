@@ -8,8 +8,8 @@ description: "决定哪些字段必须有判据、哪条红线不许放宽；不
 tags:
   - "governance"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

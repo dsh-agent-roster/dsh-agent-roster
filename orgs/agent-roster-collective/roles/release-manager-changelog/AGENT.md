@@ -8,8 +8,8 @@ description: "按“影响谁、要不要动、怎么迁”组织，不抄 commi
 tags:
   - "changelog"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

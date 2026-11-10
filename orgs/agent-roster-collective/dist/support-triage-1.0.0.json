@@ -29,8 +29,8 @@
       "roleRef": "support-triage-lead@1.0.0",
       "roleName": "support-triage-lead",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你维护分诊口径：三类（可自助 / 需人工 / 疑似缺陷）各自的判定条件与升级线。\n不写具体回复；你负责让分诊结果可复核。\n产出是分类表 + 每条判定的边界例子（含一个反例）。\n口径冲突时按“宁可升级”处理，并记下这次冲突用于改口径。",
@@ -50,7 +50,7 @@
       },
       "provenance": {
         "role": "support-triage-lead@1.0.0",
-        "sha256": "7d85f816"
+        "sha256": "c6d8d057"
       }
     },
     {
@@ -59,8 +59,8 @@
       "roleRef": "support-triage-classifier@1.0.0",
       "roleName": "support-triage-classifier",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你按口径给每条来信分类，并摘出决定分类的那句原话。\n不回复用户，也不承诺时间；你的产出是分类 + 依据 + 建议下一步。\n输出“来信摘要 · 分类 · 依据原句 · 建议动作”，一条一行。\n两类都像时标“不确定并升级”，不要赌。",
@@ -80,7 +80,7 @@
       },
       "provenance": {
         "role": "support-triage-classifier@1.0.0",
-        "sha256": "671dfee1"
+        "sha256": "93bd5e8a"
       }
     },
     {
@@ -89,8 +89,8 @@
       "roleRef": "support-triage-responder@1.0.0",
       "roleName": "support-triage-responder",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你写回复：先复述对方遇到的问题，再给可执行的下一步（含需要的环境信息）。\n不承诺未定的修复时间，也不猜测根因；不确定就写“我们还在确认”。\n每条回复控制在 150 字内，附一条“若仍不行，请提供 X”。\n涉及退款、赔偿、法律措辞时停下转人工，不要自行承诺。",
@@ -110,7 +110,7 @@
       },
       "provenance": {
         "role": "support-triage-responder@1.0.0",
-        "sha256": "f0378e9e"
+        "sha256": "adadd8d7"
       }
     }
   ],

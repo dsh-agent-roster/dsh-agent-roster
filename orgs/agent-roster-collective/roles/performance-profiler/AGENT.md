@@ -8,8 +8,8 @@ description: "用采样与计时找出真正占时间的三处，附复现命令
 tags:
   - "measurement"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

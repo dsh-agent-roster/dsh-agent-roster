@@ -8,8 +8,8 @@ description: "用最坏情形估算敞口，给出可接受的修改方向。"
 tags:
   - "risk"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

@@ -8,8 +8,8 @@ maintainers: [stofone]
 tags: [review, example]
 defaults:
   route:
-    provider: deepseek
-    model: deepseek-v4.1-flash
+    provider: deepseek-official
+    model: deepseek-flash
     reasoningEffort: high
 targets: [agent-teams/members]
 members:

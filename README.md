@@ -77,8 +77,8 @@ maintainers: [STofone]
 tags: [review, release]
 
 defaults:                    # shared route defaults
-  provider: deepseek
-  model: deepseek-v4.1-flash
+  provider: deepseek-official
+  model: deepseek-flash
   reasoningEffort: high
 
 members:
@@ -94,8 +94,8 @@ members:
 
 captain:                     # optional: what the session that creates the team looks like
   name: lead
-  provider: tsingmicro
-  model: deepseek-v4.1-flash
+  provider: deepseek-official
+  model: deepseek-flash
   personaPrefix: |
     Restate the goal and the acceptance criteria before delegating.
 ```
@@ -130,8 +130,8 @@ title: "Orchestration"
 description: "Runs the review, splits work, merges conclusions"
 tags: ["orchestration"]
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 tools:
   policy: "read-only"
@@ -156,8 +156,8 @@ tags: [review, example]
 
 defaults:
   route:
-    provider: deepseek
-    model: deepseek-v4.1-flash
+    provider: deepseek-official
+    model: deepseek-flash
     reasoningEffort: high
 targets: [agent-teams/members]
 

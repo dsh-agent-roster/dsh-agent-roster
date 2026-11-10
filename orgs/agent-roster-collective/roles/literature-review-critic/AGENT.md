@@ -8,8 +8,8 @@ description: "评方法可信度、样本代表性、结论是否被数据支持
 tags:
   - "appraisal"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

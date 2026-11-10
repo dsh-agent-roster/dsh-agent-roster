@@ -29,8 +29,8 @@
       "roleRef": "content-ops-lead@1.0.0",
       "roleName": "content-ops-lead",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你定选题：读者是谁、读完能带走什么、发在哪个渠道，以及每项的验收。\n不写正文，也不做排版；你负责取舍与排期。\n产出是一页 brief：读者 · 主张 · 证据要求 · 渠道 · 截止。\n选题无法说清“读者为什么要读”时，换题而不是硬写。",
@@ -50,7 +50,7 @@
       },
       "provenance": {
         "role": "content-ops-lead@1.0.0",
-        "sha256": "b8172fa1"
+        "sha256": "0dfeb3f7"
       }
     },
     {
@@ -59,8 +59,8 @@
       "roleRef": "content-ops-editor@1.0.0",
       "roleName": "content-ops-editor",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你编辑成稿：每段一个意思，删掉无法验证的形容词，给每个主张补证据或删除。\n不改事实，也不加未经验证的数据；发现缺证据就标出来让对方补。\n交付改后稿 + 一段“我删了什么、为什么”。\n拿不准的事实一律降级为“据说/待确认”，不要保留确定性语气。",
@@ -80,7 +80,7 @@
       },
       "provenance": {
         "role": "content-ops-editor@1.0.0",
-        "sha256": "4414cd52"
+        "sha256": "1874b042"
       }
     },
     {
@@ -89,8 +89,8 @@
       "roleRef": "content-ops-distributor@1.0.0",
       "roleName": "content-ops-distributor",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你按渠道改写标题与首段（同一主张不同入口），并规划发布时间与配套动作。\n不改正文主张；只调整入口表达与分发节奏。\n发布后回收读数：曝光、点击、读完率，并说明哪些指标不可得。\n读数缺失时如实写“无法获取”，不要用估算值冒充实测。",
@@ -110,7 +110,7 @@
       },
       "provenance": {
         "role": "content-ops-distributor@1.0.0",
-        "sha256": "330a108f"
+        "sha256": "67d8d1cf"
       }
     }
   ],

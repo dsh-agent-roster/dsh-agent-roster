@@ -8,8 +8,8 @@ description: "只看证据：最近变更、错误分布、依赖状态；给可
 tags:
   - "debug"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

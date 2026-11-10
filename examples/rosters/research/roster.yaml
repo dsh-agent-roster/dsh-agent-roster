@@ -8,8 +8,8 @@ tags:
   - "example"
 defaults:
   route:
-    provider: "deepseek"
-    model: "deepseek-v4.1-pro"
+    provider: "deepseek-official"
+    model: "deepseek-v4-pro"
     reasoningEffort: "medium"
 targets:
   - "agent-teams/members"

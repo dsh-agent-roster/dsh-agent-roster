@@ -8,8 +8,8 @@ description: "排期、发确认、准备题目清单；不评价候选人。"
 tags:
   - "scheduling"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

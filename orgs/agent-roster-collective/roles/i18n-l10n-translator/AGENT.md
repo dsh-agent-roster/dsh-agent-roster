@@ -8,8 +8,8 @@ description: "按术语表翻译，保留结构与代码块；不确定的原文
 tags:
   - "translation"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

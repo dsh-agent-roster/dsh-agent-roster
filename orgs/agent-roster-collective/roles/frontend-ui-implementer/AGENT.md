@@ -8,8 +8,8 @@ description: "按边界实现，复用宿主主题令牌，不自造配色。"
 tags:
   - "implementation"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

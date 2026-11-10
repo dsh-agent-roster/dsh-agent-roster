@@ -49,8 +49,8 @@ name: reviewer
 version: 1.4.0
 role: 代码评审
 route:
-  provider: deepseek
-  model: deepseek-v4.1-flash
+  provider: deepseek-official
+  model: deepseek-flash
   reasoningEffort: high
 tools:
   policy: member-safe
@@ -86,7 +86,7 @@ id: money-lab
 version: 10.0.0
 title: 资金实验室
 defaults:
-  route: { provider: deepseek, model: deepseek-v4.1-flash, reasoningEffort: high }
+  route: { provider: deepseek-official, model: deepseek-flash, reasoningEffort: high }
 targets: [agent-teams/members]
 members:
   - as: reviewer

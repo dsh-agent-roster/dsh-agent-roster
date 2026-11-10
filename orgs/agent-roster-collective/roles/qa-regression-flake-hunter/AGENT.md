@@ -8,8 +8,8 @@ description: "重复跑、收集差异、定位时间/顺序/数据依赖。"
 tags:
   - "flakiness"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

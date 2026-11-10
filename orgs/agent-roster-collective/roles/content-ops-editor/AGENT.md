@@ -8,8 +8,8 @@ description: "砍掉形容词，补上证据；每段只做一件事。"
 tags:
   - "editing"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

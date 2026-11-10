@@ -8,8 +8,8 @@ description: "按字段提取：样本、方法、指标、结论、局限；附
 tags:
   - "extraction"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

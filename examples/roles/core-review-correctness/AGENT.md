@@ -8,8 +8,8 @@ description: "只找\"什么输入下会做错事\"，每条结论给可复现�
 tags:
   - "correctness"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 tools:
   policy: "read-only"

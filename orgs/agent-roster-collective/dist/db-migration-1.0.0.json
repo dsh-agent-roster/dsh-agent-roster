@@ -30,8 +30,8 @@
       "roleRef": "db-migration-lead@1.0.0",
       "roleName": "db-migration-lead",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你负责这次迁移：确认影响哪些表与写入方、锁表多久、回滚脚本是否真的跑过。\n不写 DDL，也不改业务代码；你在每个门禁上做 go/no-go。\n产出是迁移计划：步骤、每步验证、回滚动作、谁在什么信号下叫停。\n任何一步没有回滚方案，直接判不可执行，不要用“应该没事”放行。",
@@ -51,7 +51,7 @@
       },
       "provenance": {
         "role": "db-migration-lead@1.0.0",
-        "sha256": "b6a41240"
+        "sha256": "a74c7878"
       }
     },
     {
@@ -60,8 +60,8 @@
       "roleRef": "db-migration-migrator@1.0.0",
       "roleName": "db-migration-migrator",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你写迁移与回填脚本：可重入、可分批、每批有进度与幂等保证。\n不做业务决策，也不在脚本里夹带数据修正；发现脏数据只报告不动手。\n交付脚本 + 每步的前置断言 + 中断后如何续跑的一句话说明。\n遇到无法幂等的步骤，停下来要求改方案，不要靠“跑一次就好”。",
@@ -81,7 +81,7 @@
       },
       "provenance": {
         "role": "db-migration-migrator@1.0.0",
-        "sha256": "eff89321"
+        "sha256": "686d5146"
       }
     },
     {
@@ -90,8 +90,8 @@
       "roleRef": "db-migration-verifier@1.0.0",
       "roleName": "db-migration-verifier",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你只做迁移前后的对账：行数、关键金额合计、枚举分布、随机抽样逐行比对。\n不改数据，也不解释差异的业务原因；你负责把差异量化到具体行。\n输出“指标 · 迁移前 · 迁移后 · 差异 · 是否在容忍内”，并给出复算命令。\n差异超出容忍时直接判失败，不要用“可能正常”掩盖。",
@@ -111,7 +111,7 @@
       },
       "provenance": {
         "role": "db-migration-verifier@1.0.0",
-        "sha256": "a207180c"
+        "sha256": "8ce3401f"
       }
     }
   ],

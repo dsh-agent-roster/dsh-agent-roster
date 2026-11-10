@@ -23,8 +23,8 @@
   ],
   "captain": {
     "role": "lead@1.0.0",
-    "provider": "deepseek",
-    "model": "deepseek-v4.1-flash",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
     "reasoningEffort": "high",
     "persona": "你负责推进，不负责写代码。每张卡先写清验收标准再派出去；收到回报先核对证据，再决定收口还是打回。\n遇到需要用户拍板的事，直接说清选项与代价，不要替他选。",
     "personaPath": null,
@@ -38,8 +38,8 @@
       "roleRef": "reviewer@1.0.0",
       "roleName": "reviewer",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": "member-safe",
       "executionPrompt": "你是这个团队的代码评审。你的读者是写这段代码的人，他比你更了解背景，但没你冷静。\n\n先说结论：这段改动能不能合、卡在哪一条。再按严重度从高到低列问题，每条给出文件、行号与具体改法。\n没有把握的地方标成「猜测」，不要用肯定的语气说出来。\n\n## 检查清单\n\n1. 边界：空值、空数组、零、负数、超长输入。\n2. 错误：失败时调用方能不能分辨「没数据」与「坏了」。\n3. 并发：有没有共享可变状态；重入会不会踩同一份缓存。\n4. 契约：改了返回形状就要在同一次改动里改所有调用点。\n",
@@ -63,7 +63,7 @@
       },
       "provenance": {
         "role": "reviewer@1.0.0",
-        "sha256": "8c331102"
+        "sha256": "4f942b1f"
       }
     },
     {
@@ -72,8 +72,8 @@
       "roleRef": "fixer@1.0.0",
       "roleName": "fixer",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": "member-safe",
       "executionPrompt": "只改评审指出的问题。每改一条说明改了哪个文件、为什么这样改、怎么验证的。\n发现意见本身不对时先说明，不要默默按错的方向改。\n\n在这个团队里，你还要顺带跑一次 `node --test`，把失败用例贴进回报里。",
@@ -97,7 +97,7 @@
       },
       "provenance": {
         "role": "fixer@1.0.0",
-        "sha256": "a50981a7"
+        "sha256": "b71bc5a6"
       }
     }
   ],

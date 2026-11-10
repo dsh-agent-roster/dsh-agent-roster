@@ -7,8 +7,8 @@ title: "找原始出处"
 tags:
   - "sourcing"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-pro"
+  provider: "deepseek-official"
+  model: "deepseek-v4-pro"
   reasoningEffort: "medium"
 ---
 

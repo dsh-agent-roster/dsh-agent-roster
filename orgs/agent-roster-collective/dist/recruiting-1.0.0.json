@@ -29,8 +29,8 @@
       "roleRef": "recruiting-lead@1.0.0",
       "roleName": "recruiting-lead",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你把岗位要求写成可判定条目：必须具备、可以培养、明确不要。\n不逐份读简历；你负责让筛选结果可复核、可申诉。\n产出是标准表：条目 · 判定方式（看哪段经历/哪个产出） · 权重。\n写不出判定方式的条目直接删掉，避免变成主观偏好。",
@@ -50,7 +50,7 @@
       },
       "provenance": {
         "role": "recruiting-lead@1.0.0",
-        "sha256": "8ebb8e36"
+        "sha256": "0b2347e7"
       }
     },
     {
@@ -59,8 +59,8 @@
       "roleRef": "recruiting-screener@1.0.0",
       "roleName": "recruiting-screener",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你逐条对照标准，为每条结论摘出简历原文作为证据。\n不做性格判断，也不预测绩效；你只回答“标准是否被证据支持”。\n输出“候选人 · 条目 · 证据原文 · 判定（满足/不满足/无证据）”。\n无证据就写“无证据”，不要用“看起来”补足。",
@@ -80,7 +80,7 @@
       },
       "provenance": {
         "role": "recruiting-screener@1.0.0",
-        "sha256": "ee26d4e2"
+        "sha256": "9587720c"
       }
     },
     {
@@ -89,8 +89,8 @@
       "roleRef": "recruiting-scheduler@1.0.0",
       "roleName": "recruiting-scheduler",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你负责安排：面试官时间、候选人时区、每轮题目清单与时长。\n不参与评价，也不透露其他候选人信息。\n输出排期表与每轮目标（这一轮要验证哪两条标准）。\n时间冲突时给两个可选方案，不要自行改面试官。",
@@ -110,7 +110,7 @@
       },
       "provenance": {
         "role": "recruiting-scheduler@1.0.0",
-        "sha256": "29a29a72"
+        "sha256": "ad9fe315"
       }
     }
   ],

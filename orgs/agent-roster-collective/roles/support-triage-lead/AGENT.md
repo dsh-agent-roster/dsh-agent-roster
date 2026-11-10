@@ -8,8 +8,8 @@ description: "维护分类表与升级条件；不直接回复用户。"
 tags:
   - "taxonomy"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

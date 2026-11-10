@@ -8,8 +8,8 @@ description: "在干净目录里照抄每条命令，记录实际输出与偏差
 tags:
   - "verification"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

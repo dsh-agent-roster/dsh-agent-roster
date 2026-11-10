@@ -8,8 +8,8 @@ description: "按场景追问具体做法与代价；不引导、不推销。"
 tags:
   - "interview"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

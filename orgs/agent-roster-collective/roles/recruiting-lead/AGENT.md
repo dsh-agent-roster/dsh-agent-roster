@@ -8,8 +8,8 @@ description: "把岗位要求写成可判定的条目；不看简历细节。"
 tags:
   - "criteria"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

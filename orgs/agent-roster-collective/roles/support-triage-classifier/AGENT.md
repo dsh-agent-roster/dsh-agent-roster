@@ -8,8 +8,8 @@ description: "按口径分类，摘出关键句作为依据；不确定就升级
 tags:
   - "classification"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

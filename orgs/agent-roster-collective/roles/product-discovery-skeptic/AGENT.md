@@ -8,8 +8,8 @@ description: "专门找反例与替代方案，防止确认偏误。"
 tags:
   - "red-team"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

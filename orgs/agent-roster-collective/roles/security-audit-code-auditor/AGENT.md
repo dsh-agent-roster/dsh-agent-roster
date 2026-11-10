@@ -8,8 +8,8 @@ description: "沿数据流找注入、路径穿越、反序列化、越权；每
 tags:
   - "sast"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

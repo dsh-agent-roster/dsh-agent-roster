@@ -8,8 +8,8 @@ description: "拆组件边界、定状态归属；不写样式细节。"
 tags:
   - "architecture"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

@@ -8,8 +8,8 @@ description: "给出结论与置信度，说明什么新证据会推翻它。"
 tags:
   - "synthesis"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

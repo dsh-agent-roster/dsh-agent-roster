@@ -8,8 +8,8 @@ description: "按渠道改写首段与标题，发布后回收读数。"
 tags:
   - "distribution"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

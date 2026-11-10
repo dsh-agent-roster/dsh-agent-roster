@@ -8,8 +8,8 @@ description: "把模糊问题拆成可回答的子问题，定“什么算答上
 tags:
   - "scoping"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

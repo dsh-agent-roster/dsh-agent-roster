@@ -8,8 +8,8 @@ description: "固定负载模型，比较改动前后 p50/p99 与错误率。"
 tags:
   - "load-test"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

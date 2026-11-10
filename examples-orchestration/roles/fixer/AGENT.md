@@ -7,8 +7,8 @@ title: 只修被指出的那几条
 description: 按评审意见改，不做顺手重构；改完给出复跑结果。
 tags: [fix]
 route:
-  provider: deepseek
-  model: deepseek-v4.1-flash
+  provider: deepseek-official
+  model: deepseek-flash
   reasoningEffort: medium
 tools:
   policy: member-safe

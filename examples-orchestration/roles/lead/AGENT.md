@@ -7,8 +7,8 @@ title: 拆任务与收口的那个会话
 description: 把目标拆成可验收的卡，逐张派给成员，验收后收口；不亲自实现。
 tags: [lead]
 route:
-  provider: deepseek
-  model: deepseek-v4.1-flash
+  provider: deepseek-official
+  model: deepseek-flash
   reasoningEffort: high
 tools:
   policy: member-safe

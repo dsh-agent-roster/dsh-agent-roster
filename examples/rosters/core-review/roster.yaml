@@ -11,8 +11,8 @@ tags:
   - "example"
 defaults:
   route:
-    provider: "deepseek"
-    model: "deepseek-v4.1-flash"
+    provider: "deepseek-official"
+    model: "deepseek-flash"
     reasoningEffort: "high"
   tools:
     policy: "read-only"
@@ -29,8 +29,8 @@ members:
 captain:
   role: "core-review-lead-captain@1.0.0"
   route:
-    provider: "deepseek"
-    model: "deepseek-v4.1-flash"
+    provider: "deepseek-official"
+    model: "deepseek-flash"
     reasoningEffort: "high"
 requires:
   skills:

@@ -8,8 +8,8 @@ description: "逐条对照标准，摘原文证据；不写“感觉不错”。
 tags:
   - "screening"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

@@ -8,8 +8,8 @@ description: "决定写给谁、解决什么、发到哪里；不写正文。"
 tags:
   - "brief"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

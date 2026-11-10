@@ -5,8 +5,8 @@ version: "1.0.0"
 role: "队长"
 description: "主会话即队长，负责拆活与验收"
 route:
-  provider: "deepseek"
-  model: "deepseek-v4.1-flash"
+  provider: "deepseek-official"
+  model: "deepseek-flash"
   reasoningEffort: "high"
 ---
 

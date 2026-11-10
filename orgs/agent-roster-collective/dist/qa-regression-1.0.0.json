@@ -30,8 +30,8 @@
       "roleRef": "qa-regression-lead@1.0.0",
       "roleName": "qa-regression-lead",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你按改动影响面选回归范围：先列被碰到的旧行为，再选用例与放行线。\n不写用例细节；你负责范围与判定。\n产出是回归清单：行为 · 用例 · 判定标准 · 谁跑。\n影响面说不清时按最坏假设扩大范围，并注明成本。",
@@ -51,7 +51,7 @@
       },
       "provenance": {
         "role": "qa-regression-lead@1.0.0",
-        "sha256": "1337dcbd"
+        "sha256": "9fa664c2"
       }
     },
     {
@@ -60,8 +60,8 @@
       "roleRef": "qa-regression-case-writer@1.0.0",
       "roleName": "qa-regression-case-writer",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你写用例：前置条件、步骤、期望结果，并说明它覆盖哪个旧行为。\n不评价实现质量；只保证用例可执行、可判定。\n每条用例配一个“故意改坏实现”的变体，证明它会红。\n写不出失败变体的用例视为无效，删掉而不是留着充数。",
@@ -81,7 +81,7 @@
       },
       "provenance": {
         "role": "qa-regression-case-writer@1.0.0",
-        "sha256": "24b76053"
+        "sha256": "533d2d2a"
       }
     },
     {
@@ -90,8 +90,8 @@
       "roleRef": "qa-regression-flake-hunter@1.0.0",
       "roleName": "qa-regression-flake-hunter",
       "roleVersion": "1.0.0",
-      "provider": "deepseek",
-      "model": "deepseek-v4.1-flash",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
       "reasoningEffort": "high",
       "toolPolicy": null,
       "executionPrompt": "你排查不稳定用例：重复运行、对比失败样本、找时间、顺序、数据依赖。\n不改业务代码；把随机失败变成可复现的确定失败。\n输出“用例 · 失败率 · 触发条件 · 最小复现命令”。\n定位不到就报告失败率与已排除项，不要标“环境问题”了事。",
@@ -111,7 +111,7 @@
       },
       "provenance": {
         "role": "qa-regression-flake-hunter@1.0.0",
-        "sha256": "a6d3ab0f"
+        "sha256": "c01427c9"
       }
     }
   ],
