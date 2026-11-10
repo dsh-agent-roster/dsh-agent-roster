@@ -130,7 +130,7 @@ test("library：200 + 快照里能看到示例库的两份档案", async () => {
   // 团队引擎：面板下拉要知道装了哪些建团插件，而不是静默失败。
   assert.deepEqual(
     result.body.hostTeamTargets.map((item) => item.id),
-    ["agent-teams", "experimental-agent-team"],
+    ["agent-teams"],
   );
   assert.equal(result.body.hostTeamTargets.every((item) => typeof item.available === "boolean"), true);
 });
@@ -420,14 +420,14 @@ test("apply：未知团队引擎是 400，不猜一个替代", async () => {
   assert.equal(result.status, 400);
   assert.equal(result.body.error.code, "unknown-target");
 
-  // 已知但暂不支持的引擎：错误码要能区分"打错字"与"支持不了"。
-  const unsupported = await call(
+  // 第二个引擎已经整个删掉：它的 id 现在与任意未知 id 一样被拒绝。
+  const removed = await call(
     host,
     "/plugins/dsh-agent-roster/apply",
     makeReq({ method: "POST", body: { rosterId: "core-review", target: "experimental-agent-team" } }),
   );
-  assert.equal(unsupported.status, 400);
-  assert.equal(unsupported.body.error.code, "target-unsupported");
+  assert.equal(removed.status, 400);
+  assert.equal(removed.body.error.code, "unknown-target");
 });
 
 test("apply：不存在的档案是 404，并列出已知档案", async () => {

@@ -27,7 +27,7 @@ import { parseDocumentText } from "./lib/parse.js";
 import { ROSTER2_KIND } from "./lib/format-v2.js";
 import { validateRoster } from "./lib/validate.js";
 import { validateRoster2 } from "./lib/roster2.js";
-import { detectTeamTargets, TEAM_TARGET_IDS, teamTargetOf } from "./lib/team-targets.js";
+import { detectTeamTargets, TEAM_TARGET_IDS } from "./lib/team-targets.js";
 import { sendError, sendJson, createAuthGate, readJsonBody, requireMethod } from "./lib/http.js";
 import { buildPanelSnapshot, installCollection, installSpace, loadRemotePanel, resolveRoots } from "./lib/service.js";
 import { listHostModels } from "./lib/host-models.js";
@@ -509,9 +509,7 @@ export function apply(ctx, config) {
         // 团队引擎是闭集：未知 id 直接 400，不猜一个替代去建团。
         const target = typeof input.target === "string" ? input.target : "";
         if (target !== "" && !TEAM_TARGET_IDS.includes(target)) {
-          // 已知但暂不支持的引擎给单独的错误码：让调用方知道"不是打错了字"。
-          const known = teamTargetOf(target);
-          sendError(res, 400, known === null ? "unknown-target" : "target-unsupported");
+          sendError(res, 400, "unknown-target");
           return;
         }
         const rosterId = typeof input.rosterId === "string" ? input.rosterId : "";

@@ -350,7 +350,6 @@
     "modelDefault": "Deployment default (no switch)",
     "modelUnknown": "Model catalog unavailable",
     "modelUnavailable": "Declared: {model} (not provided here)",
-    "modelMissing": "The roster declares {model}, which this deployment does not provide. The deployment default will be used; to run as written, provide that provider/model first.",
-    "engineUnsupported": "Unsupported"
+    "modelMissing": "The roster declares {model}, which this deployment does not provide. The deployment default will be used; to run as written, provide that provider/model first."
   }
 }

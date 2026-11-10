@@ -394,16 +394,11 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 
 ### 团队引擎
 
-创建团队时先选**用哪个建团插件**（下拉）。目前**只支持 Agent Teams**：
+建团只走 **Agent Teams**（`@nanmicoder/dsh-agent-teams`）：成员逐字段建（provider/model/persona/toolPolicy 都进运行时），团队有 `team.json`，可核对、捕获、迭代，队长人设可注入。
 
-| 引擎 | 包 | 状态 |
-|---|---|---|
-| Agent Teams | `@nanmicoder/dsh-agent-teams` | **支持**：成员逐字段建（provider/model/persona/toolPolicy 都进运行时），团队有 `team.json`，可核对、捕获、迭代，队长人设可注入 |
-| Experimental Agent Team | `@deepseek-ai/dsh-experimental-agent-team` + `-tool-agent-team` | **暂不支持**：官方实验线没有团队记录，也没有可持久化的成员人设；核对、捕获、迭代与队长人设注入都拿不到可验证的落点。装了会出现在下拉里，但禁选并写明原因 |
+面板不再提供引擎选择——只有它一个；没装时创建团队对话框里直接写「未安装」并禁用提交（依赖不静默）。探测语义是“这个 profile 里能解析到这个包”，不是“已经启用”。
 
-未安装的引擎仍出现在下拉里，禁选并标「未安装」——依赖不静默；没有任何可用引擎时提交按钮禁用。探测语义是“这个 profile 里能解析到这个包”，不是“已经启用”。
-
-`POST /apply` 与 `roster_team` 的 `target` 是闭集：未知值报 `unknown-target`，已知但暂不支持报 `target-unsupported`，**不会静默按 agent-teams 建团**。两者也都接受 `model` 覆盖 `{provider, model, reasoningEffort?}`：面板只列本部署真服务的模型，`roster_team` 对不可用的模型直接报 `model-unavailable`，不让 `selectModel` 到更晚才失败。
+`POST /apply` 与 `roster_team` 的 `target` 是闭集（只有 `agent-teams`），其他值报 `unknown-target`。两者都接受 `model` 覆盖 `{provider, model, reasoningEffort?}`：面板只列本部署真服务的模型，`roster_team` 对不可用的模型直接报 `model-unavailable`。
 
 ### 队长人设怎么进会话
 

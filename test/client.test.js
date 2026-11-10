@@ -288,10 +288,11 @@ test("从档案创建团队：行上有入口，对话框默认新会话，团�
   // 快速建团不该劫持用户正在聊的会话：默认必须是新会话。
   assert.match(source, /const \[mode, setMode\] = useState\("new"\)/);
   assert.match(source, /const payload = \{ rosterId: roster\.id, teamName: teamName\.trim\(\), mode, target: targetId \}/);
-  // 引擎下拉：未安装的目标保留在列表里但禁选，并写明原因（依赖不静默）。
+  // 引擎：只剩一个，不再做下拉；写成一行事实，缺包时写"未安装"（依赖不静默）。
   assert.match(source, /label: t\("teamCreate\.engine"\)/);
-  assert.match(source, /disabled: unsupported \|\| missing/);
+  assert.match(source, /const engine = targetList\.find\(\(item\) => item\.id === "agent-teams"\)/);
   assert.match(source, /teamCreate\.engineMissing/);
+  assert.doesNotMatch(source, /disabled: unsupported \|\| missing/);
   assert.match(source, /targetHasMemberSpecs/);
   assert.match(source, /teamCreate\.noMemberSpecs/);
   assert.match(source, /creatingTeam !== null[\s\S]{0,200}?TeamCreateDialog/);

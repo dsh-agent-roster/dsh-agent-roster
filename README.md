@@ -396,16 +396,11 @@ The row button and the `roster_team` tool share one `applyCaptain` path:
 
 ### Team engines
 
-When creating a team you choose **which team plugin builds it**. Today only **Agent Teams** is supported:
+Teams are built by **Agent Teams** (`@nanmicoder/dsh-agent-teams`) only: members are created field by field (provider/model/persona/toolPolicy reach the runtime), the team has a `team.json`, and verify/capture/iterate plus captain-persona injection all work.
 
-| Engine | Package | Status |
-|---|---|---|
-| Agent Teams | `@nanmicoder/dsh-agent-teams` | **Supported**: members are created field by field (provider/model/persona/toolPolicy reach the runtime), the team has a `team.json`, and verify/capture/iterate plus captain-persona injection all work |
-| Experimental Agent Team | `@deepseek-ai/dsh-experimental-agent-team` + `-tool-agent-team` | **Not supported yet**: the experimental line has no team record and no persisted member persona, so verify/capture/iterate and persona injection have no verifiable landing point. It is still listed (disabled, with the reason) when installed |
+The panel no longer offers an engine choice — there is one. When the package is missing, the create-team dialog says "not installed" and disables submit, so the dependency stays visible. Detection means "this profile can resolve the package", not "it is mounted".
 
-Engines that are not installed stay in the dropdown, disabled and marked "not installed" — dependencies should not be silent. The submit button is disabled when no engine is usable. Detection means "this profile can resolve the package", not "it is mounted".
-
-`POST /apply` and `roster_team` take a closed `target` set: an unknown value is `unknown-target`, a known-but-unsupported one is `target-unsupported` — neither silently falls back to agent-teams. Both also accept a `model` override `{provider, model, reasoningEffort?}`: the panel only lists models the deployment really serves, and `roster_team` rejects an unavailable model with `model-unavailable` instead of failing later in `selectModel`.
+`POST /apply` and `roster_team` take a closed `target` set (`agent-teams` only); any other value is `unknown-target`. Both also accept a `model` override `{provider, model, reasoningEffort?}`: the panel lists only models the deployment really serves, and `roster_team` rejects an unavailable model with `model-unavailable`.
 
 ### How the captain persona reaches the session
 

@@ -796,24 +796,13 @@ window.__ModuleLoader__.load({
       // 团队引擎：下拉里列出这台部署上的建团插件；未安装的项保留在列表里，
       // 但禁选并写明原因——依赖不静默，是这次改版的目的。
       const targetList = Array.isArray(targets) ? targets : [];
-      // 只把"我们支持"的引擎当作可选项。已知但不支持的仍列在下面（禁选、
-      // 带原因），因为静默消失会让人以为它没装，而不是"装了但没用"。
-      const supportedTargets = targetList.filter((item) => item.supported !== false);
-      const firstAvailable = supportedTargets.find((item) => item.available === true) ?? supportedTargets[0] ?? null;
-      const [targetId, setTargetId] = useState(firstAvailable?.id ?? "agent-teams");
-      const chosenTarget = targetList.find((item) => item.id === targetId) ?? null;
-      const targetHasTeamName = chosenTarget?.capabilities?.teamName !== false;
-      const targetHasMemberSpecs = chosenTarget?.capabilities?.memberSpecs !== false;
-      const noEngine =
-        supportedTargets.length === 0 || supportedTargets.every((item) => item.available !== true);
-      // 目标列表是快照里后到的：当前选中项若不可用，自动落到第一个可用项。
-      useEffect(() => {
-        if (supportedTargets.length === 0) return;
-        const current = supportedTargets.find((item) => item.id === targetId);
-        if (current !== undefined && current.available === true) return;
-        const fallback = supportedTargets.find((item) => item.available === true);
-        if (fallback !== undefined) setTargetId(fallback.id);
-      }, [targets, targetId]);
+      // 只有一个引擎（agent-teams）：不再做"假下拉"，直接把事实写出来。
+      // 列表来自宿主快照，为空时按默认引擎提交，由宿主/插件报"没有建团能力"。
+      const engine = targetList.find((item) => item.id === "agent-teams") ?? targetList[0] ?? null;
+      const targetId = engine?.id ?? "agent-teams";
+      const targetHasTeamName = engine?.capabilities?.teamName !== false;
+      const targetHasMemberSpecs = engine?.capabilities?.memberSpecs !== false;
+      const noEngine = engine !== null && engine.available !== true;
       const captain = roster.captain ?? null;
       const declaredModel =
         captain !== null && captain.provider !== undefined && captain.model !== undefined && captain.provider !== "" && captain.model !== ""
@@ -903,33 +892,13 @@ window.__ModuleLoader__.load({
           Field,
           { label: t("teamCreate.engine"), hint: t("teamCreate.engineHint") },
           h(
-            "select",
-            {
-              className: "rstr-select",
-              value: targetId,
-              onChange: (event) => setTargetId(event.target.value),
-            },
-            targetList.length === 0
-              ? h("option", { value: "" }, t("teamCreate.engineNone"))
-              : targetList.map((item) => {
-                  const unsupported = item.supported === false;
-                  const missing = item.available !== true;
-                  const suffix = unsupported
-                    ? t("teamCreate.engineUnsupported")
-                    : missing
-                      ? t("teamCreate.engineMissing")
-                      : "";
-                  return h(
-                    "option",
-                    {
-                      key: item.id,
-                      value: item.id,
-                      disabled: unsupported || missing,
-                      title: unsupported ? item.reason ?? "" : "",
-                    },
-                    suffix === "" ? item.label : `${item.label} · ${suffix}`,
-                  );
-                }),
+            "div",
+            { className: "rstr-stat" },
+            engine === null
+              ? t("teamCreate.engineNone")
+              : engine.available === true
+                ? engine.label
+                : `${engine.label} · ${t("teamCreate.engineMissing")}`,
           ),
         ),
         h(

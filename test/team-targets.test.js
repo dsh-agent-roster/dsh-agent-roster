@@ -34,16 +34,9 @@ function fakeController() {
 
 test("目标探测：装了就是 available，缺包写清缺哪个；支持的只有闭集里的", () => {
   const all = detectTeamTargets({ resolve: () => true });
-  assert.deepEqual(
-    all.map((item) => item.id),
-    [...TEAM_TARGET_IDS, "experimental-agent-team"],
-  );
+  assert.deepEqual(all.map((item) => item.id), TEAM_TARGET_IDS);
   assert.equal(all.every((item) => item.available === true && item.missing.length === 0), true);
-  assert.equal(teamTargetOf("agent-teams").supported, true);
-  // 官方实验线：装得上也不算支持。列出来、说清为什么，比静默消失诚实。
-  const unsupported = teamTargetOf("experimental-agent-team");
-  assert.equal(unsupported.supported, false);
-  assert.match(unsupported.reason, /团队记录/);
+  assert.equal(teamTargetOf("experimental-agent-team"), null);
 
   const none = detectTeamTargets({ resolve: () => false });
   assert.equal(none.every((item) => item.available === false), true);
@@ -59,13 +52,11 @@ test("目标探测：能力矩阵如实描述每个引擎接得住什么", () =>
     perMemberModel: true,
     teamName: true,
   });
-  const experimental = targets.find((item) => item.id === "experimental-agent-team");
-  assert.equal(experimental.supported, false);
-  assert.equal(experimental.capabilities.teamRecord, false);
+  assert.equal(targets.length, 1);
   assert.equal(teamTargetOf("nope"), null);
 });
 
-test("applyCaptain：暂不支持的引擎明确失败，不静默按 agent-teams 建团", async () => {
+test("applyCaptain：删掉的第二个引擎也按未知目标拒绝，不静默建团", async () => {
   const controller = fakeController();
   const result = await applyCaptain({
     sessionController: controller,
@@ -75,7 +66,7 @@ test("applyCaptain：暂不支持的引擎明确失败，不静默按 agent-team
     sessionTitle: "probe",
   });
   assert.equal(result.ok, false);
-  assert.equal(result.code, "target-unsupported");
+  assert.equal(result.code, "unknown-target");
   assert.equal(controller.calls.length, 0);
 });
 

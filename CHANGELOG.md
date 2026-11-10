@@ -2,6 +2,14 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.20.1] - 2026-11-10
+
+### Changed
+
+- **The second engine is gone from the surface, not just rejected.** `TEAM_TARGETS` now contains only `agent-teams`; the create-team dialog no longer renders an engine dropdown (a one-option select was a pretend choice) — it shows one line of fact, and "not installed" when the package is missing. `target: "experimental-agent-team"` is now indistinguishable from any unknown value (`unknown-target`), and the special `target-unsupported` code is removed from the HTTP route and both tools.
+
+Tests 436 (unchanged: the refusal cases were retargeted, not added).
+
 ## [1.20.0] - 2026-11-10
 
 ### Removed
@@ -1172,7 +1180,7 @@ point is now one search field above the tabs.
 [1.16.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.20.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.20.1...main
 [1.14.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.7...v1.14.0
 [1.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.1...v1.13.0
 [1.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.0...v1.13.1
