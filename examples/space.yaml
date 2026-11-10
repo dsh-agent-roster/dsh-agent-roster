@@ -6,6 +6,10 @@ license: MIT
 maintainers:
   - STofone
 layout: monorepo
+knowledge:
+  - path: knowledge/project-map.md
+    title: 示例项目的知识
+    sha256: 8db26ddabbdd897063625438d852e0641fe329a1eff084b526737e41ee993332
 rosters:
   - id: core-review
   - id: research

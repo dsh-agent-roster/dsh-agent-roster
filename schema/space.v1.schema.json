@@ -5,35 +5,81 @@
   "description": "一个装档案的目录（通常是 git 仓库）的封面：声明布局、登记档案、记录本地副本的来源。它只做声明与核对，不创建团队。",
   "type": "object",
   "additionalProperties": false,
-  "required": ["kind", "space", "rosters"],
+  "required": [
+    "kind",
+    "space",
+    "rosters"
+  ],
   "properties": {
-    "kind": { "const": "dsh-agent-roster/space@1" },
-    "space": { "$ref": "#/$defs/id" },
-    "title": { "type": "string", "maxLength": 120 },
-    "description": { "type": "string", "maxLength": 500 },
-    "license": { "type": "string", "maxLength": 120 },
-    "homepage": { "type": "string", "pattern": "^https?://\\S+$", "maxLength": 200 },
+    "kind": {
+      "const": "dsh-agent-roster/space@1"
+    },
+    "space": {
+      "$ref": "#/$defs/id"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "license": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "homepage": {
+      "type": "string",
+      "pattern": "^https?://\\S+$",
+      "maxLength": 200
+    },
     "maintainers": {
       "type": "array",
       "maxItems": 16,
-      "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      }
     },
-    "layout": { "enum": ["flat", "monorepo"] },
+    "layout": {
+      "enum": [
+        "flat",
+        "monorepo"
+      ]
+    },
     "origin": {
       "type": "object",
       "description": "只出现在本地拉取出来的副本上；仓库里的空间文件不该写 origin。",
       "additionalProperties": false,
-      "required": ["repo"],
+      "required": [
+        "repo"
+      ],
       "properties": {
-        "repo": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*$", "maxLength": 200 },
-        "ref": { "type": "string", "minLength": 1, "maxLength": 120 },
-        "path": { "type": "string", "maxLength": 200 }
+        "repo": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*$",
+          "maxLength": 200
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 200
+        }
       }
     },
     "roles": {
       "type": "array",
       "maxItems": 200,
-      "items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$" }
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+      }
     },
     "rosters": {
       "type": "array",
@@ -42,19 +88,70 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id"],
+        "required": [
+          "id"
+        ],
         "properties": {
-          "id": { "$ref": "#/$defs/rosterId" },
-          "title": { "type": "string", "maxLength": 120 },
-          "status": { "enum": ["active", "archived"] },
-          "origin": { "type": "string", "maxLength": 120 },
-          "note": { "type": "string", "maxLength": 300 }
+          "id": {
+            "$ref": "#/$defs/rosterId"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "status": {
+            "enum": [
+              "active",
+              "archived"
+            ]
+          },
+          "origin": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 300
+          }
+        }
+      }
+    },
+    "knowledge": {
+      "type": "array",
+      "description": "共享知识：clone 会按声明拉取，validate 核对存在与哈希；创建团队时只把路径与哈希作为指针给队长，正文不进提示词。",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^knowledge/",
+            "maxLength": 200
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
         }
       }
     }
   },
   "$defs": {
-    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,63}$" },
-    "rosterId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" }
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,63}$"
+    },
+    "rosterId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    }
   }
 }

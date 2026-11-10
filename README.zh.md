@@ -243,14 +243,37 @@ npx dsh-agent-roster compile --roster examples/rosters/core-review --write
 {{> snippets/report-shape.md}}
 ```
 
-- `snippets/…` 相对**库根**；其余路径相对**角色目录**，越界即 error。
+- `snippets/…` 与 `knowledge/…` 相对**库根**；其余路径相对**角色目录**，越界即 error。
 - 只展开一层：被引文件里再出现 `{{>` 是 `include-nested`。
 - 同一文件引两次就展开两次；`prompt.parts` 仍拒绝重复。
 - 预算按**展开后**算：单片段 6000、整篇 12000、最多 32 处。
 - 报错带整份文件的行号，`promptStats` 记 `{path, kind: "include", line, sha256}`。
 - 不做条件、循环、变量：档案要能逐字读懂，也要能被静态校验。
 
-`snippets/` 只属于 v2 库；`dist/` 不随 `clone` 拉取，需要本地重新编译。
+`snippets/` 与 `knowledge/` 只属于 v2 库；`dist/` 不随 `clone` 拉取，需要本地重新编译。
+
+## 公共知识
+
+`knowledge/` 是库根的**共享知识**目录，与 `snippets/` 同级但**消费方式不同**：
+
+| 方式 | 写法 | 去向 | 适合 |
+|---|---|---|---|
+| 内联 | 正文里 `{{> knowledge/xxx.md}}`（独占一行） | 进 `executionPrompt`，受 12000 预算 | 短规则、约定、清单 |
+| 指针 | `space.yaml` 的 `knowledge:` 登记 | 只把「绝对路径 + 内容哈希 + 标题」给队长起始消息 | 长文档、项目手册、地图 |
+
+```yaml
+# space.yaml
+knowledge:
+  - path: knowledge/project-map.md
+    title: 项目地图
+    sha256: 8db26ddabbdd897063625438d852e0641fe329a1eff084b526737e41ee993332   # 可选
+```
+
+- **登记是声明，不是内容**：正文永远不进提示词；指针让会话自己按需打开。
+- `clone` 会按登记把文件拉下来（没被任何角色引用也拉）；缺文件只记 warn `clone-knowledge-missing`。
+- `validate`/`scan` 核对磁盘：缺文件是 error `space-knowledge-missing`，哈希不符是 warn `space-knowledge-drift`，`knowledge/` 下没登记的文件是 info `space-knowledge-undeclared`。
+- 路径必须落在 `knowledge/` 下、必须是安全相对路径；哈希必须是 64 位小写十六进制。
+- 不做第二真源：知识只有这一份文件，登记只记路径与哈希，不复制正文。
 
 ## 每个字段到底落在哪
 
@@ -314,7 +337,7 @@ roles: [core-review-lead, reviewer]   # 可选：声明角色
 npx dsh-agent-roster clone --repo dsh-agent-roster/agent-teams --space agent-teams --dir /tmp/clone
 ```
 
-按原布局拉 rosters、roles、`parts/`、`snippets/` 与 `space.yaml`，并写一份来源账本 `.dsh-roster-origin.json`（`origin`、`commit`、`pulledAt`、每个文件的 `sha256` 与 blob id）。`dist/` 有意不拉。
+按原布局拉 rosters、roles、`parts/`、`snippets/`、`knowledge/` 与 `space.yaml`，并写一份来源账本 `.dsh-roster-origin.json`（`origin`、`commit`、`pulledAt`、每个文件的 `sha256` 与 blob id）。`dist/` 有意不拉。
 
 ### 让副本保持更新
 
@@ -468,8 +491,8 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 | 编排 | `gate-unverifiable`、`gate-without-stage`、`empty-stage`、`onfail-unknown-stage`、`onfail-immediate`、`onfail-dangling`、`onfail-unbounded` |
 | 能力 | `capability-policy-missing`、`capability-skills-unverified`、`capability-cross-check-skipped`、`invalid-document-path`、`invalid-document-sha` |
 | 策略 | `tool-policy-cross-check-skipped`（没配 `knownToolPolicies` 时是 warn：写错的 id 也会通过，无法核对） |
-| 空间 | `space-roster-missing`、`space-roster-undeclared`、`space-roster-archived`、`multiple-space-files`、`space-origin-not-allowed` |
-| 账本 | `no-origin-ledger`、`origin-ledger-broken`、`clone-unsafe-path`、`clone-snippet-missing`、`clone-no-rosters`（一份档案都没拉到，按失败处理） |
+| 空间 | `space-roster-missing`、`space-roster-undeclared`、`space-roster-archived`、`multiple-space-files`、`space-origin-not-allowed`、`space-knowledge-missing`（error）、`space-knowledge-drift`（warn）、`space-knowledge-undeclared`（info） |
+| 账本 | `no-origin-ledger`、`origin-ledger-broken`、`clone-unsafe-path`、`clone-snippet-missing`、`clone-knowledge-missing`、`clone-no-rosters`（一份档案都没拉到，按失败处理） |
 | 会话 | `session-controller-unavailable`、`session-create-failed`、`session-rename-failed`、`prompt-not-queued` |
 | 收藏/写入 | `favorites-unreadable`、`write-failed`、`delete-failed` |
 
@@ -485,7 +508,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 ## 开发
 
 ```bash
-node --test                 # 418 个测试
+node --test                 # 424 个测试
 npm run smoke               # 宿主侧 11 个工具 + 客户端两槽位
 npm run check:host         # 宿主契约（单测里的假件证明不了它）
 npm run e2e                    # 起一个一次性宿主，问它真正看见了什么（不调模型，约 9 秒）
@@ -498,7 +521,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## 验证状态
 
-- 全仓 **418/418**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
+- 全仓 **424/424**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
 - CI `registry`（Node 22）重算索引、重编示例，并在 `dist/` 与源码不一致时失败。
 - **脚本化 e2e**（`npm run e2e`）：把工作区打包、装进生产 profile 的**临时副本**，在空闲端口起一个一次性 `dsh web`，然后只问运行中的宿主：版本、库与队长投影、`hostTeamTargets`、`hostModels`、`/catalog`、未知引擎 400、未知档案 404、收藏往返——17 项断言，不调模型，约 9 秒。`--depth=apply` 才真建一支队并检查 `team.json`（慢、会调用模型）。`--depth=persona` 在 apply 之上再解码队长会话日志：团队落盘前的第一步系统提示词里**没有**档案人设，落盘后的系统提示词里**有**、且部署人设前缀**已消失**——证明注入走的是同名 section 遮蔽，不是往起始消息里塞一段。生产 profile 只读。
 - 已知边界：`npm run e2e` 复制的是**生产 profile 的快照**（含已装插件），因此它验证「宿主怎么加载我们」，不替代针对单个模块的单测；`dist/` 不随 clone 拉取；按合集安装（`/install`）会把档案摊平成 v1 文档，整空间拉取（`clone` / `/install-space`）才保留 v2 布局与账本；`toolFilter` 无法从 team.json 核对；升级后需重启 `dsh web`。

@@ -2,6 +2,20 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.15.0] - 2026-11-10
+
+### Added
+
+- **Shared knowledge: `knowledge/` at the library root, next to `snippets/` but consumed differently.** Short rules are still inlined with `{{> knowledge/…}}` (one line, one level, same 12 000-character budget). Long documents are **declared** in `space.yaml` under `knowledge:` with a path, an optional title and an optional `sha256`; the kick-off prompt then receives only an absolute path, the first 8 hex characters of the content hash and the title. Nothing is pasted into the prompt, so a 40 KB project map neither blows the budget nor disappears when the conversation is compacted — the session opens it by path when it needs it.
+- `clone` pulls every declared knowledge file, even when no role references it; a missing one is a warning (`clone-knowledge-missing`) rather than a silent hole. The generated local `space.yaml` keeps the `knowledge:` block.
+- `validate`/`scan` check the declaration against the disk: a missing file is **error** `space-knowledge-missing`, a hash mismatch is **warn** `space-knowledge-drift`, and an undeclared file under `knowledge/` is **info** `space-knowledge-undeclared`.
+
+### Changed
+
+- Declared knowledge paths must live under `knowledge/` and be safe relative paths; hashes must be 64 lowercase hex characters. `knowledge/` is the second shared root, so `snippets/` semantics (and error codes) apply unchanged.
+
+Tests 418 → 424. The `examples/` space now carries one knowledge file (`knowledge/project-map.md`) as a live demonstration.
+
 ## [1.14.0] - 2026-11-10
 
 ### Added
@@ -1070,7 +1084,8 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...main
+[1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...main
 [1.14.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.7...v1.14.0
 [1.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.1...v1.13.0
 [1.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.0...v1.13.1

@@ -73,7 +73,7 @@ requires:
   ```
 
   分隔符固定为两个换行，`assemblePrompt()` 是唯一实现（`lib/frontmatter.js`）。
-- **正文可以就地引用**：`{{> parts/x.md}}` 独占一行、只展开一层；`{{> snippets/x.md}}` 相对**库根**，用于跨角色共享同一段文字。缺文件 / 越界 / 嵌套分别是 `missing-include` / `unsafe-include` / `include-nested`，一律 error；预算按展开后的字符算；产物把每处引用记成 `{ path, kind: "include", line, sha256 }`。
+- **正文可以就地引用**：`{{> parts/x.md}}` 独占一行、只展开一层；`{{> snippets/x.md}}` 与 `{{> knowledge/x.md}}` 相对**库根**，用于跨角色共享同一段文字或一条短规则。缺文件 / 越界 / 嵌套分别是 `missing-include` / `unsafe-include` / `include-nested`，一律 error；预算按展开后的字符算；产物把每处引用记成 `{ path, kind: "include", line, sha256 }`。
 - **预算按字符**：`prompt.budget` 与 `LIMITS2.promptChars`（12000）都是字符数。不引入 token 预算——token 估算随 provider 变，会变成第二种真源。
 - **字段归宿**与 v1 一致的三分法：`route`/`tools.policy` 是 `direct`（进 `agent_teams_add_member`）；`tools.scope` 是 `config`（声明，不承载）；`requires` 是证据源约束（技能目录 / 部署声明的 toolPolicies）。
 - **未知键一律拒绝**：角色文档宁可报错，也不带一个没人校验的键。
@@ -215,7 +215,7 @@ gates:
 | 层 | 文件 | 回答的问题 |
 |---|---|---|
 | 能力 | `capabilities.yaml` | 这份档案要求部署提供什么（有证据源） |
-| 空间 | `space.yaml` | 这座库收了哪些档案、什么布局（flat / monorepo）、本地副本从哪来 |
+| 空间 | `space.yaml` | 这座库收了哪些档案、什么布局（flat / monorepo）、本地副本从哪来；可选的 `knowledge:` 登记共享知识的路径、标题与哈希 |
 | 角色/组装 | `AGENT.md` + `roster.yaml` | 谁是谁、怎么拼、编排放哪 |
 
 三者正交：`requires` 说"必须有"，`capabilities.yaml` 说"这份组装必须有"，`organization.yaml` 说"这座库有哪些"。

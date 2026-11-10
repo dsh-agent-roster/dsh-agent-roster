@@ -160,3 +160,20 @@ test("引用：编译产物在 promptStats 里逐条记 kind=include（行号 + 
   assert.match(include.sha256, /^[0-9a-f]{64}$/);
   assert.match(member.executionPrompt, /检查清单/);
 });
+
+test("includes：knowledge/ 也相对库根解析（与 snippets/ 同一套规则）", () => {
+  const dir = scratch();
+  const roleDir = nodePath.join(dir, "roles", "lead");
+  write(roleDir, "AGENT.md", ["---", "kind: dsh-agent-roster/role@1", "name: lead", "version: 1.0.0", "role: 队长", "---", "", "正文", "", "{{> knowledge/conventions.md}}", ""].join("\n"));
+  write(dir, "knowledge/conventions.md", "项目约定：先复述目标。\n");
+  const result = expandIncludes({
+    text: "正文\n\n{{> knowledge/conventions.md}}\n",
+    file: "AGENT.md",
+    roleDir,
+    libraryRoot: dir,
+    lineOffset: 0,
+  });
+  assert.equal(result.ok, true, JSON.stringify(result.diagnostics));
+  assert.match(result.text, /项目约定：先复述目标。/);
+  assert.equal(result.includes[0].path, "knowledge/conventions.md");
+});

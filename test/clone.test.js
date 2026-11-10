@@ -282,3 +282,43 @@ test("clone：一份档案都没拉到就是失败，不是「成功但空」", 
     rmSync(rootDir, { recursive: true, force: true });
   }
 });
+
+test("clone：空间登记的知识一并拉下来，缺了只 warn", async () => {
+  const rootDir = mkdtempSync(nodePath.join(tmpdir(), "dsh-clone-knowledge-"));
+  try {
+    const files = {
+      "space.yaml": [
+        "kind: dsh-agent-roster/space@1",
+        "space: demo-space",
+        "layout: monorepo",
+        "knowledge:",
+        "  - path: knowledge/guide.md",
+        "    title: 项目指南",
+        "  - path: knowledge/missing.md",
+        "rosters:",
+        "  - id: core-review",
+        "roles:",
+        "  - reviewer",
+        "",
+      ].join("\n"),
+      "rosters/core-review/roster.yaml": ROSTER.monorepo("core-review", "reviewer"),
+      "roles/reviewer/AGENT.md": AGENT("reviewer"),
+      "knowledge/guide.md": "这是项目指南。\n",
+    };
+    const result = await cloneSpace({
+      rootDir,
+      spaceId: "demo-space",
+      repo: "demo/space",
+      fetchImpl: fetchStub(files),
+    });
+    assert.equal(result.ok, true, JSON.stringify(result.diagnostics));
+    assert.ok(existsSync(nodePath.join(rootDir, "demo-space", "knowledge", "guide.md")));
+    const codes = result.diagnostics.map((item) => item.code);
+    assert.ok(codes.includes("clone-knowledge-missing"), codes.join(","));
+    const cover = readFileSync(nodePath.join(rootDir, "demo-space", "space.yaml"), "utf8");
+    assert.match(cover, /knowledge:/);
+    assert.match(cover, /knowledge\/guide\.md/);
+  } finally {
+    rmSync(rootDir, { recursive: true, force: true });
+  }
+});

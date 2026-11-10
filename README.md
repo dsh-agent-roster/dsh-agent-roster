@@ -242,14 +242,37 @@ A persona body may place a shared block inline, **on a line of its own**:
 {{> snippets/report-shape.md}}
 ```
 
-- `snippets/…` resolves against the **library root**; other paths resolve against the **role directory**; escaping is an error.
+- `snippets/…` and `knowledge/…` resolve against the **library root**; other paths resolve against the **role directory**; escaping is an error.
 - Exactly one level: a `{{>` inside an included file is `include-nested`.
 - Including the same file twice expands it twice; `prompt.parts` still rejects duplicates.
 - Budgets apply **after** expansion: 6000 per file, 12000 total, at most 32 references.
 - Errors carry line numbers of the whole file; `promptStats` records `{path, kind: "include", line, sha256}`.
 - No conditionals, loops, or variables: a roster must be readable literally and statically checkable.
 
-`snippets/` belongs to v2 libraries only; `dist/` is not cloned and must be rebuilt locally.
+`snippets/` and `knowledge/` belong to v2 libraries only; `dist/` is not cloned and must be rebuilt locally.
+
+## Shared knowledge
+
+`knowledge/` at the library root is **shared knowledge**, next to `snippets/` but consumed differently:
+
+| Mode | How | Where it goes | Good for |
+|---|---|---|---|
+| inline | `{{> knowledge/xxx.md}}` on a line of its own | into `executionPrompt`, under the 12000 budget | short rules, conventions, checklists |
+| pointer | declared under `knowledge:` in `space.yaml` | only "absolute path + content hash + title" reaches the captain's kick-off | long documents, project maps |
+
+```yaml
+# space.yaml
+knowledge:
+  - path: knowledge/project-map.md
+    title: Project map
+    sha256: 8db26ddabbdd897063625438d852e0641fe329a1eff084b526737e41ee993332   # optional
+```
+
+- **A declaration is not content**: bodies never enter the prompt; the pointer lets the session open them on demand.
+- `clone` pulls every declared file (even if no role references it); `clone-knowledge-missing` is a warning.
+- `validate`/`scan` check the disk: missing file is error `space-knowledge-missing`, hash mismatch is warn `space-knowledge-drift`, an undeclared file under `knowledge/` is info `space-knowledge-undeclared`.
+- Paths must stay under `knowledge/` and be safe relative paths; hashes are 64 lowercase hex characters.
+- No second source of truth: the file is the only copy; the declaration records path and hash only.
 
 ## Where each field actually lands
 
@@ -315,7 +338,7 @@ roles: [core-review-lead, reviewer]   # optional role declarations
 npx dsh-agent-roster clone --repo dsh-agent-roster/agent-teams --space agent-teams --dir /tmp/clone
 ```
 
-It pulls rosters, roles, `parts/`, `snippets/` and `space.yaml` in their original layout, then writes an origin ledger `.dsh-roster-origin.json` (`origin`, `commit`, `pulledAt`, per-file `sha256` and blob id). `dist/` is deliberately not pulled.
+It pulls rosters, roles, `parts/`, `snippets/`, `knowledge/` and `space.yaml` in their original layout, then writes an origin ledger `.dsh-roster-origin.json` (`origin`, `commit`, `pulledAt`, per-file `sha256` and blob id). `dist/` is deliberately not pulled.
 
 ### Keeping a pulled copy current
 
@@ -469,8 +492,8 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 | Orchestration | `gate-unverifiable`, `gate-without-stage`, `empty-stage`, `onfail-unknown-stage`, `onfail-immediate`, `onfail-dangling`, `onfail-unbounded` |
 | Capabilities | `capability-policy-missing`, `capability-skills-unverified`, `capability-cross-check-skipped`, `invalid-document-path`, `invalid-document-sha` |
 | Policy | `tool-policy-cross-check-skipped` (a warning when `knownToolPolicies` is unset: a typo'd id passes too, because there is nothing to check it against) |
-| Spaces | `space-roster-missing`, `space-roster-undeclared`, `space-roster-archived`, `multiple-space-files`, `space-origin-not-allowed` |
-| Ledger | `no-origin-ledger`, `origin-ledger-broken`, `clone-unsafe-path`, `clone-snippet-missing`, `clone-no-rosters` (nothing was pulled, so the clone fails) |
+| Spaces | `space-roster-missing`, `space-roster-undeclared`, `space-roster-archived`, `multiple-space-files`, `space-origin-not-allowed`, `space-knowledge-missing` (error), `space-knowledge-drift` (warn), `space-knowledge-undeclared` (info) |
+| Ledger | `no-origin-ledger`, `origin-ledger-broken`, `clone-unsafe-path`, `clone-snippet-missing`, `clone-knowledge-missing`, `clone-no-rosters` (nothing was pulled, so the clone fails) |
 | Sessions | `session-controller-unavailable`, `session-create-failed`, `session-rename-failed`, `prompt-not-queued` |
 | Favourites / writes | `favorites-unreadable`, `write-failed`, `delete-failed` |
 
@@ -486,7 +509,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 ## Development
 
 ```bash
-node --test                 # 418 tests
+node --test                 # 424 tests
 npm run smoke               # host: 11 tools; client: two slots
 npm run check:host         # host contracts the unit tests fake
 npm run e2e                    # boot a throwaway host and ask what it actually sees (~9 s, no model calls)
@@ -499,7 +522,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## Verification status
 
-- **418/418** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
+- **424/424** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
 - CI `registry` (Node 22) recomputes the index, recompiles the examples, and fails when `dist/` drifts from source.
 - **Scripted e2e** (`npm run e2e`): packs the working tree, installs it into a temporary copy of the production profile, boots a throwaway `dsh web` on a free port, and asks the running host what it sees — version, libraries and the captain projection, `hostTeamTargets`, `hostModels`, `/catalog`, a 400 for an unknown engine, a 404 for an unknown roster, a favourites round-trip: 17 assertions, no model calls, about 9 seconds. `--depth=apply` also builds a real team and checks `team.json` (slow, costs model calls). `--depth=persona` goes one step further and decodes the captain session log: the first system prompt (before the team exists) has no roster persona, while the later one has it and has lost the deployment prefix — that is what proves the injector shadows the section instead of appending a line to the kick-off message. The production profile is only read.
 - Known boundaries: `npm run e2e` copies a snapshot of the production profile (with its installed plugins), so it verifies how the host loads us rather than replacing unit tests of individual modules; `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.

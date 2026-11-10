@@ -195,3 +195,74 @@ test("space：schema 与运行时权威校验对齐", () => {
     assert.equal(idPattern.test(sample), SPACE_ID_PATTERN.test(sample), `id 模式不一致：${sample}`);
   }
 });
+
+test("space：知识条目必须有 knowledge/ 前缀、合法哈希，不能重复", () => {
+  const result = validateSpace(
+    orgDocument({
+      knowledge: [
+        { path: "knowledge/guide.md", title: "项目指南" },
+        { path: "../escape.md" },
+        { path: "docs/notes.md" },
+        { path: "knowledge/guide.md" },
+        { path: "knowledge/bad.md", sha256: "not-a-hash" },
+        { path: "knowledge/extra.md", unknown: true },
+      ],
+    }),
+    { file: "space.yaml" },
+  );
+  const codes = result.diagnostics.map((item) => item.code);
+  assert.equal(result.ok, false);
+  assert.ok(codes.includes("space-knowledge-path"), codes.join(","));
+  assert.ok(codes.includes("space-knowledge-duplicate"), codes.join(","));
+  assert.ok(codes.includes("space-knowledge-sha"), codes.join(","));
+  assert.ok(codes.includes("unknown-field"), codes.join(","));
+});
+
+test("space：知识登记保留路径、标题与哈希", () => {
+  const result = validateSpace(
+    orgDocument({ knowledge: [{ path: "knowledge/guide.md", title: "项目指南", sha256: "a".repeat(64) }] }),
+    { file: "space.yaml" },
+  );
+  assert.equal(result.ok, true, JSON.stringify(result.diagnostics));
+  assert.deepEqual(result.space.knowledge, [{ path: "knowledge/guide.md", title: "项目指南", sha256: "a".repeat(64) }]);
+});
+
+test("space：登记的知识缺文件是 error，哈希不符是 warn，多出来的文件是 info", () => {
+  const base = mkdtempSync(nodePath.join(tmpdir(), "dsh-knowledge-"));
+  const library = nodePath.join(base, "demo-org");
+  try {
+    mkdirSync(nodePath.join(library, "core-review"), { recursive: true });
+    mkdirSync(nodePath.join(library, "knowledge"), { recursive: true });
+    writeFileSync(nodePath.join(library, "core-review", "roster.json"), `${JSON.stringify(rosterDocument(), null, 2)}\n`);
+    writeFileSync(nodePath.join(library, "knowledge", "guide.md"), "项目指南正文\n");
+    writeFileSync(nodePath.join(library, "knowledge", "extra.md"), "没登记的文件\n");
+    writeFileSync(
+      nodePath.join(library, "space.yaml"),
+      [
+        `kind: ${SPACE_KIND}`,
+        "space: demo-org",
+        "knowledge:",
+        "  - path: knowledge/guide.md",
+        "    title: 项目指南",
+        `    sha256: ${"b".repeat(64)}`,
+        "  - path: knowledge/missing.md",
+        "rosters:",
+        "  - id: core-review",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const scan = scanRosterLibrary({ rootDir: library });
+    const codes = scan.diagnostics.map((item) => item.code);
+    assert.ok(codes.includes("space-knowledge-missing"), codes.join(","));
+    assert.ok(codes.includes("space-knowledge-drift"), codes.join(","));
+    assert.ok(codes.includes("space-knowledge-undeclared"), codes.join(","));
+    const missing = scan.diagnostics.find((item) => item.code === "space-knowledge-missing");
+    assert.equal(missing.severity, "error");
+    const drift = scan.diagnostics.find((item) => item.code === "space-knowledge-drift");
+    assert.equal(drift.severity, "warn");
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
