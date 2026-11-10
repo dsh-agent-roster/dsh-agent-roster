@@ -12,7 +12,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
@@ -367,6 +367,125 @@ test("roster_capture：把运行时差异算出来，默认不写回", async () 
   const applied = await call(tools, "roster_capture", { id: "core-review", path: lib, stateDir, apply: true });
   assert.match(applied.firstLine, /^\[roster_capture\] /);
   assert.ok(Array.isArray(applied.value.written.written) && applied.value.written.written.length > 0, applied.text);
+});
+
+test("roster_capture：默认把「可写回什么」问出来；设置打开后直接写回", async () => {
+  const stateDir = mkdtempSync(path.join(tmpdir(), "capture-ask-"));
+  mkdirSync(path.join(stateDir, "demo"), { recursive: true });
+  writeFileSync(
+    path.join(stateDir, "demo", "team.json"),
+    JSON.stringify({
+      id: "demo",
+      name: "demo",
+      phase: "running",
+      description: "roster:core-review@1.0.0#abc12345",
+      captainSessionId: "session-1",
+      members: [
+        { name: "lead", role: "core-review-lead@1.0.0", provider: "deepseek-official", model: "deepseek-v4-pro", reasoningEffort: "high", executionPrompt: "runtime text" },
+      ],
+    }),
+  );
+  const { cpSync } = await import("node:fs");
+  const lib = mkdtempSync(path.join(tmpdir(), "capture-ask-lib-"));
+  cpSync(examples, lib, { recursive: true });
+
+  const { tools } = register();
+  const asked = await call(tools, "roster_capture", { id: "core-review", path: lib, stateDir });
+  assert.equal(asked.value.needsConfirmation, true);
+  assert.ok(Array.isArray(asked.value.pending) && asked.value.pending.length > 0);
+  assert.match(asked.text, /apply: true/);
+  assert.match(asked.text, /captureAutoApply/);
+
+  const auto = register({ captureAutoApply: true });
+  const applied = await call(auto.tools, "roster_capture", { id: "core-review", path: lib, stateDir });
+  assert.ok(applied.value.written.written.length > 0);
+  assert.equal(applied.value.needsConfirmation, false);
+  assert.match(applied.text, /captureAutoApply/);
+});
+
+test("roster_capture：remember:true 优先改配置，写不进配置就写库偏好", async () => {
+  const { cpSync } = await import("node:fs");
+  const stateDir = mkdtempSync(path.join(tmpdir(), "capture-remember-"));
+  mkdirSync(path.join(stateDir, "demo"), { recursive: true });
+  writeFileSync(
+    path.join(stateDir, "demo", "team.json"),
+    JSON.stringify({
+      id: "demo",
+      name: "demo",
+      phase: "running",
+      description: "roster:core-review@1.0.0#abc12345",
+      captainSessionId: "session-1",
+      members: [
+        { name: "lead", role: "core-review-lead@1.0.0", provider: "deepseek-official", model: "deepseek-v4-pro", reasoningEffort: "high", executionPrompt: "runtime text" },
+      ],
+    }),
+  );
+  const edits = [];
+  const configEditor = {
+    entries: () => [{ id: "agent-roster", name: "@stofone/dsh-agent-roster" }],
+    async edit(entry, change) {
+      edits.push(change({}, {}));
+    },
+  };
+  const libA = mkdtempSync(path.join(tmpdir(), "capture-remember-a-"));
+  cpSync(examples, libA, { recursive: true });
+  const withEditor = register({ services: { configEditor } });
+  const saved = await call(withEditor.tools, "roster_capture", { id: "core-review", path: libA, stateDir, apply: true, remember: true });
+  assert.equal(saved.value.remembered, "config");
+  assert.equal(edits.length, 1);
+  assert.equal(edits[0].captureAutoApply, true);
+
+  const libB = mkdtempSync(path.join(tmpdir(), "capture-remember-b-"));
+  cpSync(examples, libB, { recursive: true });
+  const noEditor = register();
+  const fellBack = await call(noEditor.tools, "roster_capture", { id: "core-review", path: libB, stateDir, apply: true, remember: true });
+  assert.equal(fellBack.value.remembered, "library");
+  const prefs = JSON.parse(readFileSync(path.join(libB, ".dsh-roster-preferences.json"), "utf8"));
+  assert.equal(prefs.captureAutoApply, true);
+});
+
+test("roster_iterate：有可写回差异时先问，不建会话；capture:false 才继续", async () => {
+  const { cpSync } = await import("node:fs");
+  const lib = mkdtempSync(path.join(tmpdir(), "iterate-ask-lib-"));
+  const stateDir = mkdtempSync(path.join(tmpdir(), "iterate-ask-state-"));
+  const ws = mkdtempSync(path.join(tmpdir(), "iterate-ask-ws-"));
+  cpSync(examples, lib, { recursive: true });
+  mkdirSync(path.join(stateDir, "old-team"), { recursive: true });
+  writeFileSync(
+    path.join(stateDir, "old-team", "team.json"),
+    JSON.stringify({
+      id: "old-team",
+      name: "old-team",
+      phase: "running",
+      description: "roster:core-review@1.0.0#abc12345",
+      captainSessionId: "session-old",
+      members: [
+        { name: "lead", role: "core-review-lead@1.0.0", provider: "deepseek-official", model: "deepseek-v4-pro", reasoningEffort: "high", executionPrompt: "runtime text" },
+      ],
+    }),
+  );
+  const calls = [];
+  const sessionController = {
+    async list() { return { items: [] }; },
+    async create(request) { calls.push(["create", request]); return { sessionId: "session-new" }; },
+    async rename(request) { calls.push(["rename", request]); return {}; },
+    async selectModel(request) { calls.push(["selectModel", request]); return {}; },
+    async prompt(request, signal) { signal.throwIfAborted(); calls.push(["prompt", request]); return {}; },
+  };
+  const { tools } = register({
+    services: { sessionController, workspaceRegistry: { list: () => [{ id: "ws-1", path: ws, title: "ws" }] } },
+    agentTeamsStateDir: stateDir,
+  });
+
+  const asked = await call(tools, "roster_iterate", { id: "core-review", path: lib, stateDir, sessionName: "next" });
+  assert.equal(asked.value.needsConfirmation, true);
+  assert.equal(asked.value.sessionId, null);
+  assert.equal(calls.filter((item) => item[0] === "create").length, 0);
+  assert.match(asked.text, /capture: true/);
+
+  const skipped = await call(tools, "roster_iterate", { id: "core-review", path: lib, stateDir, sessionName: "next", capture: false });
+  assert.equal(skipped.value.sessionId, "session-new");
+  assert.equal(calls.filter((item) => item[0] === "create").length, 1);
 });
 
 test("roster_iterate：旧团队按溯源匹配，交接清单落盘并附进起始消息", async () => {

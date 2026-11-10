@@ -425,8 +425,8 @@ Favourites live in `.dsh-roster-favorites.json` at the library root (`dsh-agent-
 
 A roster does not get fresher because the team ran well — the runtime consumes rosters in one direction. Two tools bring changes back:
 
-- `roster_capture`: compares `team.json` with the roster member by member (`provider`/`model`/`reasoningEffort`/`toolPolicy` by value; the persona only by the assembled hash and length). Read-only by default; `apply: true` writes the **mechanical fields** back to `roster.yaml`, bumps the patch version and recompiles `dist/`. The persona is never written back: the runtime stores the assembled text, and writing it into the role file would flatten `parts` and `{{> …}}`; edit the role body instead.
-- `roster_iterate`: finds the old team by its provenance line, optionally captures/applies, then creates a new session and queues the build prompt. The old team is left alone.
+- `roster_capture`: compares `team.json` with the roster member by member (`provider`/`model`/`reasoningEffort`/`toolPolicy` by value; the persona only by the assembled hash and length). Read-only by default, and it lists what could be written back; `apply: true` writes the **mechanical fields** back to `roster.yaml`, bumps the patch version and recompiles `dist/`; `apply: true` plus `remember: true` also records “always write back from now on” (first as the `captureAutoApply` setting, then, if that cannot be written, into `.dsh-roster-preferences.json` at the library root). The persona is never written back: the runtime stores the assembled text, and writing it into the role file would flatten `parts` and `{{> …}}`; edit the role body instead.
+- `roster_iterate`: finds the old team by its provenance line, optionally captures/applies, then creates a new session and queues the build prompt. The old team is left alone. When there are writable differences and `capture` is omitted, it returns the diff and **stops without creating a session**, so you can pick `capture: true` (write back, then iterate), `capture: true` + `remember: true` (write back and remember), or `capture: false` (iterate without touching the roster).
 
 Hand-over steps go in `handover.steps` (`timer.cancel`/`timer.create`/`wake.update`/`archive`/`notify`/`verify`/`note`, …). The tool writes them to `<library>/.dsh-handover/<roster>-YYYYMMDD-HHmmss.json` and renders a checklist at the end of the new captain’s kick-off message, for that captain to execute one by one. **The plugin carries, validates and delivers; it does not run them**: timers belong to the host `schedule` plugin, wake routing to the team scripts, archiving to the workspace API — none of that is inside the roster layer’s boundary; the `verify` field is the command the new captain should run afterwards. A non-note step without `verify` records a warning.
 
@@ -445,8 +445,8 @@ Hand-over steps go in `handover.steps` (`timer.cancel`/`timer.create`/`wake.upda
 | `roster_compile` | compilation preview (writes nothing) | `ref`, `path?` |
 | `roster_changes` | per-file update check (seven states) | `path?`, `refresh?` |
 | `roster_team` | create a team from a roster (new or existing session) | `id`, `teamName?`, `mode?`, `workspace?`, `sessionName?`, `sessionId?`, `target?`, `model?`, `path?` |
-| `roster_capture` | compare `team.json` with the roster; `apply:true` writes mechanical fields back | `id`, `team?`, `stateDir?`, `fields?`, `apply?`, `path?` |
-| `roster_iterate` | iterate from the current team into a new session: optional write-back plus a hand-over checklist | `id`, `teamName?`, `sessionName?`, `workspace?`, `target?`, `model?`, `capture?`, `handover?`, `path?` |
+| `roster_capture` | compare `team.json` with the roster; `apply:true` writes mechanical fields back, `remember:true` records auto-apply | `id`, `team?`, `stateDir?`, `fields?`, `apply?`, `remember?`, `path?` |
+| `roster_iterate` | iterate from the current team into a new session: optional write-back plus a hand-over checklist | `id`, `teamName?`, `sessionName?`, `workspace?`, `target?`, `model?`, `capture?`, `remember?`, `handover?`, `path?` |
 
 Only these three change anything; the other ten are read-only. Saving/importing/deleting rosters still goes through the CLI and the panel’s HTTP routes.
 
@@ -491,12 +491,13 @@ All are exact routes behind the host `connection` fence; a wrong method is 405. 
 | `knownToolPolicies` | `[]` | toolPolicy ids declared by the deployment; cross-checking only happens when set |
 | `agentTeamsStateDir` | `.agent-teams` | read-only state directory for `roster_verify`, `roster_team`, and captain injection |
 | `injectCaptainPersona` | `true` | inject the roster captain persona into the captain session's system prompt (same-named section shadows the deployment persona, re-read every step). Off: kick-off message only |
+| `captureAutoApply` | `false` | when a comparison finds writable mechanical fields, write them back without asking (version +1, recompile `dist/`). The tools' “always” option sets it to `true`; if the setting cannot be written, the library-root preference file is used |
 | `language` | `"auto"` | `auto` follows DSH, or pin `zh` / `en` |
 | `indexes` | `[]` | public sources: an `https` `registry.json` or `npm:pkg`; empty = official source; `false` = local only |
 | `region` | `"auto"` | download region: `china` uses the Tencent npm mirror; `auto` means `global` (no probing) |
 | `registryMirror` | `""` | custom mirror URL (sub-paths allowed); empty uses the region preset |
 
-All eight are volatile: changes apply without a restart, but the running host re-registers tools on its own schedule.
+All nine are volatile: changes apply without a restart, but the running host re-registers tools on its own schedule.
 
 ## Diagnostics
 
@@ -528,7 +529,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 Design notes: `docs/design.md` (module map, field homes, capability matrix, and the checklist of every place a change must land).
 
 ```bash
-node --test                 # 434 tests
+node --test                 # 437 tests
 npm run smoke               # host: 13 tools; client: two slots
 npm run check:host         # host contracts the unit tests fake
 npm run e2e                    # boot a throwaway host and ask what it actually sees (~9 s, no model calls)
@@ -541,7 +542,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## Verification status
 
-- **434/434** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
+- **437/437** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
 - CI `registry` (Node 22) recomputes the index, recompiles the examples, and fails when `dist/` drifts from source.
 - **Scripted e2e** (`npm run e2e`): packs the working tree, installs it into a temporary copy of the production profile, boots a throwaway `dsh web` on a free port, and asks the running host what it sees — version, libraries and the captain projection, `hostTeamTargets`, `hostModels`, `/catalog`, a 400 for an unknown engine, a 404 for an unknown roster, a favourites round-trip: 17 assertions, no model calls, about 9 seconds. `--depth=apply` also builds a real team and checks `team.json` (slow, costs model calls). `--depth=persona` goes one step further and decodes the captain session log: the first system prompt (before the team exists) has no roster persona, while the later one has it and has lost the deployment prefix — that is what proves the injector shadows the section instead of appending a line to the kick-off message. The production profile is only read.
 - Known boundaries: `npm run e2e` copies a snapshot of the production profile (with its installed plugins), so it verifies how the host loads us rather than replacing unit tests of individual modules; `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.

@@ -71,6 +71,14 @@ export const Config = z.object({
     .default(".agent-teams")
     .description("dsh-agent-teams 的状态目录（只读，用于核对成员实际字段）。相对路径以工作区为基准。")
     .volatile(),
+  captureAutoApply: z
+    .boolean()
+    .default(false)
+    .description(
+      "比对运行时团队与档案时，发现可写回的机械字段（provider/model/reasoningEffort/toolPolicy）就直接写回：" +
+        "版本号 patch+1、重编译 dist，不再询问。默认 false：工具只报告差异，等一次明确的 apply / capture 参数。",
+    )
+    .volatile(),
   injectCaptainPersona: z
     .boolean()
     .default(true)

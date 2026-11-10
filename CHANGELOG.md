@@ -2,6 +2,20 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.19.0] - 2026-11-10
+
+### Added
+
+- **Ask before writing.** `roster_capture` still defaults to read-only, but it now ends by listing exactly which mechanical fields could be written and stops; `roster_iterate` does the same when there are writable differences and `capture` is omitted — it returns the diff **without creating a session**, so the choice is explicit: `capture: true` (write back, then iterate), `capture: true` + `remember: true` (write back and stop asking), or `capture: false` (iterate against the current roster).
+- **“Always” remembers itself.** `remember: true` records the decision: it first tries to set the `captureAutoApply` setting through the profile's config editor, and if that entry is not editable (bundled installs), it writes `.dsh-roster-preferences.json` at the library root — a dot-file the scanner already ignores, and one that travels with the library like favourites do.
+- **`captureAutoApply` setting** (default `false`, volatile). When on, a comparison that finds writable mechanical fields writes them back directly (patch version +1, recompile `dist/`) instead of asking.
+
+### Changed
+
+- A per-library preference beats nothing: a library with the preference file set stops asking even when the deployment setting is off; the deployment setting remains the broader default.
+
+Tests 434 → 437.
+
 ## [1.18.2] - 2026-11-10
 
 ### Fixed
