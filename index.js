@@ -540,6 +540,7 @@ export function apply(ctx, config) {
           sessionController: ctx.get?.("sessionController"),
           roster: { ...raw, rootDir: roster.rootDir },
           rosterDir,
+          libraryRoot: roster.rootDir,
           mode: input.mode === "new" ? "new" : "existing",
           sessionId: typeof input.sessionId === "string" ? input.sessionId : "",
           cwd: typeof input.cwd === "string" ? input.cwd : "",

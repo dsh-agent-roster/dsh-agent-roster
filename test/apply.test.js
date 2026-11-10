@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
 import nodePath from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -481,4 +483,53 @@ test("buildCaptainPrompt：空间登记的知识只给指针，不把正文塞�
   assert.match(text, /\/tmp\/lib\/knowledge\/guide\.md  #aaaaaaaa  （项目指南）/);
   assert.match(text, /\/tmp\/lib\/knowledge\/plain\.md\n/);
   assert.ok(!text.includes("这是项目指南正文"), "知识正文不该被贴进提示词");
+});
+
+test("库根传进来时不要再往上走一层：注入层与档案在同一座库里", async () => {
+  const lib = fs.mkdtempSync(nodePath.join(os.tmpdir(), "apply-root-"));
+  const ws = fs.mkdtempSync(nodePath.join(os.tmpdir(), "apply-root-ws-"));
+  fs.mkdirSync(nodePath.join(lib, "roles", "lead-captain"), { recursive: true });
+  fs.mkdirSync(nodePath.join(lib, "rosters", "agent-teams"), { recursive: true });
+  fs.writeFileSync(
+    nodePath.join(lib, "rosters", "agent-teams", "roster.yaml"),
+    JSON.stringify(
+      {
+        kind: "dsh-agent-roster/roster@2",
+        roster: "agent-teams",
+        version: "1.0.0",
+        members: [{ as: "lead", role: "lead-captain@1.0.0" }],
+        captain: { role: "lead-captain@1.0.0" },
+      },
+      null,
+      2,
+    ),
+  );
+  fs.writeFileSync(
+    nodePath.join(lib, "roles", "lead-captain", "AGENT.md"),
+    "---\nname: lead-captain\nrole: 队长\n---\n你是这支团队的队长。\n",
+  );
+
+  const controller = fakeController({
+    async create() {
+      return { sessionId: "s-lib" };
+    },
+    async rename() {
+      return { title: "t" };
+    },
+    async selectModel() {
+      return { selected: { provider: "tsing", model: "deepseek-v4.1-flash", reasoningEffort: "" } };
+    },
+    async prompt() {},
+  });
+  const result = await applyCaptain({
+    sessionController: controller,
+    roster: roster({ captain: { provider: "tsing", model: "deepseek-v4.1-flash" } }),
+    rosterDir: lib,
+    mode: "new",
+    cwd: ws,
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.rosterRoot, lib, "库根不能被当成档案目录再取一次父目录");
+  fs.rmSync(lib, { recursive: true, force: true });
+  fs.rmSync(ws, { recursive: true, force: true });
 });

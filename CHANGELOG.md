@@ -2,6 +2,15 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.16.1] - 2026-11-10
+
+### Fixed
+
+- **The injection root was the library's parent, not the library.** `libraryRootOf()` assumed it was handed a roster directory (`<root>/rosters/<id>`) and always walked one level up. `roster_team` and the panel hand it the **library root**, so the recorded root became `/workspace/money` instead of `/workspace/money/team`; `findRosterDir` then found nothing and the captain persona was skipped silently — while the kick-off message still carried it, which is why the failure looked like "persona not injected" only in `system/message`.
+- `applyCaptain` now takes an explicit `libraryRoot`; `roster_team` and `POST /apply` pass the library they scanned. `libraryRootOf` only walks up when the path really is a roster directory (it checks for `rosters/` first, then for a roster file).
+
+Tests 425 → 426.
+
 ## [1.16.0] - 2026-11-10
 
 ### Added
@@ -1097,6 +1106,7 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
+[1.16.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
 [Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...main

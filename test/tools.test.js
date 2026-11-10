@@ -175,6 +175,8 @@ test("roster_team：引擎与模型入参都透传，未知模型先拦", async 
   assert.equal(ok.value.target, "agent-teams");
   assert.match(ok.value.text, /团队引擎：agent-teams/);
   assert.match(ok.value.text, /队长模型：tsing\/deepseek-v4\.1-flash/);
+  // 注入根必须是传进来的 path，而不是它的上一层：早先这里记成 cwd，注入层静默失配。
+  assert.equal(ok.value.rosterRoot, path.resolve(examples));
   const selection = calls.find((entry) => entry[0] === "selectModel");
   assert.ok(selection, "必须真的切模型");
   assert.equal(selection[1].provider, "tsing");
