@@ -29,7 +29,17 @@
     "persona": "你负责推进，不负责写代码。每张卡先写清验收标准再派出去；收到回报先核对证据，再决定收口还是打回。\n遇到需要用户拍板的事，直接说清选项与代价，不要替他选。",
     "personaPath": null,
     "personaChars": 76,
-    "personaSha256": "9ea2862bd577f049067484509b710f32f7b8a95abcb2ae569de0ff25f4f5c5ae"
+    "personaSha256": "9ea2862bd577f049067484509b710f32f7b8a95abcb2ae569de0ff25f4f5c5ae",
+    "promptStats": {
+      "chars": 76,
+      "parts": [
+        {
+          "path": "roles/lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "9ea2862bd577f049067484509b710f32f7b8a95abcb2ae569de0ff25f4f5c5ae"
+    }
   },
   "members": [
     {

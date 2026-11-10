@@ -380,7 +380,7 @@ Engines that are not installed stay in the dropdown but are disabled and marked 
 
 Member personas work because `dsh-agent-teams` registers a `systemPrompt.section` named `deployment:persona-prefix` on each **member child session**; a same-named section shadows the deployment persona. The captain is a top-level session, outside its remit, so this plugin adds the other half:
 
-- It registers the **same section name** on the captain session's ctx, with the roster persona (v1 `captain.systemPrompt` / `captain.personaPrefix`, v2 `captain.persona` file body).
+- It registers the **same section name** on the captain session's ctx, with the roster persona (v1 `captain.systemPrompt` / `captain.personaPrefix`, v2 `captain.persona` file body or the role body, with optional `captain.prompt.prepend` / `captain.prompt.append` files — the same two ends members get).
 - `text` is a function, evaluated by the host on every model step, so edits take effect immediately and no restart or session rebuild is needed; on a read failure the last good text is kept — **never an empty string that would shadow the deployment persona**.
 - Ownership is resolved, not guessed: read the team's `captainSessionId`, then the `roster:<id>@<ver>#<sha8>` provenance in the team description to find the roster. A new session creates the session first and the team second, so a short poll (up to 30 minutes) attaches as soon as the team lands.
 - **The library the injection reads follows the `path` used to create the session.** `roster_team({path})` may point at any library; the session remembers that library root, and `rosterDirs` is only the fallback. When neither holds the roster the failure is no longer silent — the log gets `captain persona not attached: roster "<id>" not found in roots [...]`, and `roster_verify` says `roster directory not found: searched …` instead of blaming the session's age.
@@ -486,7 +486,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 ## Development
 
 ```bash
-node --test                 # 415 tests
+node --test                 # 418 tests
 npm run smoke               # host: 11 tools; client: two slots
 npm run check:host         # host contracts the unit tests fake
 npm run e2e                    # boot a throwaway host and ask what it actually sees (~9 s, no model calls)
@@ -499,7 +499,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## Verification status
 
-- **415/415** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
+- **418/418** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
 - CI `registry` (Node 22) recomputes the index, recompiles the examples, and fails when `dist/` drifts from source.
 - **Scripted e2e** (`npm run e2e`): packs the working tree, installs it into a temporary copy of the production profile, boots a throwaway `dsh web` on a free port, and asks the running host what it sees — version, libraries and the captain projection, `hostTeamTargets`, `hostModels`, `/catalog`, a 400 for an unknown engine, a 404 for an unknown roster, a favourites round-trip: 17 assertions, no model calls, about 9 seconds. `--depth=apply` also builds a real team and checks `team.json` (slow, costs model calls). `--depth=persona` goes one step further and decodes the captain session log: the first system prompt (before the team exists) has no roster persona, while the later one has it and has lost the deployment prefix — that is what proves the injector shadows the section instead of appending a line to the kick-off message. The production profile is only read.
 - Known boundaries: `npm run e2e` copies a snapshot of the production profile (with its installed plugins), so it verifies how the host loads us rather than replacing unit tests of individual modules; `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.

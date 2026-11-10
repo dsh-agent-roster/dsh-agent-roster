@@ -227,7 +227,7 @@
           "$ref": "#/$defs/relativePath"
         }
       },
-      "description": "只能加在角色拼装结果的两端，不能重排或替换角色内部片段。"
+      "description": "只能加在拼装结果的两端，不能重排或替换角色内部片段。成员加在角色正文两端；队长加在 persona 文件或角色正文两端。"
     },
     "member": {
       "type": "object",
@@ -282,6 +282,9 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 500
+        },
+        "prompt": {
+          "$ref": "#/$defs/memberPrompt"
         }
       }
     },

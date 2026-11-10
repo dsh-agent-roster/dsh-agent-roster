@@ -94,7 +94,10 @@ members:
     prompt: { append: overrides/reviewer.md }
 captain:
   role: lead@2.0.0
-  persona: personas/lead.md
+  persona: personas/lead.md      # 整体替换（不叠加角色正文）
+  prompt:
+    prepend: overrides/captain-head.md   # 与成员的 prompt 同义：加在正文两端
+    append: overrides/captain-tail.md
 requires:
   toolPolicies: [member-safe]
 orchestration:
@@ -109,7 +112,7 @@ orchestration:
 四条规则：
 
 1. **成员是引用不是内嵌**：`role: name@x.y.z`，不写范围、不写 latest。角色内容改了必须发版，引用它的组装才知道要跟。
-2. **队长独立成段**：`captain` 不是成员。它描述"创建这个团队的那个会话"，路由与 persona 只能落 profile 配置——这是 `config` 层，插件只声明。
+2. **队长独立成段**：`captain` 不是成员。它描述"创建这个团队的那个会话"，路由由部署落地、persona 由插件注入（同名 section 遮蔽部署 persona）；`captain.prompt` 与成员的 `prompt` 同义，只加在正文两端、不重排正文。
 3. **`targets` 决定字段落到哪个面**：`agent-teams/members`（桥接参数）、`agent-teams/orchestration`（任务 DAG）、`profile/agent-preset`。没有目标的面，字段只能是声明。
 4. **`orchestration` 先当声明**：它能被校验（stage/gate 交叉引用、`maxRounds` 上限），但编译器只把它原样带进产物并标 `status: "declaration"`。**没有任何验证器能证明它会被执行**，所以不假装生效；编译成 `create_task` 的 DAG 是下一步。
 

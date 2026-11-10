@@ -2,6 +2,18 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.14.0] - 2026-11-10
+
+### Added
+
+- **`captain.prompt` — the same two ends members already had.** A captain could only replace its persona wholesale (`captain.persona`); adding one sentence meant copying the whole text. It now accepts `prompt.prepend` / `prompt.append` files, assembled with the same `assemblePrompt` used for members and the same 12 000-character budget. If neither `persona` nor `role` gives the captain a body, writing `prompt` is an error (`captain-prompt-without-base`) instead of injecting two orphan fragments.
+
+### Changed
+
+- **`captain.tools` no longer exists as a parsed field.** It was read by the validator while being absent from `CAPTAIN2_FIELDS`, so writing it produced `unknown-field` and was then silently parsed anyway. No shipped roster used it.
+
+Tests 415 → 418.
+
 ## [1.13.7] - 2026-11-10
 
 ### Fixed
@@ -1058,7 +1070,8 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.5...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...main
+[1.14.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.7...v1.14.0
 [1.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.1...v1.13.0
 [1.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.0...v1.13.1
 [1.13.2]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.1...v1.13.2

@@ -105,6 +105,35 @@ test("personaSourceOf：v2 的 captain.persona 解析成文件；v1 的内联正
   assert.equal(personaTextOf(inline), "你是队长，先要结论。");
 });
 
+test("captain.prompt：prepend/append 与成员同一套语义，且每步重读", () => {
+  const lib = tempRoot();
+  write(nodePath.join(lib, "rosters", "demo", "persona", "lead.md"), "正文：先要结论。");
+  write(nodePath.join(lib, "rosters", "demo", "parts", "head.md"), "开头：你是研究队的队长。");
+  write(nodePath.join(lib, "rosters", "demo", "parts", "tail.md"), "结尾：每次汇报带证据。");
+  write(
+    nodePath.join(lib, "rosters", "demo", "roster.yaml"),
+    [
+      "kind: dsh-agent-roster/roster@2",
+      "roster: demo",
+      "version: 1.0.0",
+      "members: []",
+      "captain:",
+      "  persona: persona/lead.md",
+      "  prompt:",
+      "    prepend: parts/head.md",
+      "    append: parts/tail.md",
+    ].join("\n"),
+  );
+  const dir = nodePath.join(lib, "rosters", "demo");
+  const source = personaSourceOf(dir);
+  assert.equal(source.kind, "file");
+  assert.equal(personaTextOf(source), "开头：你是研究队的队长。\n\n正文：先要结论。\n\n结尾：每次汇报带证据。");
+
+  // 每步重读：改了 prepend 文件，下一次读到的就是新文本。
+  write(nodePath.join(lib, "rosters", "demo", "parts", "head.md"), "开头：你是产品队的队长。");
+  assert.match(personaTextOf(source), /^开头：你是产品队的队长。/);
+});
+
 test("personaSourceOf：越界的人设路径不算数，没有 captain 也不硬造", () => {
   const lib = tempRoot();
   write(

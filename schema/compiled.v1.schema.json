@@ -80,6 +80,60 @@
             "string",
             "null"
           ]
+        },
+        "promptStats": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "chars",
+            "parts",
+            "sha256"
+          ],
+          "properties": {
+            "chars": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "parts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "path",
+                  "kind"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "enum": [
+                      "prepend",
+                      "body+parts",
+                      "persona",
+                      "append"
+                    ]
+                  },
+                  "line": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                }
+              }
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
         }
       }
     },

@@ -378,7 +378,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 
 成员的人设由 `dsh-agent-teams` 在**成员子会话**上注册一个与部署 persona 同名的 `systemPrompt.section`（`deployment:persona-prefix`），靠同名遮蔽生效；队长是顶层会话，不在它的管辖里。本插件补上这另一半：
 
-- 在队长会话的 ctx 上注册**同一个 section 名**，内容是档案里的队长人设。取值与成员同一套规则：v2 先看 `captain.persona` 文件，没有就看 `captain.role` 指向角色的**组装正文**（`AGENT.md` 的 body + parts + `{{> …}}`；真实档案里队长几乎都是角色引用），v1 看 `captain.systemPrompt` / `captain.personaPrefix`。
+- 在队长会话的 ctx 上注册**同一个 section 名**，内容是档案里的队长人设。取值与成员同一套规则：v2 先看 `captain.persona` 文件，没有就看 `captain.role` 指向角色的**组装正文**；两端还可以用 `captain.prompt.prepend` / `captain.prompt.append` 各加一份文件（与成员的 `members[].prompt` 同义，只加不改）（`AGENT.md` 的 body + parts + `{{> …}}`；真实档案里队长几乎都是角色引用），v1 看 `captain.systemPrompt` / `captain.personaPrefix`。
 - `text` 传的是函数，宿主每个模型步都会求值 ⇒ 改档案立即生效，不用重启、不用重建会话；文件读失败时沿用上一次的好值，**绝不用空串遮蔽部署 persona**。
 - 归属不靠猜：读团队的 `captainSessionId`，再看团队 `description` 里的 `roster:<id>@<ver>#<sha8>` 找到档案。新会话是「先建会话、队长再建团队」，所以团队晚落盘时会短暂轮询（30 分钟内），落盘即挂上。
 - **注入读哪座库，跟着建会话时用的 `path` 走**：`roster_team({path})` 允许指向任意库，建会话时会把该库的根记在这个会话上；找不到时再退回 `rosterDirs`。两边都没有时不再静默——日志里有一行 `captain persona not attached: roster "<id>" not found in roots [...]`，`roster_verify` 也会如实写「找不到档案目录：…搜过 …」，而不是把所有情况都猜成「会话太老」。
@@ -485,7 +485,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 ## 开发
 
 ```bash
-node --test                 # 415 个测试
+node --test                 # 418 个测试
 npm run smoke               # 宿主侧 11 个工具 + 客户端两槽位
 npm run check:host         # 宿主契约（单测里的假件证明不了它）
 npm run e2e                    # 起一个一次性宿主，问它真正看见了什么（不调模型，约 9 秒）
@@ -498,7 +498,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## 验证状态
 
-- 全仓 **415/415**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
+- 全仓 **418/418**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
 - CI `registry`（Node 22）重算索引、重编示例，并在 `dist/` 与源码不一致时失败。
 - **脚本化 e2e**（`npm run e2e`）：把工作区打包、装进生产 profile 的**临时副本**，在空闲端口起一个一次性 `dsh web`，然后只问运行中的宿主：版本、库与队长投影、`hostTeamTargets`、`hostModels`、`/catalog`、未知引擎 400、未知档案 404、收藏往返——17 项断言，不调模型，约 9 秒。`--depth=apply` 才真建一支队并检查 `team.json`（慢、会调用模型）。`--depth=persona` 在 apply 之上再解码队长会话日志：团队落盘前的第一步系统提示词里**没有**档案人设，落盘后的系统提示词里**有**、且部署人设前缀**已消失**——证明注入走的是同名 section 遮蔽，不是往起始消息里塞一段。生产 profile 只读。
 - 已知边界：`npm run e2e` 复制的是**生产 profile 的快照**（含已装插件），因此它验证「宿主怎么加载我们」，不替代针对单个模块的单测；`dist/` 不随 clone 拉取；按合集安装（`/install`）会把档案摊平成 v1 文档，整空间拉取（`clone` / `/install-space`）才保留 v2 布局与账本；`toolFilter` 无法从 team.json 核对；升级后需重启 `dsh web`。

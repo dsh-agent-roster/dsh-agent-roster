@@ -30,7 +30,17 @@
     "persona": "派活前先复述目标与验收标准；汇报时先结论后证据。",
     "personaPath": null,
     "personaChars": 24,
-    "personaSha256": "cc141df98d1ce3e120594c9081479a4429da74794e6396420696b9c0ef59aee7"
+    "personaSha256": "cc141df98d1ce3e120594c9081479a4429da74794e6396420696b9c0ef59aee7",
+    "promptStats": {
+      "chars": 24,
+      "parts": [
+        {
+          "path": "roles/core-review-lead-captain/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "cc141df98d1ce3e120594c9081479a4429da74794e6396420696b9c0ef59aee7"
+    }
   },
   "members": [
     {

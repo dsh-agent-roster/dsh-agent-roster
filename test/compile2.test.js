@@ -404,3 +404,53 @@ test("编译产物自带发现元数据：远端只拿到一个文件时也能�
   assert.equal(flat.license, "MIT");
   assert.deepEqual(flat.maintainers, ["STofone"]);
 });
+
+test("编译：队长的 prepend/append 与成员同一套语义（加在正文两端，不替换）", () => {
+  const root = scratch();
+  write(root, "roles/reviewer/AGENT.md", roleDoc({ body: "你只找会出错的地方。" }));
+  write(root, "rosters/core-review/lead.prepend.md", "开工先复述目标。");
+  write(root, "rosters/core-review/lead.append.md", "汇报先结论后证据。");
+  write(
+    root,
+    "rosters/core-review/roster.yaml",
+    rosterDoc({
+      extra: [
+        "targets: [agent-teams/members, profile/agent-preset]",
+        "captain:",
+        "  role: reviewer@1.0.0",
+        "  prompt:",
+        "    prepend: ./lead.prepend.md",
+        "    append: ./lead.append.md",
+      ].join("\n"),
+    }),
+  );
+  const result = compileRosterAt(nodePath.join(root, "rosters/core-review"), {
+    rolesDir: nodePath.join(root, "roles"),
+  });
+  assert.equal(result.ok, true, JSON.stringify(result.diagnostics, null, 2));
+  assert.equal(
+    result.compiled.captain.persona,
+    ["开工先复述目标。", "你只找会出错的地方。", "汇报先结论后证据。"].join("\n\n"),
+  );
+  assert.deepEqual(
+    result.compiled.captain.promptStats.parts.map((item) => item.kind),
+    ["prepend", "body+parts", "append"],
+  );
+  assert.ok(result.compiled.captain.personaChars > 0);
+});
+
+test("编译：队长只写 prepend 而没有正文，是 error（不猜正文从哪来）", () => {
+  const root = scratch();
+  write(root, "roles/reviewer/AGENT.md", roleDoc());
+  write(root, "rosters/core-review/lead.prepend.md", "开工先复述目标。");
+  write(
+    root,
+    "rosters/core-review/roster.yaml",
+    rosterDoc({ extra: ["captain:", "  prompt:", "    prepend: ./lead.prepend.md"].join("\n") }),
+  );
+  const result = compileRosterAt(nodePath.join(root, "rosters/core-review"), {
+    rolesDir: nodePath.join(root, "roles"),
+  });
+  assert.equal(result.ok, false);
+  assert.ok(result.diagnostics.some((item) => item.code === "captain-prompt-without-base"));
+});
