@@ -796,18 +796,22 @@ window.__ModuleLoader__.load({
       // 团队引擎：下拉里列出这台部署上的建团插件；未安装的项保留在列表里，
       // 但禁选并写明原因——依赖不静默，是这次改版的目的。
       const targetList = Array.isArray(targets) ? targets : [];
-      const firstAvailable = targetList.find((item) => item.available === true) ?? targetList[0] ?? null;
+      // 只把"我们支持"的引擎当作可选项。已知但不支持的仍列在下面（禁选、
+      // 带原因），因为静默消失会让人以为它没装，而不是"装了但没用"。
+      const supportedTargets = targetList.filter((item) => item.supported !== false);
+      const firstAvailable = supportedTargets.find((item) => item.available === true) ?? supportedTargets[0] ?? null;
       const [targetId, setTargetId] = useState(firstAvailable?.id ?? "agent-teams");
       const chosenTarget = targetList.find((item) => item.id === targetId) ?? null;
       const targetHasTeamName = chosenTarget?.capabilities?.teamName !== false;
       const targetHasMemberSpecs = chosenTarget?.capabilities?.memberSpecs !== false;
-      const noEngine = targetList.length > 0 && targetList.every((item) => item.available !== true);
+      const noEngine =
+        supportedTargets.length === 0 || supportedTargets.every((item) => item.available !== true);
       // 目标列表是快照里后到的：当前选中项若不可用，自动落到第一个可用项。
       useEffect(() => {
-        if (targetList.length === 0) return;
-        const current = targetList.find((item) => item.id === targetId);
+        if (supportedTargets.length === 0) return;
+        const current = supportedTargets.find((item) => item.id === targetId);
         if (current !== undefined && current.available === true) return;
-        const fallback = targetList.find((item) => item.available === true);
+        const fallback = supportedTargets.find((item) => item.available === true);
         if (fallback !== undefined) setTargetId(fallback.id);
       }, [targets, targetId]);
       const captain = roster.captain ?? null;
@@ -907,13 +911,25 @@ window.__ModuleLoader__.load({
             },
             targetList.length === 0
               ? h("option", { value: "" }, t("teamCreate.engineNone"))
-              : targetList.map((item) =>
-                  h(
+              : targetList.map((item) => {
+                  const unsupported = item.supported === false;
+                  const missing = item.available !== true;
+                  const suffix = unsupported
+                    ? t("teamCreate.engineUnsupported")
+                    : missing
+                      ? t("teamCreate.engineMissing")
+                      : "";
+                  return h(
                     "option",
-                    { key: item.id, value: item.id, disabled: item.available !== true },
-                    item.available === true ? item.label : `${item.label} · ${t("teamCreate.engineMissing")}`,
-                  ),
-                ),
+                    {
+                      key: item.id,
+                      value: item.id,
+                      disabled: unsupported || missing,
+                      title: unsupported ? item.reason ?? "" : "",
+                    },
+                    suffix === "" ? item.label : `${item.label} · ${suffix}`,
+                  );
+                }),
           ),
         ),
         h(

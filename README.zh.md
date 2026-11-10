@@ -394,14 +394,16 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 
 ### 团队引擎
 
-创建团队时先选**用哪个建团插件**（下拉），列表来自这台机器上装了什么：
+创建团队时先选**用哪个建团插件**（下拉）。目前**只支持 Agent Teams**：
 
-| 引擎 | 包 | 能接住什么 |
+| 引擎 | 包 | 状态 |
 |---|---|---|
-| Agent Teams | `@nanmicoder/dsh-agent-teams` | 成员逐字段建（provider/model/persona/toolPolicy 都进运行时），团队有记录、可 `roster_verify` |
-| Experimental Agent Team | `@deepseek-ai/dsh-experimental-agent-team` + `-tool-agent-team` | 每个会话本身就是隐式团队的 Lead，没有“创建团队”这一步；提示词走 `spawn_teammate` + `list_agents`。**不接受成员模型/人设/toolPolicy**，团队名不存在（会话名即标识） |
+| Agent Teams | `@nanmicoder/dsh-agent-teams` | **支持**：成员逐字段建（provider/model/persona/toolPolicy 都进运行时），团队有 `team.json`，可核对、捕获、迭代，队长人设可注入 |
+| Experimental Agent Team | `@deepseek-ai/dsh-experimental-agent-team` + `-tool-agent-team` | **暂不支持**：官方实验线没有团队记录，也没有可持久化的成员人设；核对、捕获、迭代与队长人设注入都拿不到可验证的落点。装了会出现在下拉里，但禁选并写明原因 |
 
-未安装的引擎仍出现在下拉里，但禁选并标「未安装」——依赖不静默；全都不可用时提交按钮禁用。探测语义是“这个 profile 里能解析到这个包”，不是“已经启用”，真正是否挂载由宿主决定。`POST /apply` 的 `target` 是闭集（未知值 400 `unknown-target`），`roster_team` 同样接受 `target`。两者也都接受 `model` 覆盖 `{provider, model, reasoningEffort?}`：面板只列本部署真服务的模型，`roster_team` 对不可用的模型直接报 `model-unavailable`，不让 `selectModel` 到更晚才失败。
+未安装的引擎仍出现在下拉里，禁选并标「未安装」——依赖不静默；没有任何可用引擎时提交按钮禁用。探测语义是“这个 profile 里能解析到这个包”，不是“已经启用”。
+
+`POST /apply` 与 `roster_team` 的 `target` 是闭集：未知值报 `unknown-target`，已知但暂不支持报 `target-unsupported`，**不会静默按 agent-teams 建团**。两者也都接受 `model` 覆盖 `{provider, model, reasoningEffort?}`：面板只列本部署真服务的模型，`roster_team` 对不可用的模型直接报 `model-unavailable`，不让 `selectModel` 到更晚才失败。
 
 ### 队长人设怎么进会话
 
@@ -528,7 +530,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 设计说明：`docs/design.md`（模块地图、字段归宿、能力矩阵，以及「加一个能力要改哪些地方」的落点清单）。
 
 ```bash
-node --test                 # 437 个测试
+node --test                 # 436 个测试
 npm run smoke               # 宿主侧 13 个工具 + 客户端两槽位
 npm run check:host         # 宿主契约（单测里的假件证明不了它）
 npm run e2e                    # 起一个一次性宿主，问它真正看见了什么（不调模型，约 9 秒）

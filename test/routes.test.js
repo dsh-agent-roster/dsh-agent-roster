@@ -419,6 +419,15 @@ test("apply：未知团队引擎是 400，不猜一个替代", async () => {
   );
   assert.equal(result.status, 400);
   assert.equal(result.body.error.code, "unknown-target");
+
+  // 已知但暂不支持的引擎：错误码要能区分"打错字"与"支持不了"。
+  const unsupported = await call(
+    host,
+    "/plugins/dsh-agent-roster/apply",
+    makeReq({ method: "POST", body: { rosterId: "core-review", target: "experimental-agent-team" } }),
+  );
+  assert.equal(unsupported.status, 400);
+  assert.equal(unsupported.body.error.code, "target-unsupported");
 });
 
 test("apply：不存在的档案是 404，并列出已知档案", async () => {

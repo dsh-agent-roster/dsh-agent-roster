@@ -2,6 +2,19 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.20.0] - 2026-11-10
+
+### Removed
+
+- **The experimental engine target is withdrawn.** `@deepseek-ai/dsh-experimental-agent-team` looked like a second engine, but it cannot reach the same floor as agent-teams: it has no team record (`team.json`), no persisted member persona, and its `agentTeams` service exposes only name/role/status/model/description — not the persona or `toolPolicy` the archive declares. So `roster_verify` could only say "no team record", `roster_capture`/`roster_iterate` had nothing to read, and the captain persona could not be attributed to a team. Rather than ship a "builds teams it cannot check" half-feature, `target: "experimental-agent-team"` is now rejected.
+
+### Changed
+
+- The engine dropdown still lists the experimental package when installed, but disabled and with the reason; the choice is `target-unsupported` (a distinct code from `unknown-target`) in both `POST /apply` and `roster_team`. `applyCaptain` refuses unsupported engines itself, so no caller can silently fall back to agent-teams.
+- If the package is not installed the option stays disabled as "not installed", exactly like before — dependency discovery is unchanged; only the promise changed.
+
+Tests 437 → 436 (the two experimental-prompt cases are replaced by one refusal case).
+
 ## [1.19.0] - 2026-11-10
 
 ### Added
@@ -1159,7 +1172,7 @@ point is now one search field above the tabs.
 [1.16.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.17.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.20.0...main
 [1.14.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.7...v1.14.0
 [1.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.1...v1.13.0
 [1.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.0...v1.13.1

@@ -396,14 +396,16 @@ The row button and the `roster_team` tool share one `applyCaptain` path:
 
 ### Team engines
 
-Creating a team starts by choosing **which team plugin builds it**; the dropdown lists what this machine actually has:
+When creating a team you choose **which team plugin builds it**. Today only **Agent Teams** is supported:
 
-| Engine | Packages | What it can carry |
+| Engine | Package | Status |
 |---|---|---|
-| Agent Teams | `@nanmicoder/dsh-agent-teams` | per-member fields (provider/model/persona/toolPolicy all reach the runtime), a team record, `roster_verify` |
-| Experimental Agent Team | `@deepseek-ai/dsh-experimental-agent-team` + `-tool-agent-team` | every session is already the Lead of an implicit team, so there is no create step; the prompt uses `spawn_teammate` + `list_agents`. It **cannot take member model/persona/toolPolicy**, and there is no team name (the session name is the identity) |
+| Agent Teams | `@nanmicoder/dsh-agent-teams` | **Supported**: members are created field by field (provider/model/persona/toolPolicy reach the runtime), the team has a `team.json`, and verify/capture/iterate plus captain-persona injection all work |
+| Experimental Agent Team | `@deepseek-ai/dsh-experimental-agent-team` + `-tool-agent-team` | **Not supported yet**: the experimental line has no team record and no persisted member persona, so verify/capture/iterate and persona injection have no verifiable landing point. It is still listed (disabled, with the reason) when installed |
 
-Engines that are not installed stay in the dropdown but are disabled and marked “not installed” — the dependency is never silent; when none is available the submit button is disabled. Detection means “this profile can resolve the package”, not “it is enabled”; whether it is mounted is the host's call. `POST /apply` takes a closed-set `target` (unknown → 400 `unknown-target`), and `roster_team` accepts `target` too. Both also take a `model` override `{provider, model, reasoningEffort?}`: the panel only offers models this deployment actually serves, and `roster_team` refuses an unavailable one with `model-unavailable` instead of letting `selectModel` fail later.
+Engines that are not installed stay in the dropdown, disabled and marked "not installed" — dependencies should not be silent. The submit button is disabled when no engine is usable. Detection means "this profile can resolve the package", not "it is mounted".
+
+`POST /apply` and `roster_team` take a closed `target` set: an unknown value is `unknown-target`, a known-but-unsupported one is `target-unsupported` — neither silently falls back to agent-teams. Both also accept a `model` override `{provider, model, reasoningEffort?}`: the panel only lists models the deployment really serves, and `roster_team` rejects an unavailable model with `model-unavailable` instead of failing later in `selectModel`.
 
 ### How the captain persona reaches the session
 
@@ -529,7 +531,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 Design notes: `docs/design.md` (module map, field homes, capability matrix, and the checklist of every place a change must land).
 
 ```bash
-node --test                 # 437 tests
+node --test                 # 436 tests
 npm run smoke               # host: 13 tools; client: two slots
 npm run check:host         # host contracts the unit tests fake
 npm run e2e                    # boot a throwaway host and ask what it actually sees (~9 s, no model calls)

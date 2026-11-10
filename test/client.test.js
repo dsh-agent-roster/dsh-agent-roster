@@ -290,7 +290,7 @@ test("从档案创建团队：行上有入口，对话框默认新会话，团�
   assert.match(source, /const payload = \{ rosterId: roster\.id, teamName: teamName\.trim\(\), mode, target: targetId \}/);
   // 引擎下拉：未安装的目标保留在列表里但禁选，并写明原因（依赖不静默）。
   assert.match(source, /label: t\("teamCreate\.engine"\)/);
-  assert.match(source, /disabled: item\.available !== true/);
+  assert.match(source, /disabled: unsupported \|\| missing/);
   assert.match(source, /teamCreate\.engineMissing/);
   assert.match(source, /targetHasMemberSpecs/);
   assert.match(source, /teamCreate\.noMemberSpecs/);

@@ -239,8 +239,8 @@ lib/registry.js → lib/validate.js    → lib/compile2.js →  lib/bridge.js   
 
 ## 11. 已知边界
 
-- 官方实验线没有 `team.json`：`roster_verify` 对它只能报「无团队记录」，不能假装核对。
-- 官方实验线不支持 per-member 模型/人设/toolPolicy：这些字段在它的引擎上不生效，建团提示里如实写明。
+- 官方实验线**暂不支持**（1.20.0 起拒绝 `target: "experimental-agent-team"`）：它没有 `team.json`、没有可持久化的成员人设，核对/捕获/迭代/队长人设注入都拿不到可验证的落点；`agentTeams` 服务只给出名字/状态/模型，给不出人设。宁可明确不支持，也不做一个"能建、不能核"的半套。
+- 引擎闭集只有 `agent-teams`：未知值 `unknown-target`，已知但不支持 `target-unsupported`，两处（`/apply`、`roster_team`）一致。
 - `toolFilter` 是策略物化结果，`team.json` 不存，只能报「无法核对」。
 - 队长人设与部署 preset persona 是两份文本：插件在会话里遮蔽，进程外仍需落 preset。
 - 交接清单里的 `verify` 是给人/新队长执行的文本，插件不代跑，也不核对"是否真的执行了"。

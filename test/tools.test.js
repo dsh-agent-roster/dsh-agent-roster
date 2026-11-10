@@ -184,6 +184,12 @@ test("roster_team：引擎与模型入参都透传，未知模型先拦", async 
   assert.equal(selection[1].provider, "tsing");
   assert.equal(selection[1].model, "deepseek-v4.1-flash");
 
+  // 官方实验线：已知但暂不支持，必须明确拒绝，不能静默按 agent-teams 建团。
+  const unsupported = await call(tools, "roster_team", { id: "core-review", path: examples, target: "experimental-agent-team" });
+  assert.equal(unsupported.value.ok, false);
+  assert.equal(unsupported.value.code, "target-unsupported");
+  assert.match(unsupported.value.text, /暂不支持团队引擎 experimental-agent-team/);
+
   const bad = await call(tools, "roster_team", {
     id: "core-review",
     path: examples,
