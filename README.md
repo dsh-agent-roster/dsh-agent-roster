@@ -521,6 +521,8 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 
 ## Development
 
+Design notes: `docs/design.md` (module map, field homes, capability matrix, and the checklist of every place a change must land).
+
 ```bash
 node --test                 # 433 tests
 npm run smoke               # host: 13 tools; client: two slots

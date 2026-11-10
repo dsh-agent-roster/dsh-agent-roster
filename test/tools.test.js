@@ -416,4 +416,5 @@ test("roster_iterate：旧团队按溯源匹配，交接清单落盘并附进起
   assert.ok(value.handover.file.endsWith(".json"));
   const promptCall = calls.find((item) => item[0] === "prompt");
   assert.match(promptCall[1].content[0].text, /交接清单/);
+  assert.match(promptCall[1].content[0].text, /系统级迭代补充/);
 });

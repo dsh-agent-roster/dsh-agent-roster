@@ -520,6 +520,8 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 
 ## 开发
 
+设计说明：`docs/design.md`（模块地图、字段归宿、能力矩阵，以及「加一个能力要改哪些地方」的落点清单）。
+
 ```bash
 node --test                 # 433 个测试
 npm run smoke               # 宿主侧 13 个工具 + 客户端两槽位

@@ -120,6 +120,8 @@ test("handover：清单写盘、渲染与非法步骤", () => {
   const text = renderHandover(built.plan, written.file);
   assert.match(text, /timer\.cancel/);
   assert.match(text, /核对：schedule_list 不再列出/);
+  assert.match(text, /系统级迭代补充（兜底；用户步骤优先）/);
+  assert.match(text, /档案承载不了、但换代必须继承的东西/);
   assert.equal(handoverPath(lib, "core-review").includes(".dsh-handover"), true);
 
   const bad = buildHandoverPlan({ roster: { id: "x" }, steps: [{ kind: "reboot", detail: "x" }] });

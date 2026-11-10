@@ -2,6 +2,19 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.18.0] - 2026-11-10
+
+### Added
+
+- **Every iteration carries a system-level supplement.** `roster_iterate` now always appends a fixed block after the user's own steps (or alone, when no steps were given): check what the roster cannot carry but the next generation still needs (host timers, wake routing, conclusions that only exist in the old session, session ids, credential pointers, external registrations), decide for each unfinished temporary task whether to inherit or drop it with a reason, never write "done" for something unverifiable, and finish with `roster_verify` plus an honest list of what was not carried over. User steps always come first; the supplement is a fallback, not a replacement.
+- **`docs/design.md`: the cross-module map.** Module inventory, the lifecycle of one roster, the field-home table (`direct` / `config` / `declaration`), the three entry points and their capability matrix, the host contracts, the invariants, and — the reason it exists — a per-capability checklist of every place a change must land (schema, validator, compiler, bridge, projection, tools, routes, panel, locale, CLI, docs, tests, `dist/`). The previous "added a model override but not the tool parameter" bug is exactly what this checklist is for.
+
+### Changed
+
+- `renderHandover` ends with the supplement, so a hand-over checklist is never just the user's own steps.
+
+Tests 433 (unchanged: the new behaviour is asserted inside the existing capture/iterate cases).
+
 ## [1.17.0] - 2026-11-10
 
 ### Added
