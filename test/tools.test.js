@@ -358,6 +358,53 @@ test("roster_space：有账本时自带更新摘要（refresh:false 不连远端
   assert.match(value.text, /更新：待快进 0/);
 });
 
+test("roster_iterate：档案里的交接指南会排进起始消息，并与本次步骤、系统补充一起下发", async () => {
+  const lib = mkdtempSync(path.join(tmpdir(), "iter-guide-"));
+  cpSync(examples, lib, { recursive: true });
+  const file = path.join(lib, "rosters/core-review/roster.yaml");
+  // examples 自带 handover：把其中一条换成可断言的标记，避免再插一个重复键。
+  const text = readFileSync(file, "utf8").replace("先读角色正文里的闸序与验收标准", "先读 core-review 的 review 清单");
+  writeFileSync(file, text);
+
+  const prompts = [];
+  const sessionController = {
+    async create() {
+      return { sessionId: "session-iter" };
+    },
+    async rename(request) {
+      return { title: request.title };
+    },
+    async selectModel() {
+      return { selected: {} };
+    },
+    async prompt(request, signal) {
+      signal.throwIfAborted();
+      prompts.push(request.content?.[0]?.text ?? "");
+      return {};
+    },
+    async list() {
+      return { items: [] };
+    },
+  };
+  const workspaceRegistry = { list: () => [{ id: "ws-1", path: lib, title: "示例" }] };
+  const { tools } = register({ services: { sessionController, workspaceRegistry } });
+  const { value } = await call(tools, "roster_iterate", {
+    id: "core-review",
+    path: lib,
+    sessionName: "iter-1",
+    capture: false,
+    handover: { steps: [{ kind: "note", detail: "把旧会话的读数贴过来" }] },
+  });
+  assert.equal(value.ok, true);
+  const sent = prompts[0] ?? "";
+  assert.match(sent, /档案里的交接指南（换代时先读；这是指导，不是动作脚本）/);
+  assert.match(sent, /先读 core-review 的 review 清单/);
+  assert.match(sent, /交接清单/);
+  assert.match(sent, /系统级迭代补充/);
+  // 档案指南排在本次步骤之前。
+  assert.ok(sent.indexOf("档案里的交接指南") < sent.indexOf("交接清单"));
+});
+
 test("roster_capture：把运行时差异算出来，默认不写回", async () => {
   const stateDir = mkdtempSync(path.join(tmpdir(), "capture-state-"));
   mkdirSync(path.join(stateDir, "demo"), { recursive: true });

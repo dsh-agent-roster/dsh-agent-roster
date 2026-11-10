@@ -185,6 +185,32 @@ test("组装：defaults 只允许桥接字段，targets 只允许已知目标", 
   assert.ok(codes.includes("invalid-target"));
 });
 
+test("组装：handover 是交接指南，收字符串与 {title,detail,verify}，并做边界校验", () => {
+  const value = {
+    kind: "dsh-agent-roster/roster@2",
+    id: "core-review",
+    version: "2.1.0",
+    handover: ["先读 lead.md 的§3 闸序", { title: "把 09:30 唤醒重建", detail: "旧 session id 不能沿用", verify: "schedule list 出现新任务" }],
+    members: [{ as: "aa", role: "reviewer@1.0.0" }],
+  };
+  const result = validateRoster2(value, {});
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.roster.handover, [
+    { title: "先读 lead.md 的§3 闸序", detail: "", verify: "" },
+    { title: "把 09:30 唤醒重建", detail: "旧 session id 不能沿用", verify: "schedule list 出现新任务" },
+  ]);
+
+  const bad = validateRoster2(
+    { ...value, handover: [{ detail: "没有 title" }, { title: "x", nope: 1 }, { title: "y".repeat(200) }] },
+    {},
+  );
+  assert.equal(bad.ok, false);
+  const codes = bad.diagnostics.map((item) => item.code);
+  assert.ok(codes.includes("handover-title-missing"));
+  assert.ok(codes.includes("unknown-field"));
+  assert.ok(codes.includes("handover-title-too-long"));
+});
+
 // ── 编译 ────────────────────────────────────────────────────────────────────
 
 test("编译：defaults 被 materialize，append 进拼装，provenance 带角色版本与哈希", () => {

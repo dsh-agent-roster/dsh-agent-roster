@@ -2,6 +2,23 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.22.0] - 2026-11-10
+
+### Added
+
+- v2 rosters can carry a `handover` guide: an ordered list of "what the next captain
+  should read first", optionally with concrete hand-over items (`title`, `detail`,
+  `verify`). `roster_iterate` puts it at the front of the new captain's first message,
+  ahead of the run's own steps and the system fallback; the plugin validates and
+  delivers it but never executes it.
+- The example library now ships a three-item guide, so the mixed order
+  (archive → steps → system notes) is visible without writing YAML from scratch.
+
+### Changed
+
+- `handover` is a roster-level declaration, not a step list: it lives with the roster,
+  survives restarts, and is checked like any other field (≤32 items, title ≤120,
+  detail/verify ≤400).
 ## [1.21.1] - 2026-11-10
 
 ### Fixed
@@ -1204,7 +1221,8 @@ point is now one search field above the tabs.
 [1.16.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.21.1...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.22.0...main
+[1.22.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v1.22.0
 [1.14.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.7...v1.14.0
 [1.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.1...v1.13.0
 [1.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.0...v1.13.1

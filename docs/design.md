@@ -107,7 +107,7 @@ lib/registry.js → lib/validate.js    → lib/compile2.js →  lib/bridge.js   
 |---|---|---|
 | `direct` | 原样传给 `agent_teams_add_member` | `name`、`role`、`systemPrompt`、`provider`、`model`、`reasoningEffort`、`toolPolicy` |
 | `config` | 只能落部署配置，插件只报「需落配置」 | `captain.route`、`captain.persona`（要脱离插件生效时） |
-| `declaration` | 只声明与校验，永不下发 | `tools.scope`、`requires.skills`、`requires.documents`、`skills` |
+| `declaration` | 只声明与校验，永不下发；`handover` 是“换代时先读”的指南，进入起始消息但不执行 | `tools.scope`、`requires.skills`、`requires.documents`、`skills`、`handover` |
 
 **新字段必须能回答：它属于哪一格？** 答不出来就不要加——那会变成"写了但不生效"的假字段。
 

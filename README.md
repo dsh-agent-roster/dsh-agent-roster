@@ -198,7 +198,7 @@ requires:
 onMissing: refuse
 ```
 
-Roster keys: `kind`, `id`, `version`, `title`, `description`, `license`, `maintainers`, `tags`, `defaults`, `targets`, `members`, `captain`, `orchestration`, `requires`, `onMissing`, `notes`.
+Roster keys: `kind`, `id`, `version`, `title`, `description`, `license`, `maintainers`, `tags`, `defaults`, `targets`, `members`, `captain`, `orchestration`, `handover`, `requires`, `onMissing`, `notes`.
 
 There is exactly one way to assemble the execution prompt (`lib/frontmatter.js#assemblePrompt`):
 
@@ -425,6 +425,16 @@ A roster does not get fresher because the team ran well — the runtime consumes
 - `roster_capture`: compares `team.json` with the roster member by member (`role` by the **expanded role name**, with the reference kept as a note; `provider`/`model`/`reasoningEffort`/`toolPolicy` by value; the persona only by the assembled hash and length). Read-only by default, and it lists what could be written back; `apply: true` writes the **mechanical fields** back to `roster.yaml`, bumps the patch version and recompiles `dist/`; `apply: true` plus `remember: true` also records “always write back from now on” (first as the `captureAutoApply` setting, then, if that cannot be written, into `.dsh-roster-preferences.json` at the library root). The persona is never written back: the runtime stores the assembled text, and writing it into the role file would flatten `parts` and `{{> …}}`; edit the role body instead.
 - `roster_iterate`: finds the old team by its provenance line, optionally captures/applies, then creates a new session and queues the build prompt. The old team is left alone. When there are writable differences and `capture` is omitted, it returns the diff and **stops without creating a session**, so you can pick `capture: true` (write back, then iterate), `capture: true` + `remember: true` (write back and remember), or `capture: false` (iterate without touching the roster).
 
+A roster can also carry its own hand-over guide: `handover` is the long-lived answer to "what should the next captain read first", not a script. Items are strings or `{title, detail?, verify?}` (up to 32; `title` ≤120 characters, `detail`/`verify` ≤400). `roster_iterate` puts it into the new captain's first message, in the order **archive guide → this run's steps (if any) → system fallback**; the plugin never executes it.
+
+```yaml
+handover:
+  - "Read the gates and acceptance criteria before delegating"
+  - title: "Recreate the 09:30 wake-up in the new session"
+    detail: "The old session id cannot be reused; timers belong to the host schedule"
+    verify: "schedule list shows a task pointing at the new session"
+```
+
 Hand-over steps go in `handover.steps` (`timer.cancel`/`timer.create`/`wake.update`/`archive`/`notify`/`verify`/`note`, …). The tool writes them to `<library>/.dsh-handover/<roster>-YYYYMMDD-HHmmss.json` and renders a checklist at the end of the new captain’s kick-off message, for that captain to execute one by one. **The plugin carries, validates and delivers; it does not run them**: timers belong to the host `schedule` plugin, wake routing to the team scripts, archiving to the workspace API — none of that is inside the roster layer’s boundary; the `verify` field is the command the new captain should run afterwards. A non-note step without `verify` records a warning.
 
 ## Tools (thirteen: `roster_team` and `roster_iterate` touch the runtime, `roster_capture` with `apply:true` writes a roster; the rest are read-only)
@@ -539,7 +549,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## Verification status
 
-- **438/438** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
+- **440/440** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
 - CI `registry` (Node 22) recomputes the index, recompiles the examples, and fails when `dist/` drifts from source.
 - **Scripted e2e** (`npm run e2e`): packs the working tree, installs it into a temporary copy of the production profile, boots a throwaway `dsh web` on a free port, and asks the running host what it sees — version, libraries and the captain projection, `hostTeamTargets`, `hostModels`, `/catalog`, a 400 for an unknown engine, a 404 for an unknown roster, a favourites round-trip: 17 assertions, no model calls, about 9 seconds. `--depth=apply` also builds a real team and checks `team.json` (slow, costs model calls). `--depth=persona` goes one step further and decodes the captain session log: the first system prompt (before the team exists) has no roster persona, while the later one has it and has lost the deployment prefix — that is what proves the injector shadows the section instead of appending a line to the kick-off message. The production profile is only read.
 - Known boundaries: `npm run e2e` copies a snapshot of the production profile (with its installed plugins), so it verifies how the host loads us rather than replacing unit tests of individual modules; `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.

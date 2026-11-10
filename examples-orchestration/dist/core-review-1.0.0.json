@@ -162,6 +162,7 @@
     ],
     "status": "declaration"
   },
+  "handover": [],
   "declarations": [
     {
       "scope": "roster",

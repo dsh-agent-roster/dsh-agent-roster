@@ -95,6 +95,23 @@
         "refuse",
         "degraded"
       ]
+    },
+    "handover": {
+      "type": "array",
+      "maxItems": 32,
+      "description": "交接指南：换代时新队长先读什么、要注意哪些具体交接事项。它是指导，不是动作脚本；插件不代跑。",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          {
+            "$ref": "#/$defs/handoverItem"
+          }
+        ]
+      }
     }
   },
   "$defs": {
@@ -454,6 +471,30 @@
           "items": {
             "$ref": "#/$defs/id"
           }
+        }
+      }
+    },
+    "handoverItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "detail": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "verify": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
         }
       }
     }

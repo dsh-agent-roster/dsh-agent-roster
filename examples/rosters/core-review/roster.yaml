@@ -19,6 +19,13 @@ defaults:
 targets:
   - "agent-teams/members"
   - "profile/agent-preset"
+handover:
+  - "先读角色正文里的闸序与验收标准，再看上一代团队的 roster_verify 输出"
+  - title: "把 09:30 的唤醒重建到新会话"
+    detail: "旧 session id 不能沿用；定时器属于宿主 schedule，不在档案层"
+    verify: "schedule list 里出现指向新会话的任务"
+  - title: "旧团队归档前先确认交接清单里的读数都已贴进新会话"
+    verify: "新会话首条消息里有交接指南与清单"
 members:
   - as: "lead"
     role: "core-review-lead@1.0.0"
