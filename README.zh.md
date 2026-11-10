@@ -6,6 +6,8 @@
 
 一份档案就是磁盘上的文件：团队里有谁、各自负责什么、走哪个模型路由、被允许碰哪些工具。本插件定义这套格式、校验它，并把它翻译成 `agent_teams_*` 调用参数——它不运行团队。
 
+**目录**：它是什么 · 安装 · 快速开始 · 三种落盘形态 · 角色 → 档案 → 产物 · 正文里的引用 · 公共知识 · 字段归宿 · 能力要求 · 档案空间 · 左侧栏面板 · 工具 · 命令行 · 路由 · 配置 · 诊断 · 与 dsh-agent-teams 的关系 · 开发。设计与维护规则见 [`docs/design.md`](./docs/design.md)。
+
 ## 它是什么 / 不是什么
 
 | 是 | 不是 |
@@ -403,7 +405,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 
 成员的人设由 `dsh-agent-teams` 在**成员子会话**上注册一个与部署 persona 同名的 `systemPrompt.section`（`deployment:persona-prefix`），靠同名遮蔽生效；队长是顶层会话，不在它的管辖里。本插件补上这另一半：
 
-- 在队长会话的 ctx 上注册**同一个 section 名**，内容是档案里的队长人设。取值与成员同一套规则：v2 先看 `captain.persona` 文件，没有就看 `captain.role` 指向角色的**组装正文**；两端还可以用 `captain.prompt.prepend` / `captain.prompt.append` 各加一份文件（与成员的 `members[].prompt` 同义，只加不改）（`AGENT.md` 的 body + parts + `{{> …}}`；真实档案里队长几乎都是角色引用），v1 看 `captain.systemPrompt` / `captain.personaPrefix`。
+- 在队长会话的 ctx 上注册**同一个 section 名**，内容是档案里的队长人设。取值与成员同一套规则：v2 先看 `captain.persona` 文件，没有就看 `captain.role` 指向角色的**组装正文**（`AGENT.md` 的 body + parts + `{{> …}}`，真实档案里队长几乎都是角色引用）；两端还可以用 `captain.prompt.prepend` / `captain.prompt.append` 各加一份文件（与成员的 `members[].prompt` 同义，只加不改）；v1 看 `captain.systemPrompt` / `captain.personaPrefix`。
 - `text` 传的是函数，宿主每个模型步都会求值 ⇒ 改档案立即生效，不用重启、不用重建会话；文件读失败时沿用上一次的好值，**绝不用空串遮蔽部署 persona**。
 - 归属不靠猜：读团队的 `captainSessionId`，再看团队 `description` 里的 `roster:<id>@<ver>#<sha8>` 找到档案。新会话是「先建会话、队长再建团队」，所以团队晚落盘时会短暂轮询（30 分钟内），落盘即挂上。
 - **注入读哪座库，跟着建会话时用的 `path` 走**：`roster_team({path})` 允许指向任意库，建会话时会把该库的根记在这个会话上；找不到时再退回 `rosterDirs`。两边都没有时不再静默——日志里有一行 `captain persona not attached: roster "<id>" not found in roots [...]`，`roster_verify` 也会如实写「找不到档案目录：…搜过 …」，而不是把所有情况都猜成「会话太老」。
@@ -443,7 +445,7 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 | `roster_capture` | 比对 `team.json` 与档案；`apply:true` 才把机械字段写回 | `id`、`team?`、`stateDir?`、`fields?`、`apply?`、`path?` |
 | `roster_iterate` | 从当前团队迭代出新会话：可选写回 + 交接清单 | `id`、`teamName?`、`sessionName?`、`workspace?`、`target?`、`model?`、`capture?`、`handover?`、`path?` |
 
-只有这三个工具会改东西，其余八个只读。档案的保存/导入/删除仍走 CLI 与面板 HTTP 路由。
+只有这三个工具会改东西，其余十个只读。档案的保存/导入/删除仍走 CLI 与面板 HTTP 路由。
 
 ## 命令行
 

@@ -6,6 +6,8 @@ A **static member roster** plugin for multi-agent teams on DeepSeek Harness.
 
 A roster is a file on disk: who is on the team, what each member owns, which model route they take, and which tools they may touch. This plugin defines that format, validates it, and translates it into `agent_teams_*` arguments — it does not run teams.
 
+**Contents**: what it is · install · quick start · three on-disk shapes · role → roster → compiled · references · shared knowledge · where each field lands · capabilities · space · the sidebar panel · tools · CLI · routes · configuration · diagnostics · relationship with `dsh-agent-teams` · development. Design and maintenance rules: [`docs/design.md`](./docs/design.md).
+
 ## What it is / what it is not
 
 | It is | It is not |
@@ -444,7 +446,7 @@ Hand-over steps go in `handover.steps` (`timer.cancel`/`timer.create`/`wake.upda
 | `roster_capture` | compare `team.json` with the roster; `apply:true` writes mechanical fields back | `id`, `team?`, `stateDir?`, `fields?`, `apply?`, `path?` |
 | `roster_iterate` | iterate from the current team into a new session: optional write-back plus a hand-over checklist | `id`, `teamName?`, `sessionName?`, `workspace?`, `target?`, `model?`, `capture?`, `handover?`, `path?` |
 
-Only these three change anything; the other eight are read-only. Saving/importing/deleting rosters still goes through the CLI and the panel’s HTTP routes.
+Only these three change anything; the other ten are read-only. Saving/importing/deleting rosters still goes through the CLI and the panel’s HTTP routes.
 
 ## CLI
 
