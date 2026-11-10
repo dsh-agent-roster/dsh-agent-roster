@@ -121,7 +121,7 @@ export function apply(ctx, config) {
   const settings = configView(config);
 
   registerRosterTools(ctx, settings, { version: pkg.version });
-  ctx.logger?.info?.(`dsh-agent-roster ${pkg.version}: registered 11 tools`);
+  ctx.logger?.info?.(`dsh-agent-roster ${pkg.version}: registered 13 tools`);
 
   // 队长人设的会话级嵌入：与成员侧同构，补上 agent-teams 结构上不管的那一半。
   // 失败只记日志、绝不阻断会话创建——注入是增强，不是建会话的前置条件。

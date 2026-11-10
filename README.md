@@ -22,7 +22,7 @@ Requirements: DSH provides the `tools` service; Node.js ≥ 22.19. Runtime depen
 @stofone/dsh-agent-roster
 ```
 
-The package ships `cordis.patch.yml`, so installing it into a profile wires the plugin. After install you should see **eleven tools** (see “Tools”) and an **Agent Roster** panel in the left sidebar.
+The package ships `cordis.patch.yml`, so installing it into a profile wires the plugin. After install you should see **thirteen tools** (see “Tools”) and an **Agent Roster** panel in the left sidebar.
 
 Plugin code is loaded when DSH starts: after upgrading, **restart `dsh web`**. Swapping `node_modules` alone leaves the running host on the old build.
 
@@ -417,7 +417,16 @@ Member personas work because `dsh-agent-teams` registers a `systemPrompt.section
 
 Favourites live in `.dsh-roster-favorites.json` at the library root (`dsh-agent-roster/favorites@1`, at most 500 entries, atomic replace). Saving or importing auto-favourites the new roster; deleting unfavourites it; a broken file yields one warning and the panel still works. Favourites **affect the view only** and never move files.
 
-## Tools (eleven: ten read-only, `roster_team` creates a session)
+### Iterating and handing over
+
+A roster does not get fresher because the team ran well — the runtime consumes rosters in one direction. Two tools bring changes back:
+
+- `roster_capture`: compares `team.json` with the roster member by member (`provider`/`model`/`reasoningEffort`/`toolPolicy` by value; the persona only by the assembled hash and length). Read-only by default; `apply: true` writes the **mechanical fields** back to `roster.yaml`, bumps the patch version and recompiles `dist/`. The persona is never written back: the runtime stores the assembled text, and writing it into the role file would flatten `parts` and `{{> …}}`; edit the role body instead.
+- `roster_iterate`: finds the old team by its provenance line, optionally captures/applies, then creates a new session and queues the build prompt. The old team is left alone.
+
+Hand-over steps go in `handover.steps` (`timer.cancel`/`timer.create`/`wake.update`/`archive`/`notify`/`verify`/`note`, …). The tool writes them to `<library>/.dsh-handover/<roster>-YYYYMMDD-HHmmss.json` and renders a checklist at the end of the new captain’s kick-off message, for that captain to execute one by one. **The plugin carries, validates and delivers; it does not run them**: timers belong to the host `schedule` plugin, wake routing to the team scripts, archiving to the workspace API — none of that is inside the roster layer’s boundary; the `verify` field is the command the new captain should run afterwards. A non-note step without `verify` records a warning.
+
+## Tools (thirteen: `roster_team` and `roster_iterate` touch the runtime, `roster_capture` with `apply:true` writes a roster; the rest are read-only)
 
 | Tool | Purpose | Key parameters |
 |---|---|---|
@@ -432,8 +441,10 @@ Favourites live in `.dsh-roster-favorites.json` at the library root (`dsh-agent-
 | `roster_compile` | compilation preview (writes nothing) | `ref`, `path?` |
 | `roster_changes` | per-file update check (seven states) | `path?`, `refresh?` |
 | `roster_team` | create a team from a roster (new or existing session) | `id`, `teamName?`, `mode?`, `workspace?`, `sessionName?`, `sessionId?`, `target?`, `model?`, `path?` |
+| `roster_capture` | compare `team.json` with the roster; `apply:true` writes mechanical fields back | `id`, `team?`, `stateDir?`, `fields?`, `apply?`, `path?` |
+| `roster_iterate` | iterate from the current team into a new session: optional write-back plus a hand-over checklist | `id`, `teamName?`, `sessionName?`, `workspace?`, `target?`, `model?`, `capture?`, `handover?`, `path?` |
 
-Writing goes through the CLI and the panel’s HTTP routes only; the tool layer stays read-only.
+Only these three change anything; the other eight are read-only. Saving/importing/deleting rosters still goes through the CLI and the panel’s HTTP routes.
 
 ## CLI
 
@@ -511,8 +522,8 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 ## Development
 
 ```bash
-node --test                 # 426 tests
-npm run smoke               # host: 11 tools; client: two slots
+node --test                 # 433 tests
+npm run smoke               # host: 13 tools; client: two slots
 npm run check:host         # host contracts the unit tests fake
 npm run e2e                    # boot a throwaway host and ask what it actually sees (~9 s, no model calls)
 npm run e2e -- --depth=apply   # the same, then really build a team (slower, calls the model)
@@ -524,7 +535,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## Verification status
 
-- **426/426** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
+- **433/433** tests; both smoke halves; `check:locale` four checks at 0; `validate` on three libraries with 0 errors (`examples-orchestration` keeps one pre-existing `captain-not-targeted` warning); `registry validate` covers 5 collections with 0 errors.
 - CI `registry` (Node 22) recomputes the index, recompiles the examples, and fails when `dist/` drifts from source.
 - **Scripted e2e** (`npm run e2e`): packs the working tree, installs it into a temporary copy of the production profile, boots a throwaway `dsh web` on a free port, and asks the running host what it sees — version, libraries and the captain projection, `hostTeamTargets`, `hostModels`, `/catalog`, a 400 for an unknown engine, a 404 for an unknown roster, a favourites round-trip: 17 assertions, no model calls, about 9 seconds. `--depth=apply` also builds a real team and checks `team.json` (slow, costs model calls). `--depth=persona` goes one step further and decodes the captain session log: the first system prompt (before the team exists) has no roster persona, while the later one has it and has lost the deployment prefix — that is what proves the injector shadows the section instead of appending a line to the kick-off message. The production profile is only read.
 - Known boundaries: `npm run e2e` copies a snapshot of the production profile (with its installed plugins), so it verifies how the host loads us rather than replacing unit tests of individual modules; `dist/` is not cloned; installing a collection (`/install`) flattens rosters into v1 documents, while a whole-space pull (`clone` / `/install-space`) keeps the v2 layout and ledger; `toolFilter` cannot be verified from `team.json`; `dsh web` must be restarted after an upgrade.

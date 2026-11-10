@@ -2,6 +2,20 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.17.0] - 2026-11-10
+
+### Added
+
+- **`roster_capture`: the runtime's changes, as a diff you can read.** It compares `team.json` with the roster member by member — `provider`/`model`/`reasoningEffort`/`toolPolicy` by value, the persona only by the assembled hash and length, because the runtime stores the assembled text and writing it back would flatten `parts` and `{{> …}}`. Read-only by default; `apply: true` writes the **mechanical fields** back into `roster.yaml` (v2 members are keyed by `as`, and `provider`/`model` are written as a pair because the route must stay complete), bumps the patch version, validates the result and recompiles `dist/`.
+- **`roster_iterate`: capture, then build the next generation.** Finds the current team by the `roster:<id>@…` provenance line, optionally captures/applies, creates a new session (or takes an explicit one) and queues the build prompt. The old team is left in place.
+- **Hand-over steps travel with the iteration.** `handover.steps` is a closed set (`capture`/`session.create`/`timer.cancel`/`timer.create`/`wake.update`/`archive`/`notify`/`verify`/`note`), written to `<library>/.dsh-handover/<roster>-YYYYMMDD-HHmmss.json` and rendered as a checklist at the end of the new captain's kick-off message. A non-`note` step without `verify` records a warning. The plugin carries, validates and delivers these steps; it does not run timers, wake routing or archiving — those are outside the roster layer's boundary.
+
+### Changed
+
+- The tool layer is no longer "read-only except `roster_team`": `roster_iterate` creates a session and `roster_capture` may write a roster. Both say so in their descriptions and in the READMEs.
+
+Tests 426 → 433.
+
 ## [1.16.1] - 2026-11-10
 
 ### Fixed
@@ -1106,10 +1120,11 @@ point is now one search field above the tabs.
 - 工具返回值含 `undefined` 键，运行时按 `value is not lossless JSON` 整次拒绝；缺失值统一写 `null`，
   且所有返回值先过 `lib/json.js#lossless`。
 
+[1.17.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.16.1...v1.17.0
 [1.16.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.17.0...main
 [1.14.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.7...v1.14.0
 [1.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.1...v1.13.0
 [1.13.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.0...v1.13.1

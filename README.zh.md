@@ -22,7 +22,7 @@
 @stofone/dsh-agent-roster
 ```
 
-包内带 `cordis.patch.yml`，安装即把插件插进 profile。装好后应看到**十一个工具**（见「工具」）与左侧栏里的 **Agent 档案** 面板。
+包内带 `cordis.patch.yml`，安装即把插件插进 profile。装好后应看到**十三个工具**（见「工具」）与左侧栏里的 **Agent 档案** 面板。
 
 插件代码在 DSH 启动时加载：升级包后**必须重启 `dsh web`**，面板与工具才会是新的；只换 `node_modules` 不重启，运行中的宿主仍是旧版本。
 
@@ -416,7 +416,16 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 
 收藏写在库根的 `.dsh-roster-favorites.json`（`dsh-agent-roster/favorites@1`，最多 500 条，原子替换）。保存/导入会自动收藏新档案；删除会取消收藏；坏文件只报一条 warn，面板照常可用。收藏**只影响视图**，不会移动文件。
 
-## 工具（十一个：十个只读，`roster_team` 会建会话）
+### 迭代与交接
+
+档案不会因为团队跑得好而自动变新——运行时单向消费档案。要把运行时的调整带回来，用两个工具：
+
+- `roster_capture`：把 `team.json` 与档案逐成员比一遍（`provider`/`model`/`reasoningEffort`/`toolPolicy` 比原值，人设只比拼装后的哈希与字数）。默认只读；`apply: true` 才把**机械字段**写回 `roster.yaml`，版本号 patch+1 并重编译 `dist/`。人设写不回去：运行时存的是拼装结果，写回角色文件会把 `parts`/`{{> …}}` 结构压平——改人设请改角色正文。
+- `roster_iterate`：按溯源行找到旧团队 →（可选）先 capture/apply → 新建一个会话并排入建团提示。旧团队不删。
+
+交接步骤放在 `handover.steps`（`timer.cancel`/`timer.create`/`wake.update`/`archive`/`notify`/`verify`/`note` 等），工具把它写成 `<库根>/.dsh-handover/<档案>-YYYYMMDD-HHmmss.json`，并渲染成一段清单附在新队长起始消息末尾，由新队长逐条执行。**插件只承载、校验、交付，不代跑**：定时器属于宿主 `schedule`，唤醒路由属于团队脚本，归档走 workspace 接口，都不在档案层的能力边界内；`verify` 一栏写的是新队长执行后该用哪条命令确认。缺 `verify` 的步骤会记一条 warn。
+
+## 工具（十三个：`roster_team`、`roster_iterate` 会动运行时，`roster_capture` 的 `apply:true` 会写档案；其余只读）
 
 | 工具 | 作用 | 主要参数 |
 |---|---|---|
@@ -431,8 +440,10 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 | `roster_compile` | 编译预览（不写盘） | `ref`、`path?` |
 | `roster_changes` | 逐文件更新检查（七态） | `path?`、`refresh?` |
 | `roster_team` | 从档案创建团队（新会话或已有会话） | `id`、`teamName?`、`mode?`、`workspace?`、`sessionName?`、`sessionId?`、`target?`、`model?`、`path?` |
+| `roster_capture` | 比对 `team.json` 与档案；`apply:true` 才把机械字段写回 | `id`、`team?`、`stateDir?`、`fields?`、`apply?`、`path?` |
+| `roster_iterate` | 从当前团队迭代出新会话：可选写回 + 交接清单 | `id`、`teamName?`、`sessionName?`、`workspace?`、`target?`、`model?`、`capture?`、`handover?`、`path?` |
 
-写操作只走 CLI 与面板 HTTP 路由；工具层保持只读。
+只有这三个工具会改东西，其余八个只读。档案的保存/导入/删除仍走 CLI 与面板 HTTP 路由。
 
 ## 命令行
 
@@ -510,8 +521,8 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 ## 开发
 
 ```bash
-node --test                 # 426 个测试
-npm run smoke               # 宿主侧 11 个工具 + 客户端两槽位
+node --test                 # 433 个测试
+npm run smoke               # 宿主侧 13 个工具 + 客户端两槽位
 npm run check:host         # 宿主契约（单测里的假件证明不了它）
 npm run e2e                    # 起一个一次性宿主，问它真正看见了什么（不调模型，约 9 秒）
 npm run e2e -- --depth=apply   # 同上，再真的建一支队（会调用模型，慢）
@@ -523,7 +534,7 @@ npx dsh-agent-roster registry validate --file index/registry.json
 
 ## 验证状态
 
-- 全仓 **426/426**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
+- 全仓 **433/433**；smoke 双段；`check:locale` 四项 0；三座库 `validate` 0 error（`examples-orchestration` 保留一条既有的 `captain-not-targeted` warn）；`registry validate` 5 条 collection、0 error。
 - CI `registry`（Node 22）重算索引、重编示例，并在 `dist/` 与源码不一致时失败。
 - **脚本化 e2e**（`npm run e2e`）：把工作区打包、装进生产 profile 的**临时副本**，在空闲端口起一个一次性 `dsh web`，然后只问运行中的宿主：版本、库与队长投影、`hostTeamTargets`、`hostModels`、`/catalog`、未知引擎 400、未知档案 404、收藏往返——17 项断言，不调模型，约 9 秒。`--depth=apply` 才真建一支队并检查 `team.json`（慢、会调用模型）。`--depth=persona` 在 apply 之上再解码队长会话日志：团队落盘前的第一步系统提示词里**没有**档案人设，落盘后的系统提示词里**有**、且部署人设前缀**已消失**——证明注入走的是同名 section 遮蔽，不是往起始消息里塞一段。生产 profile 只读。
 - 已知边界：`npm run e2e` 复制的是**生产 profile 的快照**（含已装插件），因此它验证「宿主怎么加载我们」，不替代针对单个模块的单测；`dist/` 不随 clone 拉取；按合集安装（`/install`）会把档案摊平成 v1 文档，整空间拉取（`clone` / `/install-space`）才保留 v2 布局与账本；`toolFilter` 无法从 team.json 核对；升级后需重启 `dsh web`。

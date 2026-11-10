@@ -64,14 +64,16 @@ async function call(tools, name, args) {
   return { value, firstLine, text: blocks[0].text };
 }
 
-test("注册十一个工具，旧的六个能在 examples 上执行", async () => {
+test("注册十三个工具，旧的六个能在 examples 上执行", async () => {
   const { tools } = register();
   assert.deepEqual([...tools.keys()].sort(), [
+    "roster_capture",
     "roster_changes",
     "roster_compile",
     "roster_create",
     "roster_diff",
     "roster_index",
+    "roster_iterate",
     "roster_list",
     "roster_search",
     "roster_show",
@@ -215,7 +217,7 @@ test("显式 path 覆盖配置目录（真机回归点）", async () => {
 
 test("释放后不残留工具", () => {
   const { tools, disposers } = register();
-  assert.equal(tools.size, 11);
+  assert.equal(tools.size, 13);
   for (const dispose of disposers) dispose();
   assert.equal(tools.size, 0);
 });
@@ -331,4 +333,87 @@ test("roster_verify：没注入时说出真实原因（找不到档案根），�
     dispose();
     resetCaptainInjector();
   }
+});
+
+test("roster_capture：把运行时差异算出来，默认不写回", async () => {
+  const stateDir = mkdtempSync(path.join(tmpdir(), "capture-state-"));
+  mkdirSync(path.join(stateDir, "demo"), { recursive: true });
+  writeFileSync(
+    path.join(stateDir, "demo", "team.json"),
+    JSON.stringify({
+      id: "demo",
+      name: "demo",
+      phase: "running",
+      description: "roster:core-review@1.0.0#abc12345",
+      captainSessionId: "session-1",
+      members: [
+        { name: "lead", role: "core-review-lead@1.0.0", provider: "deepseek-official", model: "deepseek-v4-pro", reasoningEffort: "high", executionPrompt: "runtime text" },
+      ],
+    }),
+  );
+  const { tools } = register();
+  const { text, value } = await call(tools, "roster_capture", { id: "core-review", path: examples, stateDir });
+  assert.match(text, /^\[roster_capture\] /);
+  assert.match(text, /differ=1/);
+  assert.match(text, /deepseek-v4-pro/);
+  assert.match(text, /人设/);
+  assert.ok(value.written === null || value.written.length === 0);
+  assert.ok(value.summary.differ > 0);
+
+  // 写回必须在副本上做：仓库里的 examples 是只读夹具。
+  const lib = mkdtempSync(path.join(tmpdir(), "capture-lib-"));
+  const { cpSync } = await import("node:fs");
+  cpSync(examples, lib, { recursive: true });
+  const applied = await call(tools, "roster_capture", { id: "core-review", path: lib, stateDir, apply: true });
+  assert.match(applied.firstLine, /^\[roster_capture\] /);
+  assert.ok(Array.isArray(applied.value.written.written) && applied.value.written.written.length > 0, applied.text);
+});
+
+test("roster_iterate：旧团队按溯源匹配，交接清单落盘并附进起始消息", async () => {
+  const lib = mkdtempSync(path.join(tmpdir(), "iterate-lib-"));
+  const stateDir = mkdtempSync(path.join(tmpdir(), "iterate-state-"));
+  const ws = mkdtempSync(path.join(tmpdir(), "iterate-ws-"));
+  const { cpSync } = await import("node:fs");
+  cpSync(examples, lib, { recursive: true });
+  mkdirSync(path.join(stateDir, "old-team"), { recursive: true });
+  writeFileSync(
+    path.join(stateDir, "old-team", "team.json"),
+    JSON.stringify({
+      id: "old-team",
+      name: "old-team",
+      phase: "running",
+      description: "roster:core-review@1.0.0#abc12345",
+      captainSessionId: "session-old",
+      members: [],
+    }),
+  );
+  const calls = [];
+  const sessionController = {
+    async list() { return { items: [] }; },
+    async create(request) { calls.push(["create", request]); return { sessionId: "session-new" }; },
+    async rename(request) { calls.push(["rename", request]); return {}; },
+    async selectModel(request) { calls.push(["selectModel", request]); return {}; },
+    async prompt(request, signal) { signal.throwIfAborted(); calls.push(["prompt", request]); return {}; },
+  };
+  const { tools } = register({
+    services: {
+      sessionController,
+      workspaceRegistry: { list: () => [{ id: "ws-1", path: ws, title: "ws" }] },
+    },
+    agentTeamsStateDir: stateDir,
+  });
+  const { text, value } = await call(tools, "roster_iterate", {
+    id: "core-review",
+    path: lib,
+    stateDir,
+    sessionName: "core-review-next",
+    teamName: "core-review-next",
+    handover: { steps: [{ kind: "note", detail: "先看一遍差异" }] },
+  });
+  assert.match(text, /^\[roster_iterate\] /);
+  assert.match(text, /交接清单/);
+  assert.equal(value.sessionId, "session-new");
+  assert.ok(value.handover.file.endsWith(".json"));
+  const promptCall = calls.find((item) => item[0] === "prompt");
+  assert.match(promptCall[1].content[0].text, /交接清单/);
 });

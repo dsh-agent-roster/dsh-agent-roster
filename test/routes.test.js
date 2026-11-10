@@ -307,17 +307,19 @@ test("collection：没有远端源时明确 404 并列出已知项", async () =>
   assert.deepEqual(result.body.known, []);
 });
 
-test("工具：apply() 之后十一个工具都在注册表里", () => {
+test("工具：apply() 之后十三个工具都在注册表里", () => {
   const host = makeHost();
   apply(host.ctx, CONFIG);
   assert.deepEqual(
     [...host.tools.keys()].sort(),
     [
+      "roster_capture",
       "roster_changes",
       "roster_compile",
       "roster_create",
       "roster_diff",
       "roster_index",
+      "roster_iterate",
       "roster_list",
       "roster_search",
       "roster_show",
