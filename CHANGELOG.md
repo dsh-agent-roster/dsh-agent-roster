@@ -2,6 +2,24 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.23.0] - 2026-11-11
+
+### Added
+
+- `import-agency` (CLI): turn the experts shipped by `@michengai/dsh-agency-agents`
+  (Apache-2.0) into a v2 library - one role per expert, one or more rosters per
+  domain, `NOTICE-agency.txt` for attribution. It is a one-time snapshot: nothing
+  links back to the package, and the source package's `summon_expert_team` is not
+  copied.
+- 331 experts today: 308 become roles (bodies over 8000 characters split into
+  `parts/rest.md`) and 23 are skipped with `agency-too-long`, because a persona
+  cannot exceed the 12000-character prompt budget.
+
+### Changed
+
+- `--space` on `import-agency` can only confirm the directory name; a space id must
+  equal its directory, so a mismatched value is an error rather than a silent rename.
+
 ## [1.22.0] - 2026-11-10
 
 ### Added
@@ -1221,7 +1239,8 @@ point is now one search field above the tabs.
 [1.16.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.22.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.23.0...main
+[1.23.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v1.23.0
 [1.22.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v1.22.0
 [1.14.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.7...v1.14.0
 [1.13.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.12.1...v1.13.0

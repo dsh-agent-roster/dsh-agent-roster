@@ -469,6 +469,21 @@ handover:
 | `registry validate --file <路径>` | 校验公共索引 |
 | `registry fetch --file <路径> [--local-only]` | 逐条确认真能取到 |
 | `registry sync --file <路径> [--write]` | 按仓库实际内容重算 roster 列表与文件映射 |
+| `import-agency --from <包目录|assets> --dir <目标库> [--write] [--force]` | 把 `@michengai/dsh-agency-agents` 的专家素材转成一座 v2 库（角色 + 按领域分块的档案 + NOTICE）；默认只预览 |
+
+### 从 `agency-agents` 导入专家素材
+
+`@michengai/dsh-agency-agents`（Apache-2.0）带 331 位中文专家，每位是一份带 frontmatter 的 Markdown。它不是档案格式，所以只能**一次性转换**，不能当第二真源：
+
+```bash
+node bin/cli.mjs import-agency --from ~/.dsh/profiles/web/node_modules/@michengai/dsh-agency-agents \
+  --dir ~/.dsh/agent-roster/agency-experts --write
+```
+
+- 每位专家 → 一个角色（`roles/agency-<slug>/AGENT.md`），frontmatter 的 `notes` 记来源文件与正文哈希。
+- 每个领域 → 若干份档案（每份 ≤24 人，`as` 用专家 slug），`targets: [agent-teams/members]`。
+- 正文超过 8000 字符的拆成 `parts/rest.md`；超过 12000 的**跳过并写明原因**（当前 331 位里有 23 位）。
+- 库根写 `NOTICE-agency.txt` 保留 Apache-2.0 归属；导入后与源包再无联动，源包升级不会自动更新。
 
 ## 路由（十二条）
 

@@ -21,6 +21,7 @@ import nodePath from "node:path";
 import { resolveDirSpec } from "../lib/home.js";
 import { globalRosterRoot } from "../lib/home.js";
 import { cloneSpace } from "../lib/clone.js";
+import { findAgencyAssets, planAgencyLibrary, readAgencyExperts, writeAgencyLibrary } from "../lib/agency.js";
 import { scanRosterLibrary } from "../lib/registry.js";
 import { renderRosterList } from "../lib/render.js";
 import { REGISTRY_KIND } from "../lib/format.js";
@@ -47,6 +48,8 @@ const USAGE = `用法：
                                                       把一个远端空间按原布局拉成本地副本（可编辑）
   dsh-agent-roster update --dir <空间目录> [--write] [--accept] [--json]
                                                       检查拉下来的空间有没有变（本地/远端/冲突六态）
+  dsh-agent-roster import-agency --from <包目录|assets 目录> --dir <目标库> [--write] [--force]
+                                                      把 @michengai/dsh-agency-agents 的专家素材转成一座 v2 库
   dsh-agent-roster --version         输出版本号
 
 选项：
@@ -64,6 +67,7 @@ const USAGE = `用法：
   --run <path>              执行回执（compile 用；把上一轮失败并入重试卡）
   --roles <path>            角色库目录（compile 用；缺省按 rosters/<id> 推同级的 roles/）
   --json                    以 JSON 输出（validate / list / compile 都支持）
+  --force                   import-agency 覆盖目标库里已有的文件
   --help                    显示本帮助
 `;
 
@@ -87,6 +91,7 @@ function parseArgs(argv) {
     path: null,
     space: null,
     repo: null,
+    force: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -94,6 +99,7 @@ function parseArgs(argv) {
     else if (arg === "--json") options.json = true;
     else if (arg === "--local-only") options.localOnly = true;
     else if (arg === "--write") options.write = true;
+    else if (arg === "--force") options.force = true;
     // 冲突之后"认账"：把当前本地内容接受为新基线。它是唯一能让 diverged 消失的动作，
     // 所以必须由人显式给，绝不在 --write 里顺手做。
     else if (arg === "--accept") options.accept = true;
@@ -192,6 +198,7 @@ async function main(argv) {
   if (options.command === "compile") return runCompile(options);
   if (options.command === "clone") return runClone(options);
   if (options.command === "update") return runUpdate(options);
+  if (options.command === "import-agency") return runImportAgency(options);
   if (options.command === "migrate") return runMigrate(options);
   if (options.command === "registry") {
     if (options.file === null) {
@@ -669,6 +676,68 @@ async function runUpdate(options) {
   );
   for (const item of applied.applied) process.stdout.write(`  写入 ${item}\n`);
   return applied.ok ? 0 : 1;
+}
+
+/**
+ * 把 @michengai/dsh-agency-agents 的专家素材转成一座 v2 档案库。
+ *
+ * 默认只预览；--write 才落盘，目标库必须为空（或 --force 覆盖）。
+ */
+function runImportAgency(options) {
+  if (options.from === null) {
+    process.stderr.write(`import-agency 需要 --from <包目录|assets 目录>\n\n${USAGE}`);
+    return 2;
+  }
+  if (options.dirs.length === 0) {
+    process.stderr.write(`import-agency 需要 --dir <目标库目录>\n\n${USAGE}`);
+    return 2;
+  }
+  const dir = nodePath.resolve(options.dirs[0]);
+  const found = findAgencyAssets(options.from);
+  if (!found.ok) {
+    process.stderr.write(`找不到专家素材：${found.code}\n`);
+    return 1;
+  }
+  const { experts, diagnostics } = readAgencyExperts(found.dir);
+  // 空间 id 必须等于目录名（位置即身份）：--space 只能用来确认，不能换个名字。
+  const derivedSpace = nodePath.basename(dir).toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "");
+  if (options.space !== null && options.space !== derivedSpace) {
+    process.stderr.write(`--space ${options.space} 与目录名 ${derivedSpace} 不一致；空间 id 必须等于目录名，请改目录名或去掉 --space。\n`);
+    return 2;
+  }
+  const spaceId = derivedSpace;
+  const plan = planAgencyLibrary(experts, { spaceId });
+  const report = {
+    source: found.dir,
+    lang: found.lang,
+    target: dir,
+    space: spaceId,
+    stats: plan.stats,
+    skipped: plan.skipped,
+    diagnostics: [...diagnostics, ...plan.diagnostics],
+    write: options.write,
+  };
+  if (options.write) {
+    const written = writeAgencyLibrary(dir, plan, { force: options.force });
+    Object.assign(report, written);
+    if (!written.ok) {
+      process.stderr.write(`没有写入：${written.code}（目标库非空；确要覆盖请加 --force）\n`);
+      return 1;
+    }
+  }
+  if (options.json) {
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.write && report.written !== undefined ? 0 : report.write ? 1 : 0;
+  }
+  process.stdout.write(`来源：${found.dir}（${found.lang}）\n`);
+  process.stdout.write(`计划：${plan.stats.experts} 位专家 → ${plan.stats.roles} 角色、${plan.stats.rosters} 份档案（跳过 ${plan.skipped}）\n`);
+  for (const item of report.diagnostics.slice(0, 5)) process.stdout.write(`  ${item.code}: ${item.reason}\n`);
+  if (!options.write) {
+    process.stdout.write(`未写入。加 --write 落盘到 ${dir}（目标库需为空）。\n`);
+    return 0;
+  }
+  process.stdout.write(`已写入 ${report.written.length} 个文件到 ${dir}；空间 ${spaceId}\n`);
+  return 0;
 }
 
 async function runClone(options) {

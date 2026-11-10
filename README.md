@@ -470,6 +470,21 @@ Only these three change anything; the other ten are read-only. Saving/importing/
 | `registry validate --file <path>` | validate a public index |
 | `registry fetch --file <path> [--local-only]` | confirm every collection really resolves |
 | `registry sync --file <path> [--write]` | recompute roster lists and file maps from the repo |
+| `import-agency --from <package|assets> --dir <library> [--write] [--force]` | turn `@michengai/dsh-agency-agents` experts into a v2 library (roles + per-domain rosters + NOTICE); dry run unless `--write` |
+
+### Importing `agency-agents` experts
+
+`@michengai/dsh-agency-agents` (Apache-2.0) ships 331 Chinese-language experts, each a Markdown file with frontmatter. It is not a roster format, so the import is a **one-time conversion**, not a second source of truth:
+
+```bash
+node bin/cli.mjs import-agency --from ~/.dsh/profiles/web/node_modules/@michengai/dsh-agency-agents \
+  --dir ~/.dsh/agent-roster/agency-experts --write
+```
+
+- Each expert becomes a role (`roles/agency-<slug>/AGENT.md`) whose `notes` carry the source file and body hash.
+- Each domain becomes one or more rosters (≤24 members, `as` = expert slug) with `targets: [agent-teams/members]`.
+- Bodies over 8000 characters are split into `parts/rest.md`; bodies over 12000 are **skipped with a reason** (23 of 331 today).
+- `NOTICE-agency.txt` keeps the Apache-2.0 attribution; nothing links back to the package afterwards.
 
 ## Routes (twelve)
 
