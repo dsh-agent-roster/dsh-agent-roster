@@ -2,6 +2,12 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.26.1] - 2026-11-11
+
+### Fixed
+
+- 1.26.0 在 npm 上停在 staged、`latest` 仍是 1.25.1：重新以 1.26.1 发布同一份代码，避免对着已 staged 的版本重发被 409 拒绝。内容与 1.26.0 相同。
+
 ## [1.26.0] - 2026-11-11
 
 ### Added
