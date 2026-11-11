@@ -158,3 +158,8 @@ tmp/
 
 # local handover notes: working-tree prose, never published
 HANDOFF.md
+
+# 插件写在库根的状态点文件（收藏、来源账本、自动登记偏好）
+.dsh-roster-favorites.json
+.dsh-roster-origin.json
+.dsh-roster-preferences.json

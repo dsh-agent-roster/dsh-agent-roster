@@ -25,7 +25,7 @@ const examples = path.join(root, "examples");
 
 /** 用最小的假 ctx 注册工具，返回 name → tool 的映射。 */
 function register(overrides = {}) {
-  const { services = {}, ...config } = overrides;
+  const { services = {}, remember = () => {}, favorite = () => {}, ...config } = overrides;
   const tools = new Map();
   const disposers = [];
   const ctx = {
@@ -47,7 +47,7 @@ function register(overrides = {}) {
     ctx,
     { rosterDirs: ["rosters"], knownToolPolicies: [], agentTeamsStateDir: ".agent-teams", ...config },
     { version: "0.1.0" },
-    { remember: () => {} },
+    { remember, favorite },
   );
   return { tools, disposers };
 }
@@ -171,7 +171,11 @@ test("roster_team：引擎与模型入参都透传，未知模型先拦", async 
     listModels: async () => [{ id: "deepseek-v4.1-flash", name: "flash" }],
   };
   const workspaceRegistry = { list: () => [{ id: "ws-1", path: root, title: "示例" }] };
-  const { tools } = register({ services: { sessionController, llm, workspaceRegistry } });
+  const favorites = [];
+  const { tools } = register({
+    services: { sessionController, llm, workspaceRegistry },
+    favorite: (dir, ids) => favorites.push([dir, ids]),
+  });
 
   const ok = await call(tools, "roster_team", {
     id: "core-review",
@@ -186,6 +190,8 @@ test("roster_team：引擎与模型入参都透传，未知模型先拦", async 
   assert.match(ok.value.text, /队长模型：tsing\/deepseek-v4\.1-flash/);
   // 注入根必须是传进来的 path，而不是它的上一层：早先这里记成 cwd，注入层静默失配。
   assert.equal(ok.value.rosterRoot, path.resolve(examples));
+  // 从档案建团即收藏：否则档案页（默认只看收藏）里刚用过的档案反而看不见。
+  assert.deepEqual(favorites, [[path.resolve(examples), ["core-review"]]]);
   const selection = calls.find((entry) => entry[0] === "selectModel");
   assert.ok(selection, "必须真的切模型");
   assert.equal(selection[1].provider, "tsing");

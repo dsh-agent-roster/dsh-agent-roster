@@ -2,6 +2,13 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.27.3] - 2026-11-11
+
+### Fixed
+
+- The library tab no longer hides a library that the roster tab can see. `/catalog` built its local list without the auto-registered roots, so a pulled or tool-used library showed up under 档案 but not under 档案库. Both paths now use the same set of roots.
+- Creating a team from a roster marks that roster as a favourite. The roster tab defaults to favourites, so a roster you just built a team from could disappear from the default view.
+
 ## [1.27.2] - 2026-11-11
 
 ### Fixed

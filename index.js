@@ -216,7 +216,10 @@ export function apply(ctx, config) {
     // 「档案库」与「搜索」共用同一次摊平动作：本机 + 所有订阅来源。
     // 两条路由各写一遍，缓存口径、并发上限与诊断文案迟早会分叉。
     const gatherEntries = async ({ refresh = false } = {}) => {
-      const library = collectLibrary(ctx, settings, { name: pkg.name, version: pkg.version });
+      // 自动登记的库根也要进档案库，否则"面板档案页有、档案库没有"——两处口径必须同一份。
+      const library = collectLibrary(ctx, settings, { name: pkg.name, version: pkg.version }, {
+        registeredLibraryDirs: registeredLibraryDirs(),
+      });
       const entries = [];
       let localCount = 0;
       // 远端条目也要知道自己"是不是已经在本机、有没有被收藏"，否则档案库只能显示一半事实。
@@ -614,6 +617,8 @@ export function apply(ctx, config) {
         });
         // 用过的库根自动登记：工具/面板建的库不在配置根下面，不登记就永远看不见。
         if (result.ok) rememberLibraryDir(roster.rootDir);
+        // 从档案建团即收藏：档案页默认只看收藏，工具用过的档案理应出现在那里。
+        if (result.ok) addFavorites(roster.rootDir, [roster.id]);
         const status = result.ok ? 200 : result.code === "session-controller-unavailable" ? 503 : 400;
         sendJson(res, status, result);
       },

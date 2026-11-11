@@ -5,7 +5,7 @@
  * 快照、单份原文、保存、删除、导入、方法不符、词典型。
  */
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import nodePath from "node:path";
 import { Readable } from "node:stream";
@@ -489,21 +489,31 @@ test("apply：有 sessionController 时切模型并把建团队提示词排进�
       return { items: [] };
     },
   };
-  const host = makeHost({ sessionController });
-  apply(host.ctx, CONFIG);
-  const result = await call(
-    host,
-    "/plugins/dsh-agent-roster/apply",
-    makeReq({ method: "POST", body: { rosterId: "core-review", mode: "new" } }),
-  );
-  assert.equal(result.status, 200, result.raw);
-  assert.equal(result.body.ok, true);
-  assert.equal(result.body.sessionId, "s-new");
-  assert.deepEqual(
-    calls.map((call) => call[0]),
-    ["create", "selectModel", "prompt"],
-    "core-review 的队长 route 来自角色库，应用时必须切模型",
-  );
+  // 用临时副本：应用成功会给档案写收藏点文件，不能写进仓库的 examples/。
+  const dir = mkdtempSync(nodePath.join(tmpdir(), "roster-routes-apply-"));
+  try {
+    cpSync(examples, dir, { recursive: true });
+    const host = makeHost({ sessionController });
+    apply(host.ctx, { ...CONFIG, rosterDirs: [dir] });
+    const result = await call(
+      host,
+      "/plugins/dsh-agent-roster/apply",
+      makeReq({ method: "POST", body: { rosterId: "core-review", mode: "new" } }),
+    );
+    assert.equal(result.status, 200, result.raw);
+    assert.equal(result.body.ok, true);
+    assert.equal(result.body.sessionId, "s-new");
+    assert.deepEqual(
+      calls.map((call) => call[0]),
+      ["create", "selectModel", "prompt"],
+      "core-review 的队长 route 来自角色库，应用时必须切模型",
+    );
+    // 用过的档案自动收藏：档案页默认只看收藏。
+    const favorites = JSON.parse(readFileSync(nodePath.join(dir, ".dsh-roster-favorites.json"), "utf8"));
+    assert.deepEqual(favorites.favorites ?? favorites, ["core-review"]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("apply：已有会话但没给 sessionId 是 400 missing-session", async () => {
@@ -599,6 +609,13 @@ test("自动登记：library-registry 能加、能撤销，登记的库出现在
     assert.ok(auto, "登记的库要真的出现在快照里");
     assert.equal(auto.autoRegistered, true);
     assert.equal(auto.rosters.find((roster) => roster.id === "demo") !== undefined, true);
+
+    // 档案库必须用同一份口径：自动登记的库根也要出现在 /catalog 里。
+    const catalog = await call(host, "/plugins/dsh-agent-roster/catalog", makeReq());
+    assert.equal(catalog.status, 200);
+    const entry = catalog.body.entries.find((item) => item.scope === "local" && item.rootDir === workspace);
+    assert.ok(entry, "自动登记的库要进档案库");
+    assert.equal(entry.rosterId, "demo");
 
     const forgot = await call(
       host,
