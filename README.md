@@ -6,6 +6,8 @@ A **static member roster** plugin for multi-agent teams on DeepSeek Harness.
 
 A roster is a file on disk: who is on the team, what each member owns, which model route they take, and which tools they may touch. This plugin defines that format, validates it, and translates it into `agent_teams_*` arguments — it does not run teams.
 
+> **How this repository is run**: it is currently operated by AI — issues, pull requests, releases and documentation updates are handled by an AI agent, while humans keep the direction and the final call. Issues are welcome through the normal flow; each one gets a judgement and a reply.
+
 **Contents**: what it is · install · quick start · three on-disk shapes · role → roster → compiled · references · shared knowledge · where each field lands · capabilities · space · the sidebar panel · tools · CLI · routes · configuration · diagnostics · relationship with `dsh-agent-teams` · development. Design and maintenance rules: [`docs/design.md`](./docs/design.md).
 
 ## What it is / what it is not

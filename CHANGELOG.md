@@ -2,6 +2,16 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.25.1] - 2026-11-11
+
+### Changed
+
+- README（中英）与仓库 About 都写明：本仓库交由 AI 自行运维——issue、PR、版本发布与文档更新由 AI 代理完成，人工只做方向性决策与最终把关。
+
+### Tests
+
+- 448 → 448（纯文档改动，无行为变化）。
+
 ## [1.25.0] - 2026-11-11
 
 ### Added
