@@ -2,6 +2,22 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.25.0] - 2026-11-11
+
+### Added
+
+- Libraries a tool has actually used are auto-registered: `roster_team` /
+  `roster_iterate` with `path=...` and the panel's create-team dialog record the
+  library root in the global library's `.dsh-roster-preferences.json` (at most 16),
+  and the panel shows it under rosters, marked "Auto-registered". Without this, a
+  library built outside the configured directories was invisible forever — you could
+  create a team from it and never see the roster again.
+- `dsh-agent-roster libraries` lists what has been registered, `--add <dir>` registers
+  by hand, `--forget <dir>` undoes it. Registered roots also join the write whitelist,
+  so they can be edited/applied from the panel instead of failing with `unknown-root`.
+
+[1.25.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v1.25.0
+
 ## [1.24.0] - 2026-11-11
 
 ### Fixed

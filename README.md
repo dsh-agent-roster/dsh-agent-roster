@@ -385,6 +385,8 @@ Settings live only in the panel’s gear dialog (language, download region, mirr
 
 Two things are easy to conflate: **Teams** are read from `.agent-teams` under every host workspace (no library needs to be registered there, so teams built elsewhere are visible); **rosters** only come from the directories listed under library directories — an unlisted directory simply does not appear (add one line in the gear dialog; it applies immediately).
 
+A library that a tool has built a team from (the `path=` of `roster_team`/`roster_iterate`, or the create-team dialog) is **auto-registered**: no configuration change, it shows up under rosters on the next refresh and is marked "Auto-registered". The list lives in `.dsh-roster-preferences.json` at the global library root (at most 16 entries); use `node bin/cli.mjs libraries` to inspect, `libraries --add <dir>` to register, `libraries --forget <dir>` to undo.
+
 ### Creating a team
 
 The row button and the `roster_team` tool share one `applyCaptain` path:
@@ -473,6 +475,7 @@ Only these three change anything; the other ten are read-only. Saving/importing/
 | `registry fetch --file <path> [--local-only]` | confirm every collection really resolves |
 | `registry sync --file <path> [--write]` | recompute roster lists and file maps from the repo |
 | `import-agency --from <package|assets> --dir <library> [--write] [--force]` | turn `@michengai/dsh-agency-agents` experts into a v2 library (roles + per-domain rosters + NOTICE); dry run unless `--write` |
+| `libraries [--add <dir>] [--forget <dir>] [--json]` | list / register / undo the library roots a tool has used; auto-registered on a successful team build and kept across machines |
 
 ### Importing `agency-agents` experts
 

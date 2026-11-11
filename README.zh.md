@@ -384,6 +384,8 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 
 两件事常被混在一起：**团队**读的是每个宿主工作区下的 `.agent-teams`（不要求那台工作区里有被登记的档案库，所以在别处建的团队也能看到）；**档案**只来自「档案库目录」里登记的那些库——目录没登记，档案就不会出现在面板上（在齿轮弹窗里加一行即可，改完即时生效）。
 
+用工具建过团队（`roster_team`/`roster_iterate` 的 `path=`、面板的创建团队）的库会被**自动登记**：不用改配置，下次刷新面板就在「档案」里出现，标题后会标「自动登记」。登记表在全局库根的 `.dsh-roster-preferences.json` 里（最多 16 条），用 `node bin/cli.mjs libraries` 查看、`libraries --add <目录>` 手动登记、`libraries --forget <目录>` 撤销。
+
 ### 创建团队
 
 档案行上的「创建团队」与 `roster_team` 工具走同一段 `applyCaptain`：
@@ -472,6 +474,7 @@ handover:
 | `registry fetch --file <路径> [--local-only]` | 逐条确认真能取到 |
 | `registry sync --file <路径> [--write]` | 按仓库实际内容重算 roster 列表与文件映射 |
 | `import-agency --from <包目录|assets> --dir <目标库> [--write] [--force]` | 把 `@michengai/dsh-agency-agents` 的专家素材转成一座 v2 库（角色 + 按领域分块的档案 + NOTICE）；默认只预览 |
+| `libraries [--add <目录>] [--forget <目录>] [--json]` | 查看 / 登记 / 撤销「用过的库根」；自动登记由工具在成功建团时写入，换机器仍在 |
 
 ### 从 `agency-agents` 导入专家素材
 

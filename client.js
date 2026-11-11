@@ -2138,8 +2138,8 @@ window.__ModuleLoader__.load({
             rootDir: workspace.rootDir,
             label:
               workspace.scope === "global"
-                ? `${t("settings.globalLibrary")} — ${workspace.rootDir}`
-                : `${workspace.rootDir}${workspace.title ? ` — ${workspace.title}` : ""}`,
+                ? `${t("settings.globalLibrary")} — ${workspace.rootDir}${workspace.autoRegistered ? ` · ${t("misc.autoRegistered")}` : ""}`
+                : `${workspace.rootDir}${workspace.title ? ` — ${workspace.title}` : ""}${workspace.autoRegistered ? ` · ${t("misc.autoRegistered")}` : ""}`,
           })),
         [snapshot],
       );

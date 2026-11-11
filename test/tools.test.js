@@ -42,7 +42,13 @@ function register(overrides = {}) {
       return services[name];
     },
   };
-  registerRosterTools(ctx, { rosterDirs: ["rosters"], knownToolPolicies: [], agentTeamsStateDir: ".agent-teams", ...config }, { version: "0.1.0" });
+  // remember 注入成空实现：测试不该把临时目录写进真实用户的全局偏好。
+  registerRosterTools(
+    ctx,
+    { rosterDirs: ["rosters"], knownToolPolicies: [], agentTeamsStateDir: ".agent-teams", ...config },
+    { version: "0.1.0" },
+    { remember: () => {} },
+  );
   return { tools, disposers };
 }
 

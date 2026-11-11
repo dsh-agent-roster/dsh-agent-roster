@@ -256,7 +256,8 @@
     "copied": "Copied",
     "yes": "Yes",
     "no": "No",
-    "failed": "Failed"
+    "failed": "Failed",
+    "autoRegistered": "Auto-registered"
   },
   "captain": {
     "title": "Captain",

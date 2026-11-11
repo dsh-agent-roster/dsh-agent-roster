@@ -14,6 +14,7 @@
  *   dsh-agent-roster compile --roster rosters/money-lab [--roles roles] [--run run.json] [--write] [--json]
  *   dsh-agent-roster migrate --dir examples [--write] [--json]
  *   dsh-agent-roster migrate --dir . --from rosters --repo owner/repo --write
+ *   dsh-agent-roster libraries [--json] [--add <绝对路径>] [--forget <绝对路径>]
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import nodePath from "node:path";
@@ -23,6 +24,7 @@ import { globalRosterRoot } from "../lib/home.js";
 import { cloneSpace } from "../lib/clone.js";
 import { findAgencyAssets, planAgencyLibrary, readAgencyExperts, writeAgencyLibrary } from "../lib/agency.js";
 import { scanRosterLibrary } from "../lib/registry.js";
+import { forgetLibraryDir, registeredLibraryDirs, rememberLibraryDir } from "../lib/preferences.js";
 import { renderRosterList } from "../lib/render.js";
 import { REGISTRY_KIND } from "../lib/format.js";
 import { fetchCollection, readRegistryFile } from "../lib/remote.js";
@@ -92,6 +94,8 @@ function parseArgs(argv) {
     space: null,
     repo: null,
     force: false,
+    forget: null,
+    add: null,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -100,6 +104,17 @@ function parseArgs(argv) {
     else if (arg === "--local-only") options.localOnly = true;
     else if (arg === "--write") options.write = true;
     else if (arg === "--force") options.force = true;
+    else if (arg === "--add") {
+      const value = argv[index + 1];
+      if (value === undefined) throw new UsageError("--add 需要一个绝对路径");
+      options.add = value;
+      index += 1;
+    } else if (arg === "--forget") {
+      const value = argv[index + 1];
+      if (value === undefined) throw new UsageError("--forget 需要一个绝对路径");
+      options.forget = value;
+      index += 1;
+    }
     // 冲突之后"认账"：把当前本地内容接受为新基线。它是唯一能让 diverged 消失的动作，
     // 所以必须由人显式给，绝不在 --write 里顺手做。
     else if (arg === "--accept") options.accept = true;
@@ -199,6 +214,7 @@ async function main(argv) {
   if (options.command === "clone") return runClone(options);
   if (options.command === "update") return runUpdate(options);
   if (options.command === "import-agency") return runImportAgency(options);
+  if (options.command === "libraries") return runLibraries(options);
   if (options.command === "migrate") return runMigrate(options);
   if (options.command === "registry") {
     if (options.file === null) {
@@ -683,6 +699,43 @@ async function runUpdate(options) {
  *
  * 默认只预览；--write 才落盘，目标库必须为空（或 --force 覆盖）。
  */
+function runLibraries(options) {
+  if (options.add !== null) {
+    if (!existsSync(options.add)) {
+      process.stderr.write(`没有这个目录：${options.add}\n`);
+      return 1;
+    }
+    const result = rememberLibraryDir(options.add);
+    if (!result.ok) {
+      process.stderr.write(`登记失败：${result.code}\n`);
+      return 1;
+    }
+    process.stdout.write(`${result.added ? "已登记" : "已在登记表里"}：${nodePath.resolve(options.add)}\n`);
+    return 0;
+  }
+  if (options.forget !== null) {
+    const ok = forgetLibraryDir(options.forget);
+    if (!ok) {
+      process.stderr.write(`没有忘掉 ${options.forget}：偏好文件写不进去\n`);
+      return 1;
+    }
+    process.stdout.write(`已忘掉 ${nodePath.resolve(options.forget)}\n`);
+    return 0;
+  }
+  const dirs = registeredLibraryDirs();
+  if (options.json) {
+    process.stdout.write(`${JSON.stringify({ dirs }, null, 2)}\n`);
+    return 0;
+  }
+  if (dirs.length === 0) {
+    process.stdout.write("没有自动登记的库：面板与工具用 path= 用过一次之后才会记下来。\n");
+    return 0;
+  }
+  process.stdout.write(`自动登记的库（${dirs.length}）：\n`);
+  for (const dir of dirs) process.stdout.write(`- ${dir}${existsSync(dir) ? "" : "（已不存在）"}\n`);
+  return 0;
+}
+
 function runImportAgency(options) {
   if (options.from === null) {
     process.stderr.write(`import-agency 需要 --from <包目录|assets 目录>\n\n${USAGE}`);

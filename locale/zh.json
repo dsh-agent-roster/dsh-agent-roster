@@ -256,7 +256,8 @@
     "copied": "已复制",
     "yes": "是",
     "no": "否",
-    "failed": "操作失败"
+    "failed": "操作失败",
+    "autoRegistered": "自动登记"
   },
   "captain": {
     "title": "队长",

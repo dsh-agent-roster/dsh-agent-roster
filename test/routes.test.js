@@ -10,12 +10,27 @@ import { tmpdir } from "node:os";
 import nodePath from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
-import { test } from "node:test";
+import { afterEach, beforeEach, test } from "node:test";
 
 import { apply } from "../index.js";
 import { sha256Of, writeOrigin } from "../lib/origin.js";
 
 const root = nodePath.resolve(nodePath.dirname(fileURLToPath(import.meta.url)), "..");
+
+// 路由会把"用过的库根"登记到全局偏好：测试必须落在临时 DSH_HOME 里，
+// 否则每跑一次测试就往真实用户的登记表里塞一条。
+let testHome = null;
+const previousHome = process.env.DSH_HOME;
+beforeEach(() => {
+  testHome = mkdtempSync(nodePath.join(tmpdir(), "dsh-agent-roster-routes-home-"));
+  process.env.DSH_HOME = testHome;
+});
+afterEach(() => {
+  if (previousHome === undefined) delete process.env.DSH_HOME;
+  else process.env.DSH_HOME = previousHome;
+  if (testHome !== null) rmSync(testHome, { recursive: true, force: true });
+  testHome = null;
+});
 const examples = nodePath.join(root, "examples");
 
 /** 造一个宿主桩：注册的工具与路由都被收集起来，effect 可回收。 */

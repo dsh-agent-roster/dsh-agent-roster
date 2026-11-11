@@ -18,6 +18,7 @@ import nodePath from "node:path";
 import z from "@deepseek-ai/schemastery";
 
 import { configView } from "./lib/config-view.js";
+import { registeredLibraryDirs, rememberLibraryDir } from "./lib/preferences.js";
 import { applyCaptain, listHostWorkspaces, listSessions } from "./lib/apply.js";
 import { collectLibrary } from "./lib/library.js";
 import { scanRosterLibrary } from "./lib/registry.js";
@@ -134,7 +135,7 @@ export function apply(ctx, config) {
   // 队长人设的会话级嵌入：与成员侧同构，补上 agent-teams 结构上不管的那一半。
   // 失败只记日志、绝不阻断会话创建——注入是增强，不是建会话的前置条件。
   const stopInjector = installCaptainInjector(ctx, settings, {
-    roots: () => resolveRoots(ctx, settings),
+    roots: () => resolveRoots(ctx, settings, { registeredLibraryDirs: registeredLibraryDirs() }),
     logger: ctx.logger,
   });
   ctx.effect?.(() => stopInjector, "dsh-agent-roster: captain persona injector");
@@ -151,7 +152,7 @@ export function apply(ctx, config) {
       async (req, res) => {
         if (guard(req, res)) return;
         if (!requireMethod(req, res, "GET")) return;
-        const snapshot = buildPanelSnapshot(ctx, settings, { name: pkg.name, version: pkg.version });
+        const snapshot = buildPanelSnapshot(ctx, settings, { name: pkg.name, version: pkg.version }, { registeredLibraryDirs: registeredLibraryDirs() });
         const query = new URL(req.url ?? "/", "http://localhost").searchParams;
         // 远程源是“附属信息”：拉不到也不能让本地档案库的响应失败，所以失败只体现在 remote.diagnostics 里。
         const remote = await loadRemotePanel(settings, { refresh: query.get("refresh") === "1" });
@@ -376,7 +377,7 @@ export function apply(ctx, config) {
         if (!requireMethod(req, res, "GET")) return;
         const query = new URL(req.url ?? "/", "http://localhost").searchParams;
         const result = readRosterDocument({
-          roots: resolveRoots(ctx, settings),
+          roots: resolveRoots(ctx, settings, { registeredLibraryDirs: registeredLibraryDirs() }),
           rootDir: query.get("rootDir") ?? "",
           id: query.get("id") ?? "",
         });
@@ -479,7 +480,7 @@ export function apply(ctx, config) {
           return;
         }
         const input = body.value !== null && typeof body.value === "object" ? body.value : {};
-        const roots = resolveRoots(ctx, settings);
+        const roots = resolveRoots(ctx, settings, { registeredLibraryDirs: registeredLibraryDirs() });
         const root = findLibraryRoot(roots, typeof input.rootDir === "string" ? input.rootDir : "");
         if (root === null) {
           sendError(res, 403, "unknown-root");
@@ -572,6 +573,8 @@ export function apply(ctx, config) {
               }
             : null,
         });
+        // 用过的库根自动登记：工具/面板建的库不在配置根下面，不登记就永远看不见。
+        if (result.ok) rememberLibraryDir(roster.rootDir);
         const status = result.ok ? 200 : result.code === "session-controller-unavailable" ? 503 : 400;
         sendJson(res, status, result);
       },
@@ -590,7 +593,7 @@ export function apply(ctx, config) {
           return;
         }
         const input = body.value !== null && typeof body.value === "object" ? body.value : {};
-        const rootDir = findLibraryRoot(resolveRoots(ctx, settings), input.rootDir);
+        const rootDir = findLibraryRoot(resolveRoots(ctx, settings, { registeredLibraryDirs: registeredLibraryDirs() }), input.rootDir);
         if (rootDir === null) {
           sendError(res, 403, "unknown-root");
           return;
@@ -646,7 +649,7 @@ export function apply(ctx, config) {
           return;
         }
         const input = body.value !== null && typeof body.value === "object" ? body.value : {};
-        const roots = resolveRoots(ctx, settings);
+        const roots = resolveRoots(ctx, settings, { registeredLibraryDirs: registeredLibraryDirs() });
 
         if (input.action === "delete") {
           const result = deleteRosterDocument({ roots, rootDir: input.rootDir, id: input.id });
