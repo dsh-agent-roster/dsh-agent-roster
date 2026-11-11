@@ -362,6 +362,9 @@
     "modelDefault": "部署默认（不切换）",
     "modelUnknown": "读不到模型目录",
     "modelUnavailable": "档案声明：{model}（本部署未提供）",
-    "modelMissing": "档案声明的 {model} 在本部署不存在，将使用部署默认模型；要按档案跑，请先在部署里提供该 provider/model。"
+    "modelMissing": "档案声明的 {model} 在本部署不存在，将使用部署默认模型；要按档案跑，请先在部署里提供该 provider/model。",
+    "attachOnly": "只应用队长人设，不建团队",
+    "attachOnlyHint": "不会新建会话，也不会创建团队",
+    "applied": "已应用队长人设（{chars} 字符）"
   }
 }

@@ -35,6 +35,8 @@ window.__ModuleLoader__.load({
     const INSTALL_SPACE_ROUTE = "/plugins/dsh-agent-roster/install-space";
     const COLLECTION_ROUTE = "/plugins/dsh-agent-roster/collection";
     const APPLY_ROUTE = "/plugins/dsh-agent-roster/apply";
+    // 只把队长人设挂到已存在的会话，不建团（另一条路：/apply 会唤起会话并让它建团）。
+    const APPLY_SESSION_ROUTE = "/plugins/dsh-agent-roster/apply-session";
     const SEARCH_ROUTE = "/plugins/dsh-agent-roster/search";
     const CATALOG_ROUTE = "/plugins/dsh-agent-roster/catalog";
     const SPACE_UPDATE_ROUTE = "/plugins/dsh-agent-roster/space-update";
@@ -799,6 +801,8 @@ window.__ModuleLoader__.load({
       }, [workspaceKey, defaultWorkspace]);
       const [busy, setBusy] = useState(false);
       const [error, setError] = useState(null);
+      // 只应用人设：不新建会话、不建团队，直接把档案的队长人设挂到选中的会话上。
+      const [attachOnly, setAttachOnly] = useState(false);
       // 团队引擎：下拉里列出这台部署上的建团插件；未安装的项保留在列表里，
       // 但禁选并写明原因——依赖不静默，是这次改版的目的。
       const targetList = Array.isArray(targets) ? targets : [];
@@ -845,6 +849,21 @@ window.__ModuleLoader__.load({
         setBusy(true);
         setError(null);
         try {
+          if (mode === "existing" && attachOnly) {
+            const applied = await readJson(APPLY_SESSION_ROUTE, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ rosterId: roster.id, rootDir: roster.rootDir, sessionId }),
+            });
+            if (!applied.ok || applied.body?.ok !== true) {
+              setError(applied.body?.code ?? applied.body?.error?.code ?? String(applied.status));
+              return;
+            }
+            onToast(t("teamCreate.applied", { chars: applied.body.chars ?? 0 }));
+            onCreated?.(sessionId);
+            onClose();
+            return;
+          }
           const payload = { rosterId: roster.id, teamName: teamName.trim(), mode, target: targetId };
           const pickedModel = modelList.find((item) => item.key === modelKey);
           if (pickedModel !== undefined) payload.model = { provider: pickedModel.provider, model: pickedModel.model };
@@ -1016,6 +1035,19 @@ window.__ModuleLoader__.load({
                 }),
               ),
         ),
+        mode === "existing"
+          ? h(
+              "label",
+              { className: "rstr-toggle" },
+              h("input", {
+                type: "checkbox",
+                checked: attachOnly,
+                onChange: (event) => setAttachOnly(event.target.checked),
+              }),
+              h("span", null, t("teamCreate.attachOnly")),
+              h("span", { className: "rstr-toggle-hint" }, t("teamCreate.attachOnlyHint")),
+            )
+          : null,
         h(
           "p",
           { className: "rstr-hint" },
@@ -3381,6 +3413,9 @@ window.__ModuleLoader__.load({
 .rstr-captain { display: flex; flex-direction: column; gap: 10px; border-top: 1px dashed var(--dsw-alias-border-l1); padding-top: 12px; }
 .rstr-meta-grid { display: grid; grid-template-columns: auto repeat(3, auto); justify-content: start; gap: 6px 20px; align-items: baseline; font-size: 12px; font-variant-numeric: tabular-nums; }
 .rstr-checks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, max-content)); gap: 0 24px; }
+.rstr-toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.rstr-toggle input { margin: 0; }
+.rstr-toggle-hint { color: var(--dsw-alias-label-tertiary); }
 .rstr-check { display: flex; justify-content: space-between; gap: 18px; font-size: 12px; border-bottom: 1px solid var(--dsw-alias-border-l1); padding: 4px 0; }
 .rstr-apply { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .rstr-segmented { display: inline-flex; border: 1px solid var(--dsw-alias-border-l3); }

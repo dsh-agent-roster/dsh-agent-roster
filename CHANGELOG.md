@@ -2,6 +2,12 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.28.0] - 2026-11-12
+
+### Added
+
+- **Apply a roster's captain persona to an existing session.** `POST /plugins/dsh-agent-roster/apply-session` takes `{rootDir, rosterId, sessionId}`, looks the live agent up in `agentRegistry`, and registers the same `deployment:persona-prefix` section the team captain gets — re-read every model step, so editing the roster takes effect on the next step. The panel exposes it as “apply the persona only” when an existing session is picked; no session is created and no team is built. The binding lives in this process: a host restart drops it (apply again, or build a team from the roster).
+
 ## [1.27.3] - 2026-11-11
 
 ### Fixed

@@ -585,6 +585,35 @@ test("收藏：POST /favorites 写库根的点文件，下一次快照就带 fav
   }
 });
 
+test("POST /apply-session：缺 sessionId 400、越界 403、未知会话 404", async () => {
+  const host = makeHost();
+  apply(host.ctx, { ...CONFIG, rosterDirs: [examples] });
+
+  const missing = await call(
+    host,
+    "/plugins/dsh-agent-roster/apply-session",
+    makeReq({ method: "POST", headers: { "content-type": "application/json" }, body: { rootDir: examples, rosterId: "core-review" } }),
+  );
+  assert.equal(missing.status, 400);
+  assert.equal(missing.body.error.code, "session-required");
+
+  const outside = await call(
+    host,
+    "/plugins/dsh-agent-roster/apply-session",
+    makeReq({ method: "POST", headers: { "content-type": "application/json" }, body: { rootDir: "/etc", rosterId: "core-review", sessionId: "session-1" } }),
+  );
+  assert.equal(outside.status, 403);
+
+  // 测试宿主没有 agentRegistry：拿不到 live agent 时如实报 404，而不是假装挂上了。
+  const unknown = await call(
+    host,
+    "/plugins/dsh-agent-roster/apply-session",
+    makeReq({ method: "POST", headers: { "content-type": "application/json" }, body: { rootDir: examples, rosterId: "core-review", sessionId: "session-missing" } }),
+  );
+  assert.equal(unknown.status, 404);
+  assert.equal(unknown.body.error.code, "session-not-found");
+});
+
 test("自动登记：library-registry 能加、能撤销，登记的库出现在快照里", async () => {
   const workspace = mkdtempSync(nodePath.join(tmpdir(), "roster-routes-reg-"));
   try {

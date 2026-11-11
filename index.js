@@ -35,7 +35,7 @@ import { listHostModels } from "./lib/host-models.js";
 import { createTtlCache, fetchCollection } from "./lib/remote.js";
 import { searchRosters } from "./lib/search.js";
 import { registerRosterTools } from "./lib/tools.js";
-import { installCaptainInjector } from "./lib/captain-inject.js";
+import { attachRosterToSession, installCaptainInjector } from "./lib/captain-inject.js";
 import { deleteRosterDocument, findLibraryRoot, readRosterDocument, writeRosterDocument } from "./lib/write.js";
 
 const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
@@ -623,6 +623,62 @@ export function apply(ctx, config) {
         sendJson(res, status, result);
       },
       "apply route",
+    );
+
+    // 直接把一座档案的队长人设挂到一个已存在的会话（不建团）。
+    // 与 /apply 分开：那条路是「新建/唤起会话并让它建团」，这条路只改这个会话的人设。
+    register(
+      "/plugins/dsh-agent-roster/apply-session",
+      async (req, res) => {
+        if (guard(req, res)) return;
+        if (!requireMethod(req, res, "POST")) return;
+        const body = await readJsonBody(req);
+        if (!body.ok) {
+          sendError(res, body.status, body.code);
+          return;
+        }
+        const input = body.value !== null && typeof body.value === "object" ? body.value : {};
+        const sessionId = typeof input.sessionId === "string" ? input.sessionId : "";
+        if (sessionId === "") {
+          sendError(res, 400, "session-required");
+          return;
+        }
+        const rootDir = findLibraryRoot(
+          resolveRoots(ctx, settings, { registeredLibraryDirs: registeredLibraryDirs() }),
+          input.rootDir,
+        );
+        if (rootDir === null) {
+          sendError(res, 403, "unknown-root");
+          return;
+        }
+        const rosterId = typeof input.rosterId === "string" ? input.rosterId : "";
+        const registry = ctx.get?.("agentRegistry");
+        const agent = typeof registry?.get === "function" ? registry.get(sessionId) : undefined;
+        if (agent === undefined || agent === null) {
+          sendError(res, 404, "session-not-found");
+          return;
+        }
+        // 只认磁盘上的原始档案：面板投影不含 captain 正文，用它注入会注入一份空人设。
+        const scanned = scanRosterLibrary({ rootDir, knownToolPolicies: settings.knownToolPolicies ?? null });
+        const raw = scanned.rosters.find((item) => item.id === rosterId);
+        if (raw === undefined) {
+          sendError(res, 404, "roster-not-found");
+          return;
+        }
+        const rosterDir =
+          typeof raw.file === "string" && raw.file !== ""
+            ? nodePath.join(rootDir, nodePath.dirname(raw.file))
+            : "";
+        const result = attachRosterToSession(agent, {
+          rosterDir,
+          rosterId: raw.id,
+          version: raw.version,
+          logger: ctx.logger,
+        });
+        if (result.ok) addFavorites(rootDir, [raw.id]);
+        sendJson(res, result.ok ? 200 : 400, { ...result, rosterId: raw.id, rootDir });
+      },
+      "apply-session route",
     );
 
     // 更新检查：账本在空间根目录；冲突不自动合并，只把两边摘要摆出来。
