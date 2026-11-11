@@ -599,6 +599,8 @@ export function apply(ctx, config) {
           workspaceId: typeof input.workspaceId === "string" ? input.workspaceId : "",
           // 只给了目录时也把会话登记进对应工作区（否则界面上看不到它落在那）。
           workspaceRegistry: ctx.get?.("workspaceRegistry"),
+          // 已有会话建团时不会再触发 agent/created：把 live agent 一起交给注入层。
+          agentRegistry: ctx.get?.("agentRegistry"),
           sessionTitle: typeof input.sessionTitle === "string" ? input.sessionTitle.trim().slice(0, 120) : "",
           // 团队名只进提示词，不写任何团队状态；超长按 120 截断，与档案标题同量级。
           teamName: typeof input.teamName === "string" ? input.teamName.trim().slice(0, 120) : "",

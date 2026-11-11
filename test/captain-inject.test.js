@@ -250,6 +250,33 @@ test("会话绑定：写盘、读回，并能按库根找到（重启后靠它�
   assert.equal(findSessionBinding([{ rootDir: tempRoot() }], "session-9"), null);
 });
 
+test("已有会话建团：mark 时把 live agent 交给注入层，团队已在就立刻挂上", () => {
+  resetCaptainInjector();
+  const lib = tempRoot();
+  makeLibrary(lib);
+  const ws = tempRoot();
+  makeTeam(ws); // 团队记录已经落盘（已有会话建团的情形）
+  const agent = fakeAgent(ws);
+
+  const handlers = new Map();
+  const ctx = {
+    on(name, fn) {
+      handlers.set(name, fn);
+    },
+    off(name, fn) {
+      if (handlers.get(name) === fn) handlers.delete(name);
+    },
+  };
+  const dispose = installCaptainInjector(ctx, { agentTeamsStateDir: ".agent-teams" }, {
+    roots: () => [{ rootDir: lib, exists: true }],
+  });
+  markCaptainCandidate("session-1", { rosterRoot: lib, agent });
+  assert.equal(agent.sections.length, 1, "不会再等到一次 agent/created");
+  assert.equal(attachedCaptain("session-1").rosterId, "demo");
+  dispose();
+  resetCaptainInjector();
+});
+
 test("installCaptainInjector：没有团队记录时，按会话绑定在 agent/created 重挂", () => {
   resetCaptainInjector();
   const lib = tempRoot();

@@ -2,6 +2,12 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.28.3] - 2026-11-12
+
+### Fixed
+
+- Creating a team **from an existing session** now attaches the captain persona. Existing sessions never fire `agent/created` again, and only new sessions were registered as candidates — so the team landed but the persona stayed off until a restart. `/apply` (and `roster_team`) now hand the live agent from `agentRegistry` to the injector, which attaches as soon as `team.json` appears (or keeps watching for it).
+
 ## [1.28.2] - 2026-11-12
 
 ### Fixed
