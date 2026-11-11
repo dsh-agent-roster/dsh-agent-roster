@@ -12,7 +12,7 @@
  *
  * @module dsh-agent-roster
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import nodePath from "node:path";
 
 import z from "@deepseek-ai/schemastery";
@@ -35,7 +35,7 @@ import { listHostModels } from "./lib/host-models.js";
 import { createTtlCache, fetchCollection } from "./lib/remote.js";
 import { searchRosters } from "./lib/search.js";
 import { registerRosterTools } from "./lib/tools.js";
-import { attachRosterToSession, installCaptainInjector } from "./lib/captain-inject.js";
+import { attachRosterToSession, writeSessionBinding, installCaptainInjector } from "./lib/captain-inject.js";
 import { deleteRosterDocument, findLibraryRoot, readRosterDocument, writeRosterDocument } from "./lib/write.js";
 
 const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
@@ -643,14 +643,16 @@ export function apply(ctx, config) {
           sendError(res, 400, "session-required");
           return;
         }
-        const rootDir = findLibraryRoot(
+        const rootEntry = findLibraryRoot(
           resolveRoots(ctx, settings, { registeredLibraryDirs: registeredLibraryDirs() }),
           input.rootDir,
         );
-        if (rootDir === null) {
+        if (rootEntry === null) {
           sendError(res, 403, "unknown-root");
           return;
         }
+        // findLibraryRoot 返回的是库根条目（{rootDir, ...}），扫描要的是路径字符串。
+        const rootDir = typeof rootEntry === "string" ? rootEntry : rootEntry.rootDir;
         const rosterId = typeof input.rosterId === "string" ? input.rosterId : "";
         const registry = ctx.get?.("agentRegistry");
         const agent = typeof registry?.get === "function" ? registry.get(sessionId) : undefined;
@@ -665,18 +667,30 @@ export function apply(ctx, config) {
           sendError(res, 404, "roster-not-found");
           return;
         }
+        // 档案目录按布局算：v2 是 <root>/rosters/<id>，v1 是 <root>/<id>。
+        // 不能用 raw.file 反推——v2 的 file 是相对档案目录的 roster.yaml。
+        const v2Dir = nodePath.join(rootDir, "rosters", raw.id);
         const rosterDir =
-          typeof raw.file === "string" && raw.file !== ""
-            ? nodePath.join(rootDir, nodePath.dirname(raw.file))
-            : "";
+          existsSync(nodePath.join(v2Dir, "roster.yaml")) || existsSync(nodePath.join(v2Dir, "roster.yml"))
+            ? v2Dir
+            : nodePath.join(rootDir, raw.id);
         const result = attachRosterToSession(agent, {
           rosterDir,
           rosterId: raw.id,
           version: raw.version,
           logger: ctx.logger,
         });
-        if (result.ok) addFavorites(rootDir, [raw.id]);
-        sendJson(res, result.ok ? 200 : 400, { ...result, rosterId: raw.id, rootDir });
+        if (result.ok) {
+          addFavorites(rootDir, [raw.id]);
+          // 绑定要落盘：section 活在 live agent 上，宿主重启后由 agent/created 按它重挂。
+          writeSessionBinding(rootDir, {
+            sessionId,
+            rosterId: raw.id,
+            version: typeof raw.version === "string" ? raw.version : "",
+            rosterDir,
+          });
+        }
+        sendJson(res, result.ok ? 200 : 400, { ...result, rosterId: raw.id, rootDir, rosterDir });
       },
       "apply-session route",
     );

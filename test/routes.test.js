@@ -614,6 +614,55 @@ test("POST /apply-session：缺 sessionId 400、越界 403、未知会话 404", 
   assert.equal(unknown.body.error.code, "session-not-found");
 });
 
+test("POST /apply-session：把档案人设挂到已有会话，并写下重启后能重挂的绑定", async () => {
+  const workspace = mkdtempSync(nodePath.join(tmpdir(), "roster-apply-session-"));
+  try {
+    cpSync(examples, workspace, { recursive: true });
+    const sections = [];
+    const agent = {
+      id: "session-ok",
+      session: { header: { cwd: workspace } },
+      ctx: {
+        systemPrompt: {
+          getSectionOrder: () => 100,
+          section(options) {
+            sections.push(options);
+            return () => {};
+          },
+        },
+      },
+    };
+    const host = makeHost({ agentRegistry: { get: (id) => (id === "session-ok" ? agent : undefined) } });
+    apply(host.ctx, { ...CONFIG, rosterDirs: [workspace] });
+
+    const ok = await call(
+      host,
+      "/plugins/dsh-agent-roster/apply-session",
+      makeReq({
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: { rootDir: workspace, rosterId: "core-review", sessionId: "session-ok" },
+      }),
+    );
+    assert.equal(ok.status, 200);
+    assert.equal(ok.body.ok, true);
+    assert.ok(ok.body.chars > 0, "要报出注入的字符数");
+    assert.equal(sections.length, 1, "只注册一个 section");
+    assert.equal(sections[0].name, "deployment:persona-prefix");
+
+    // 绑定必须落盘：宿主重启后 agent 重建，靠它把 section 重挂回去。
+    const binding = JSON.parse(
+      readFileSync(nodePath.join(workspace, ".dsh-roster-bindings", "session-ok.json"), "utf8"),
+    );
+    assert.equal(binding.kind, "dsh-agent-roster/session-binding@1");
+    assert.equal(binding.sessionId, "session-ok");
+    assert.equal(binding.rosterId, "core-review");
+    assert.ok(binding.rosterDir.endsWith("rosters/core-review") || binding.rosterDir.endsWith("rosters\\core-review"));
+  } finally {
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
 test("自动登记：library-registry 能加、能撤销，登记的库出现在快照里", async () => {
   const workspace = mkdtempSync(nodePath.join(tmpdir(), "roster-routes-reg-"));
   try {

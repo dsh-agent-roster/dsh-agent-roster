@@ -2,6 +2,17 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.28.1] - 2026-11-12
+
+### Fixed
+
+- Applying a roster to an existing session now finds v2 rosters. The route derived the roster directory from the scanned file name, which is `roster.yaml` relative to the roster directory — so a v2 library resolved to the library root and the attach failed. It now resolves `<root>/rosters/<id>` (or `<root>/<id>` for the flat layout).
+- `POST /apply-session` returned 500 instead of 200 on a live host: the library-root lookup returns the root entry, not a path string, and the route passed the object into the scanner.
+
+### Added
+
+- **The session binding survives a restart.** `apply-session` writes `.dsh-roster-bindings/<sessionId>.json` under the library root; on `agent/created` the injector falls back to that record when no team file names the session, so a session that was bound to a roster gets its persona back when it is reopened.
+
 ## [1.28.0] - 2026-11-12
 
 ### Added

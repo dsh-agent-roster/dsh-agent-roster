@@ -20,6 +20,11 @@ import {
   personaTextOf,
   resolveCaptainPersona,
   resetCaptainInjector,
+  writeSessionBinding,
+  readSessionBinding,
+  findSessionBinding,
+  bindingPath,
+  BINDING_KIND,
 } from "../lib/captain-inject.js";
 
 function tempRoot() {
@@ -219,6 +224,61 @@ test("attachCaptainPersona：没有团队 / 没有人设 / 没有 section 服务
   // 没有 systemPrompt 服务（最小宿主）：不崩、不注册。
   const bare = { id: "session-2", session: { header: { cwd: ws } }, ctx: {} };
   assert.equal(attachCaptainPersona(bare, { stateDir: nodePath.join(ws, ".agent-teams"), roots: [{ rootDir: lib }] }), false);
+  resetCaptainInjector();
+});
+
+test("会话绑定：写盘、读回，并能按库根找到（重启后靠它重挂）", () => {
+  const lib = tempRoot();
+  makeLibrary(lib);
+  const rosterDir = nodePath.join(lib, "rosters", "demo");
+  const written = writeSessionBinding(lib, {
+    sessionId: "session-9",
+    rosterId: "demo",
+    version: "1.0.0",
+    rosterDir,
+  });
+  assert.equal(written.ok, true);
+  assert.equal(fs.existsSync(bindingPath(lib, "session-9")), true);
+
+  const binding = readSessionBinding(lib, "session-9");
+  assert.equal(binding.kind, BINDING_KIND);
+  assert.equal(binding.rosterDir, rosterDir);
+
+  const found = findSessionBinding([{ rootDir: lib }], "session-9");
+  assert.equal(found.rootDir, lib);
+  assert.equal(found.binding.rosterId, "demo");
+  assert.equal(findSessionBinding([{ rootDir: tempRoot() }], "session-9"), null);
+});
+
+test("installCaptainInjector：没有团队记录时，按会话绑定在 agent/created 重挂", () => {
+  resetCaptainInjector();
+  const lib = tempRoot();
+  makeLibrary(lib);
+  const ws = tempRoot();
+  writeSessionBinding(lib, {
+    sessionId: "session-1",
+    rosterId: "demo",
+    version: "1.0.0",
+    rosterDir: nodePath.join(lib, "rosters", "demo"),
+  });
+  const agent = fakeAgent(ws);
+
+  const handlers = new Map();
+  const ctx = {
+    on(name, fn) {
+      handlers.set(name, fn);
+    },
+    off(name, fn) {
+      if (handlers.get(name) === fn) handlers.delete(name);
+    },
+  };
+  const dispose = installCaptainInjector(ctx, { agentTeamsStateDir: ".agent-teams" }, {
+    roots: () => [{ rootDir: lib, exists: true }],
+  });
+  handlers.get("agent/created")({ agent });
+  assert.equal(agent.sections.length, 1, "没有 team.json 也要按绑定挂上");
+  assert.equal(attachedCaptain("session-1").rosterId, "demo");
+  dispose();
   resetCaptainInjector();
 });
 
