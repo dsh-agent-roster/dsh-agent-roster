@@ -2,6 +2,16 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.27.1] - 2026-11-12
+
+### Changed
+
+- 编译时的 `captain-not-targeted` 由 warn 降为 info，文案改成「队长人设由插件在运行时注入队长会话；只有想落成 profile preset 时才需要该 target」——旧文案说「队长只会作为说明出现」，与 1.10.0 之后的运行时注入相反。
+
+### Tests
+
+- 454/454（不变；该诊断的各单测按 code 断言，不按严重级）。
+
 ## [1.27.0] - 2026-11-11
 
 ### Fixed
