@@ -79,6 +79,31 @@ async function loadClient(options = {}) {
   return { module, registrations, slots, disposers };
 }
 
+test("档案行不会把标题挤成一条缝：统计另起一行", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  const body = source.slice(source.indexOf(".rstr-row-body {"), source.indexOf(".rstr-row-body {") + 700);
+  // 1.27.0 的线上事故：统计列是 nowrap，grid 把标题列压到 1px。
+  assert.match(body, /grid-template-areas:/);
+  assert.match(body, /"id text actions"\s+"id stats actions"/);
+  assert.match(source, /\.rstr-row-body > \.rstr-row-stats \{ grid-area: stats; justify-self: start; white-space: normal; flex-wrap: wrap; \}/);
+});
+
+test("档案页分组 memo 在 Panel 作用域里，且位于 filtered 之后", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  const filtered = source.indexOf("const filtered = useMemo(() => {\n        const needle = query.trim().toLowerCase();");
+  const groups = source.indexOf("const rosterGroups = useMemo(");
+  assert.notEqual(filtered, -1);
+  assert.notEqual(groups, -1);
+  // 放进 CatalogTab 会让 Panel 渲染时抛 ReferenceError（1.27.0 的线上事故：面板整块黑）。
+  assert.ok(groups > filtered, "rosterGroups 必须定义在 Panel 的 filtered 之后");
+  assert.ok(source.indexOf("rosterGroups.map(") > groups);
+  // 同一个事故的第二个漏点：渲染函数也必须落在 Panel 里，CatalogTab 里定义会让 Panel 抛 renderRoster is not defined。
+  const panel = source.indexOf("    function Panel() {");
+  const render = source.indexOf("      function renderRoster(roster) {");
+  assert.ok(panel !== -1 && render > panel, "renderRoster 必须定义在 Panel 里");
+  assert.ok(source.indexOf("renderRoster(roster)") > render);
+});
+
 test("模块 id 是包名，只注入 slots", async () => {
   const { module } = await loadClient();
   assert.deepEqual(module.inject, ["slots"], "语言与配置表单是可选服务，用 ctx.get 探测，不写进 inject");

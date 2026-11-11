@@ -1934,35 +1934,6 @@ window.__ModuleLoader__.load({
         setUpdates({ pending, fastForward, unverified, unledgered });
       }
 
-      const rosterGroups = useMemo(() => {
-        const map = new Map();
-        for (const roster of filtered) {
-          if (!map.has(roster.rootDir)) map.set(roster.rootDir, []);
-          map.get(roster.rootDir).push(roster);
-        }
-        return [...map.entries()];
-      }, [filtered]);
-
-      function renderRoster(roster) {
-        return h(RosterCard, {
-          key: `${roster.rootDir}::${roster.id}`,
-          roster,
-          deployment: snapshot?.deployments?.[roster.id],
-          captainReport: (snapshot?.captain?.reports ?? []).find(
-            (item) => item.rosterId === roster.id && item.rootDir === roster.rootDir,
-          ),
-          sessions: snapshot?.sessions?.sessions ?? [],
-          workspaces: snapshot?.hostWorkspaces ?? [],
-          onToast: setToast,
-          onEdit: () => setEditor({ roster, rootDir: roster.rootDir }),
-          onDuplicate: () => setEditor({ roster, rootDir: roster.rootDir, duplicate: true }),
-          onDelete: () => setRemoving(roster),
-          onCopy: copyPayload,
-          onFavorite: toggleFavorite,
-          onCreateTeam: (target) => setCreatingTeam(target),
-        });
-      }
-
       function toggleTag(tag) {
         setSelected((current) => {
           const next = new Set(current);
@@ -2227,6 +2198,7 @@ window.__ModuleLoader__.load({
 
       const favorites = useMemo(() => rosters.filter((roster) => roster.favorite === true), [rosters]);
 
+
       // 标签池：整个库出现过的标签 + 各标签档案数，按出现次数降序（同数按字母）。
       const tagPool = useMemo(() => {
         const counts = new Map();
@@ -2251,6 +2223,37 @@ window.__ModuleLoader__.load({
             .some((value) => value.toLowerCase().includes(needle));
         });
       }, [rosters, query, selectedTags, favOnly]);
+
+      // 档案页按库根分组：多个库时按路径分段，平铺时才走另一条渲染分支。
+      const rosterGroups = useMemo(() => {
+        const map = new Map();
+        for (const roster of filtered) {
+          if (!map.has(roster.rootDir)) map.set(roster.rootDir, []);
+          map.get(roster.rootDir).push(roster);
+        }
+        return [...map.entries()];
+      }, [filtered]);
+
+      function renderRoster(roster) {
+        return h(RosterCard, {
+          key: `${roster.rootDir}::${roster.id}`,
+          roster,
+          deployment: snapshot?.deployments?.[roster.id],
+          captainReport: (snapshot?.captain?.reports ?? []).find(
+            (item) => item.rosterId === roster.id && item.rootDir === roster.rootDir,
+          ),
+          sessions: snapshot?.sessions?.sessions ?? [],
+          workspaces: snapshot?.hostWorkspaces ?? [],
+          onToast: setToast,
+          onEdit: () => setEditor({ roster, rootDir: roster.rootDir }),
+          onDuplicate: () => setEditor({ roster, rootDir: roster.rootDir, duplicate: true }),
+          onDelete: () => setRemoving(roster),
+          onCopy: copyPayload,
+          onFavorite: toggleFavorite,
+          onCreateTeam: (target) => setCreatingTeam(target),
+        });
+      }
+
 
       function toggleTag(tag) {
         setSelectedTags((current) => {
@@ -3282,12 +3285,21 @@ window.__ModuleLoader__.load({
 
 .rstr-row-body {
   display: grid;
-  grid-template-columns: minmax(110px, 176px) minmax(0, 1fr) auto auto;
+  /* 统计占第三列时会把标题挤成一条缝（面板宽 1000px 时标题只剩 1px）。改成两行：
+     标题在上、统计在下，操作列纵向居中，窄屏也不会再压缩标题。 */
+  grid-template-columns: minmax(96px, 150px) minmax(0, 1fr) auto;
+  grid-template-areas:
+    "id text actions"
+    "id stats actions";
   align-items: baseline;
-  gap: 8px 16px;
+  gap: 6px 16px;
   padding: 13px 8px 13px 0;
   min-width: 0;
 }
+.rstr-row-body > .rstr-row-id { grid-area: id; }
+.rstr-row-body > .rstr-row-text { grid-area: text; }
+.rstr-row-body > .rstr-row-stats { grid-area: stats; justify-self: start; white-space: normal; flex-wrap: wrap; }
+.rstr-row-body > .rstr-row-actions { grid-area: actions; align-self: center; }
 .rstr-row-id {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 13px;

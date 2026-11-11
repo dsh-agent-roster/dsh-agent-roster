@@ -2,6 +2,17 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.27.2] - 2026-11-11
+
+### Fixed
+
+- The panel no longer crashes when you open it. `rosterGroups` and `renderRoster` were declared inside the catalog tab but used by the rosters tab, so rendering threw `ReferenceError` and the whole slot went black. Both now live where they are used, and a test keeps them there.
+- A roster row no longer squeezes its title into a 1-pixel column: the stats line moved under the title instead of competing for horizontal space.
+
+### Tests
+
+- 454 → 456 (Panel scope guards for the grouping memo and the row renderer; the row layout).
+
 ## [1.27.1] - 2026-11-12
 
 ### Changed
