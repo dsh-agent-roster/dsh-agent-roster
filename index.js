@@ -125,6 +125,11 @@ export const Config = z.object({
  * @param {object} config
  * @returns {void}
  */
+// 宿主把 AgentRegistry 注册成 "agents"（dsh-agent 的 Service 名）；旧宿主没有它时退回 agentRegistry。
+function agentRegistryOf(ctx) {
+  return ctx.get?.("agents") ?? ctx.get?.("agentRegistry");
+}
+
 export function apply(ctx, config) {
   // volatile 字段在运行时是引用对象，必须走视图按当前值读，见 lib/config-view.js。
   const settings = configView(config);
@@ -600,7 +605,7 @@ export function apply(ctx, config) {
           // 只给了目录时也把会话登记进对应工作区（否则界面上看不到它落在那）。
           workspaceRegistry: ctx.get?.("workspaceRegistry"),
           // 已有会话建团时不会再触发 agent/created：把 live agent 一起交给注入层。
-          agentRegistry: ctx.get?.("agentRegistry"),
+          agentRegistry: agentRegistryOf(ctx),
           sessionTitle: typeof input.sessionTitle === "string" ? input.sessionTitle.trim().slice(0, 120) : "",
           // 团队名只进提示词，不写任何团队状态；超长按 120 截断，与档案标题同量级。
           teamName: typeof input.teamName === "string" ? input.teamName.trim().slice(0, 120) : "",
@@ -656,7 +661,7 @@ export function apply(ctx, config) {
         // findLibraryRoot 返回的是库根条目（{rootDir, ...}），扫描要的是路径字符串。
         const rootDir = typeof rootEntry === "string" ? rootEntry : rootEntry.rootDir;
         const rosterId = typeof input.rosterId === "string" ? input.rosterId : "";
-        const registry = ctx.get?.("agentRegistry");
+        const registry = agentRegistryOf(ctx);
         const agent = typeof registry?.get === "function" ? registry.get(sessionId) : undefined;
         if (agent === undefined || agent === null) {
           sendError(res, 404, "session-not-found");

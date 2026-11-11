@@ -561,7 +561,7 @@ node bin/cli.mjs import-agency --from ~/.dsh/profiles/web/node_modules/@michenga
 设计说明：`docs/design.md`（模块地图、字段归宿、能力矩阵，以及「加一个能力要改哪些地方」的落点清单）。
 
 ```bash
-node --test                 # 438 个测试
+node --test                 # 463 个测试
 npm run smoke               # 宿主侧 13 个工具 + 客户端两槽位
 npm run check:host         # 宿主契约（单测里的假件证明不了它）
 npm run e2e                    # 起一个一次性宿主，问它真正看见了什么（不调模型，约 9 秒）

@@ -2,6 +2,18 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.28.4] - 2026-11-12
+
+### Fixed
+
+- **The agent registry has a different service name than we assumed.** The host registers `AgentRegistry` as `agents` (`dsh-agent`: `super(ctx, "agents")`), while `POST /apply-session` and the existing-session path of `roster_team` looked up `agentRegistry`. The lookup returned `undefined`, so a live session was reported as `session-not-found` and the "attach the persona to a session that already exists" flow could not find its agent.
+  - Both lookups now try `agents` first and fall back to `agentRegistry` for older hosts.
+- A regression test registers the registry under `agents`, so the real service name is what the route is tested against.
+
+### Changed
+
+- Tests 462 → 463.
+
 ## [1.28.3] - 2026-11-12
 
 ### Fixed
@@ -1378,7 +1390,9 @@ point is now one search field above the tabs.
 [1.16.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.23.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.4...main
+[1.28.4]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.3...v1.28.4
+[1.28.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.2...v1.28.3
 [1.23.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v1.23.0
 [1.22.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v1.22.0
 [1.14.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.13.7...v1.14.0

@@ -663,6 +663,45 @@ test("POST /apply-session：把档案人设挂到已有会话，并写下重启�
   }
 });
 
+test("POST /apply-session：宿主把注册表叫 agents 时也能找到 live 会话", async () => {
+  const workspace = mkdtempSync(nodePath.join(tmpdir(), "roster-apply-agents-"));
+  try {
+    cpSync(examples, workspace, { recursive: true });
+    const sections = [];
+    const agent = {
+      id: "session-via-agents",
+      session: { header: { cwd: workspace } },
+      ctx: {
+        systemPrompt: {
+          getSectionOrder: () => 100,
+          section(options) {
+            sections.push(options);
+            return () => {};
+          },
+        },
+      },
+    };
+    // 真实宿主用 "agents" 注册 AgentRegistry（dsh-agent: super(ctx, "agents")）。
+    const host = makeHost({ agents: { get: (id) => (id === "session-via-agents" ? agent : undefined) } });
+    apply(host.ctx, { ...CONFIG, rosterDirs: [workspace] });
+
+    const ok = await call(
+      host,
+      "/plugins/dsh-agent-roster/apply-session",
+      makeReq({
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: { rootDir: workspace, rosterId: "core-review", sessionId: "session-via-agents" },
+      }),
+    );
+    assert.equal(ok.status, 200);
+    assert.equal(ok.body.ok, true);
+    assert.equal(sections.length, 1);
+  } finally {
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
 test("自动登记：library-registry 能加、能撤销，登记的库出现在快照里", async () => {
   const workspace = mkdtempSync(nodePath.join(tmpdir(), "roster-routes-reg-"));
   try {
