@@ -38,6 +38,7 @@ window.__ModuleLoader__.load({
     const SEARCH_ROUTE = "/plugins/dsh-agent-roster/search";
     const CATALOG_ROUTE = "/plugins/dsh-agent-roster/catalog";
     const SPACE_UPDATE_ROUTE = "/plugins/dsh-agent-roster/space-update";
+    const LIBRARY_REGISTRY_ROUTE = "/plugins/dsh-agent-roster/library-registry";
   const FAVORITES_ROUTE = "/plugins/dsh-agent-roster/favorites";
 
     const EFFORTS = ["low", "medium", "high", "default"];
@@ -527,6 +528,11 @@ window.__ModuleLoader__.load({
      * 会话在“选已有会话”里的显示名：标题（来自投影）→ 工作区目录名 → 短 id。
      * 只显示 id 时人根本认不出那是哪个会话，所以标题缺失也要退回工作区。
      */
+    function dirNameOf(path) {
+      const parts = String(path ?? "").split(/[\\/]/).filter((part) => part !== "");
+      return parts.length === 0 ? String(path ?? "") : parts[parts.length - 1];
+    }
+
     function workspaceNameOf(cwd, workspaces) {
       const path = typeof cwd === "string" ? cwd.replace(/\/+$/, "") : "";
       const list = Array.isArray(workspaces) ? workspaces : [];
@@ -1586,23 +1592,60 @@ window.__ModuleLoader__.load({
 
     function ImportDialog({ targets, initialRoot, onClose, onDone }) {
       useTranslation();
-      const [text, setText] = useState("");
       const [rootDir, setRootDir] = useState(initialRoot);
+      const [files, setFiles] = useState([]);
       const [busy, setBusy] = useState(false);
       const [failure, setFailure] = useState(null);
+      const [dragging, setDragging] = useState(false);
+      const input = useRef(null);
+
+      async function takeFiles(list) {
+        const picked = [];
+        for (const file of Array.from(list ?? [])) {
+          const lower = String(file.name ?? "").toLowerCase();
+          const format = lower.endsWith(".json") ? "json" : lower.endsWith(".yaml") || lower.endsWith(".yml") ? "yaml" : "";
+          if (format === "") continue;
+          let text = "";
+          try {
+            text = await file.text();
+          } catch {
+            continue;
+          }
+          picked.push({ name: file.name, format, text });
+        }
+        if (picked.length === 0) return;
+        setFiles((current) => [...current, ...picked]);
+        setFailure(null);
+      }
+
+      function drop(event) {
+        event.preventDefault();
+        setDragging(false);
+        takeFiles(event.dataTransfer?.files);
+      }
 
       async function submit() {
+        if (files.length === 0) return;
         setBusy(true);
         setFailure(null);
-        const trimmed = text.trim();
-        const format = trimmed.startsWith("{") ? "json" : "yaml";
-        const result = await mutate({ action: "import", rootDir, text, format, overwrite: false });
+        const written = [];
+        const failures = [];
+        for (const file of files) {
+          const result = await mutate({ action: "import", rootDir, text: file.text, format: file.format, overwrite: true });
+          if (result.ok) written.push(result.body?.file ?? file.name);
+          else
+            failures.push({
+              name: file.name,
+              code: result.body?.error?.code ?? "import-failed",
+              diagnostics: result.body?.diagnostics ?? [],
+            });
+        }
         setBusy(false);
-        if (result.ok) {
-          onDone(result.body?.file ?? "");
+        if (failures.length === 0) {
+          onDone(written.length === 1 ? written[0] : `${written.length}`);
           return;
         }
-        setFailure({ code: result.body?.error?.code ?? "import-failed", diagnostics: result.body?.diagnostics ?? [] });
+        setFailure({ ...failures[0], failed: failures.length });
       }
 
       return h(
@@ -1610,19 +1653,81 @@ window.__ModuleLoader__.load({
         {
           title: t("importDialog.title"),
           onClose,
-          width: "760px",
+          width: "720px",
           footer: h(
             "div",
             { className: "rstr-modal-foot-actions" },
             h("button", { type: "button", className: "rstr-btn", onClick: onClose }, t("editor.cancel")),
-            h("button", { type: "button", className: "rstr-btn rstr-btn-primary", disabled: busy || text.trim() === "", onClick: submit }, busy ? t("editor.saving") : t("importDialog.submit")),
+            h(
+              "button",
+              { type: "button", className: "rstr-btn rstr-btn-primary", disabled: busy || files.length === 0, onClick: submit },
+              busy ? t("editor.saving") : t("importDialog.submit"),
+            ),
           ),
         },
         h("p", { className: "rstr-hint" }, t("importDialog.hint")),
-        h(Field, { label: t("importDialog.target") }, h(Select, { value: rootDir, onChange: setRootDir, options: targets.map((target) => ({ value: target.rootDir, label: target.label })) })),
-        h(TextArea, { value: text, onChange: setText, rows: 16, mono: true, placeholder: t("importDialog.placeholder") }),
+        h(
+          Field,
+          { label: t("importDialog.target") },
+          h(Select, { value: rootDir, onChange: setRootDir, options: targets.map((target) => ({ value: target.rootDir, label: target.label })) }),
+        ),
+        h(
+          "div",
+          {
+            className: `rstr-drop${dragging ? " rstr-drop-active" : ""}`,
+            onDragOver: (event) => {
+              event.preventDefault();
+              setDragging(true);
+            },
+            onDragLeave: () => setDragging(false),
+            onDrop: drop,
+          },
+          h("strong", null, t("importDialog.dropTitle")),
+          h("span", { className: "rstr-hint" }, t("importDialog.dropHint")),
+          h("button", { type: "button", className: "rstr-btn", onClick: () => input.current?.click() }, t("importDialog.pick")),
+        ),
+        h("input", {
+          ref: input,
+          type: "file",
+          accept: ".yaml,.yml,.json,application/json,text/yaml",
+          multiple: true,
+          className: "rstr-hidden-input",
+          onChange: (event) => {
+            takeFiles(event.target.files);
+            event.target.value = "";
+          },
+        }),
+        files.length === 0
+          ? null
+          : h(
+              "ul",
+              { className: "rstr-file-list" },
+              files.map((file, index) =>
+                h(
+                  "li",
+                  { key: `${file.name}-${index}`, className: "rstr-file" },
+                  h("code", { className: "rstr-code" }, file.name),
+                  h("span", { className: "rstr-stat" }, `${file.text.length}`),
+                  h(
+                    "button",
+                    {
+                      type: "button",
+                      className: "rstr-btn rstr-btn-sm",
+                      onClick: () => setFiles((current) => current.filter((_, position) => position !== index)),
+                    },
+                    t("importDialog.remove"),
+                  ),
+                ),
+              ),
+            ),
         failure !== null
-          ? h("div", { className: "rstr-error" }, h("code", { className: "rstr-code" }, failure.code), h(DiagnosticList, { items: failure.diagnostics }))
+          ? h(
+              "div",
+              { className: "rstr-error" },
+              h("code", { className: "rstr-code" }, failure.code),
+              h("span", { className: "rstr-hint" }, t("importDialog.failedFiles", { count: String(failure.failed ?? 1), name: failure.name })),
+              h(DiagnosticList, { items: failure.diagnostics ?? [] }),
+            )
           : null,
       );
     }
@@ -1758,13 +1863,14 @@ window.__ModuleLoader__.load({
         if (mode === "flat") return [{ key: "flat", title: "", scope: "mixed", entries: filtered }];
         const map = new Map();
         for (const entry of filtered) {
-          const key = entry.scope === "local" ? "__local" : `c:${entry.collectionId ?? ""}`;
+          // 本机可以有多个库根：按路径分组，否则两个库的档案会混成一组，看不出各自来自哪。
+          const key = entry.scope === "local" ? `local:${entry.rootDir ?? ""}` : `c:${entry.collectionId ?? ""}`;
           if (!map.has(key)) {
             map.set(key, {
               key,
               scope: entry.scope,
-              id: entry.scope === "local" ? t("catalog.local") : entry.collectionId ?? "",
-              title: entry.scope === "local" ? "" : entry.collectionTitle ?? "",
+              id: entry.scope === "local" ? dirNameOf(entry.rootDir) : entry.collectionId ?? "",
+              title: entry.scope === "local" ? entry.rootDir ?? "" : entry.collectionTitle ?? "",
               entries: [],
             });
           }
@@ -1826,6 +1932,35 @@ window.__ModuleLoader__.load({
           unverified += Number(response.body.unverified ?? 0);
         }
         setUpdates({ pending, fastForward, unverified, unledgered });
+      }
+
+      const rosterGroups = useMemo(() => {
+        const map = new Map();
+        for (const roster of filtered) {
+          if (!map.has(roster.rootDir)) map.set(roster.rootDir, []);
+          map.get(roster.rootDir).push(roster);
+        }
+        return [...map.entries()];
+      }, [filtered]);
+
+      function renderRoster(roster) {
+        return h(RosterCard, {
+          key: `${roster.rootDir}::${roster.id}`,
+          roster,
+          deployment: snapshot?.deployments?.[roster.id],
+          captainReport: (snapshot?.captain?.reports ?? []).find(
+            (item) => item.rosterId === roster.id && item.rootDir === roster.rootDir,
+          ),
+          sessions: snapshot?.sessions?.sessions ?? [],
+          workspaces: snapshot?.hostWorkspaces ?? [],
+          onToast: setToast,
+          onEdit: () => setEditor({ roster, rootDir: roster.rootDir }),
+          onDuplicate: () => setEditor({ roster, rootDir: roster.rootDir, duplicate: true }),
+          onDelete: () => setRemoving(roster),
+          onCopy: copyPayload,
+          onFavorite: toggleFavorite,
+          onCreateTeam: (target) => setCreatingTeam(target),
+        });
       }
 
       function toggleTag(tag) {
@@ -1956,6 +2091,28 @@ window.__ModuleLoader__.load({
               { type: "button", className: "rstr-btn rstr-btn-sm", onClick: () => setNonce((value) => value + 1) },
               t("catalog.refresh"),
             ),
+            catalog.entries.some((entry) => entry.scope === "local")
+              ? h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "rstr-btn rstr-btn-sm",
+                    disabled: updates !== null && updates.fastForward === 0 && updates.pending + updates.unverified + updates.unledgered > 0,
+                    onClick: checkUpdates,
+                  },
+                  updates === null
+                    ? t("catalog.checkUpdates")
+                    : updates.fastForward > 0
+                      ? t("catalog.applyUpdates", { count: String(updates.fastForward) })
+                      : updates.pending > 0
+                        ? t("catalog.conflicts", { count: String(updates.pending) })
+                        : updates.unverified > 0
+                          ? t("catalog.unverified", { count: String(updates.unverified) })
+                          : updates.unledgered > 0
+                            ? t("catalog.noBaseline")
+                            : t("catalog.upToDate"),
+                )
+              : null,
           ),
         ),
         pool.length === 0
@@ -2012,28 +2169,6 @@ window.__ModuleLoader__.load({
                           installed: String(group.installed),
                         }),
                       ),
-                      group.scope === "local"
-                        ? h(
-                            "button",
-                            {
-                              type: "button",
-                              className: "rstr-btn rstr-btn-sm rstr-btn-ghost",
-                              disabled: updates !== null && updates.fastForward === 0 && updates.pending + updates.unverified + updates.unledgered > 0,
-                              onClick: checkUpdates,
-                            },
-                            updates === null
-                              ? t("catalog.checkUpdates")
-                              : updates.fastForward > 0
-                                ? t("catalog.applyUpdates", { count: String(updates.fastForward) })
-                                : updates.pending > 0
-                                  ? t("catalog.conflicts", { count: String(updates.pending) })
-                                  : updates.unverified > 0
-                                    ? t("catalog.unverified", { count: String(updates.unverified) })
-                                    : updates.unledgered > 0
-                                      ? t("catalog.noBaseline")
-                                      : t("catalog.upToDate"),
-                          )
-                        : null,
                       group.scope === "remote" && typeof onPullSpace === "function"
                         ? h(
                             "button",
@@ -2067,6 +2202,7 @@ window.__ModuleLoader__.load({
       const [tab, setTab] = useState("rosters");
       // 档案页默认只列收藏：拉一整个空间会带来二十份，全铺在首屏等于没有首屏。
       const [favOnly, setFavOnly] = useState(true);
+      const [rosterMode, setRosterMode] = useState("path");
       const [query, setQuery] = useState("");
       const [selectedTags, setSelectedTags] = useState(() => new Set());
       const [settingsOpen, setSettingsOpen] = useState(false);
@@ -2385,6 +2521,30 @@ window.__ModuleLoader__.load({
                   { className: "rstr-toolbar-actions" },
                   h(
                     "div",
+                    { className: "rstr-segmented", role: "group", "aria-label": t("panel.groupMode") },
+                    h(
+                      "button",
+                      {
+                        type: "button",
+                        className: `rstr-seg${rosterMode === "path" ? " rstr-seg-on" : ""}`,
+                        "aria-pressed": rosterMode === "path",
+                        onClick: () => setRosterMode("path"),
+                      },
+                      t("panel.groupByPath"),
+                    ),
+                    h(
+                      "button",
+                      {
+                        type: "button",
+                        className: `rstr-seg${rosterMode === "flat" ? " rstr-seg-on" : ""}`,
+                        "aria-pressed": rosterMode === "flat",
+                        onClick: () => setRosterMode("flat"),
+                      },
+                      t("panel.groupFlat"),
+                    ),
+                  ),
+                  h(
+                    "div",
                     { className: "rstr-segmented", role: "group", "aria-label": t("panel.favFilter") },
                     h(
                       "button",
@@ -2426,29 +2586,26 @@ window.__ModuleLoader__.load({
               ),
               filtered.length === 0
                 ? h("p", { className: "rstr-muted" }, t("panel.noMatch"))
-                : h(
-                    "div",
-                    { className: "rstr-cards" },
-                    filtered.map((roster) =>
-                    h(RosterCard, {
-                      key: `${roster.rootDir}::${roster.id}`,
-                      roster,
-                      deployment: snapshot?.deployments?.[roster.id],
-                      captainReport: (snapshot?.captain?.reports ?? []).find(
-                        (item) => item.rosterId === roster.id && item.rootDir === roster.rootDir,
+                : rosterMode === "flat"
+                  ? h("div", { className: "rstr-cards" }, filtered.map((roster) => renderRoster(roster)))
+                  : rosterGroups.map(([rootDir, list]) =>
+                      h(
+                        "div",
+                        { key: rootDir, className: "rstr-space" },
+                        h(
+                          "div",
+                          { className: "rstr-space-head" },
+                          h("code", { className: "rstr-space-id", title: rootDir }, dirNameOf(rootDir)),
+                          h("span", { className: "rstr-space-title" }, rootDir),
+                          h(
+                            "span",
+                            { className: "rstr-space-facts" },
+                            t("panel.countRosters", { count: String(list.length) }),
+                          ),
+                        ),
+                        list.map((roster) => renderRoster(roster)),
                       ),
-                      sessions: snapshot?.sessions?.sessions ?? [],
-                      workspaces: snapshot?.hostWorkspaces ?? [],
-                      onToast: setToast,
-                      onEdit: () => setEditor({ roster, rootDir: roster.rootDir }),
-                      onDuplicate: () => setEditor({ roster, rootDir: roster.rootDir, duplicate: true }),
-                      onDelete: () => setRemoving(roster),
-                      onCopy: copyPayload,
-                      onFavorite: toggleFavorite,
-                      onCreateTeam: (target) => setCreatingTeam(target),
-                    }),
-                  ),
-              ),
+                    ),
             ),
           );
         }
@@ -2682,6 +2839,16 @@ window.__ModuleLoader__.load({
         write("registryMirror", mirror.trim());
       }
 
+      const autoDirs = useMemo(
+        () => (library?.data?.workspaces ?? []).filter((workspace) => workspace.autoRegistered === true),
+        [library?.data?.workspaces],
+      );
+
+      async function forgetDir(dir) {
+        const result = await mutate({ action: "forget", dir });
+        if (result.ok) library.reload();
+      }
+
       function saveDirs() {
         // 逗号/分号/空白都当分隔符：用户从别处粘路径时不该因为分隔符被卡住。
         const list = dirs
@@ -2777,6 +2944,30 @@ window.__ModuleLoader__.load({
           ),
           h("span", { className: "rstr-muted rstr-small" }, t("settings.rosterDirsHint")),
         ),
+        autoDirs.length === 0
+          ? null
+          : h(
+              "div",
+              { className: "rstr-settings-field" },
+              h("span", { className: "rstr-label" }, t("settings.autoDirs")),
+              h(
+                "ul",
+                { className: "rstr-file-list" },
+                autoDirs.map((workspace) =>
+                  h(
+                    "li",
+                    { key: workspace.rootDir, className: "rstr-file" },
+                    h("code", { className: "rstr-code rstr-truncate", title: workspace.rootDir }, workspace.rootDir),
+                    h(
+                      "button",
+                      { type: "button", className: "rstr-btn rstr-btn-sm", onClick: () => forgetDir(workspace.rootDir) },
+                      t("settings.forgetDir"),
+                    ),
+                  ),
+                ),
+              ),
+              h("span", { className: "rstr-muted rstr-small" }, t("settings.autoDirsHint")),
+            ),
         h(
           "div",
           { className: "rstr-settings-row" },
@@ -3402,6 +3593,42 @@ window.__ModuleLoader__.load({
   .rstr-member { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .rstr-member-meta { justify-self: start; }
 }
+
+/* ---- 导入（文件 / 拖拽） ---- */
+.rstr-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 20px;
+  border: 1px dashed var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-1);
+}
+.rstr-drop-active {
+  border-color: var(--dsw-alias-state-business-primary);
+  background: var(--dsw-alias-bg-layer-2);
+}
+.rstr-hidden-input {
+  display: none;
+}
+.rstr-file-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.rstr-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
 `;
 
     function ensureStyle() {

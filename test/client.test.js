@@ -421,3 +421,32 @@ test("档案详情说出磁盘形态：v1 单文件与 v2 空间不再隐形", (
   assert.match(zh.roster.formatLine, /格式 \{format\}/);
   assert.match(en.roster.formatLine, /Format \{format\}/);
 });
+
+test("导入：选文件或拖拽，不在界面上编辑；自动登记的库在设置里能看见", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  assert.match(source, /type: "file"/);
+  assert.match(source, /onDrop: drop/);
+  assert.match(source, /file\.text\(\)/);
+  // 导入弹窗里不该再有可编辑的文本域：粘贴改文本是编辑器的活。
+  const start = source.indexOf("function ImportDialog(");
+  const end = source.indexOf("function DeleteDialog(");
+  const dialog = source.slice(start, end);
+  assert.doesNotMatch(dialog, /TextArea/);
+  assert.match(dialog, /rstr-drop/);
+  // 设置里列出自动登记的库，并能撤销（走 library-registry 路由）。
+  assert.match(source, /autoDirs\.length === 0/);
+  assert.match(source, /LIBRARY_REGISTRY_ROUTE/);
+  assert.match(source, /\{ action: "forget", dir \}/);
+});
+
+test("多库：档案页可按路径分组或平铺，档案库的本机也按库根分组", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  assert.match(source, /useState\("path"\)/);
+  assert.match(source, /rosterMode === "flat"/);
+  assert.match(source, /t\("panel\.groupByPath"\)/);
+  assert.match(source, /t\("panel\.groupFlat"\)/);
+  assert.match(source, /`local:\$\{entry\.rootDir \?\? ""\}`/);
+  const zh = JSON.parse(readFileSync(new URL("../locale/zh.json", import.meta.url), "utf8"));
+  assert.equal(zh.panel.groupByPath, "按路径");
+  assert.equal(zh.panel.groupFlat, "平铺");
+});

@@ -376,16 +376,18 @@ The plugin adds one row, **Agent Roster**, to the global sidebar (`sidebar.panel
 
 | Tab | What it does |
 |---|---|
-| **Rosters** | defaults to favourites (segmented control switches to all); create / edit / duplicate / delete / import / export; a “Create team” button per row; expand for members, apply-captain, copy member params; search and a tag pool |
-| **Library** | find rosters across local libraries and subscribed sources: search, tag filtering, grouped by source or flat; open local ones, favourite the rest; “pull the whole space” per space; the local space header shows “check updates / apply N updates / N conflicts / N unverified / no baseline” |
+| **Rosters** | defaults to favourites (segmented control switches to all); create / edit / duplicate / delete / import (file picker or drag-and-drop, several at once) / export; grouped by path or flat; a “Create team” button per row; expand for members, apply-captain, copy member params; search and a tag pool |
+| **Library** | find rosters across local libraries and subscribed sources: search, tag filtering, grouped by source (local grouped per library root) or flat; open local ones, favourite the rest; “pull the whole space” per space; the local space header shows “check updates / apply N updates / N conflicts / N unverified / no baseline” |
 | **Teams** | reads the state directory (default `.agent-teams`) and lists the teams actually built, member routes, per-member agreement with the roster, and tasks |
 | **Health** | resolved directories, state directory, unconfirmed declarations, and which setting to change |
 
 The design is a **ledger, not a card wall**: one row per roster — a 3px status edge (lit only for error/warn), a monospace id column, title and one-line description, counts on the right, quiet actions. Only the panel root scrolls; expanded content grows the page instead of creating a nested scroll box. Below 860px the tag pool moves above the list and the space header wraps to two lines.
 
-Settings live only in the panel’s gear dialog (language, download region, mirror, library directories, read-only summary); the plugin **no longer registers a DSH settings section**.
+Settings live only in the panel’s gear dialog (language, download region, mirror, library directories, auto-registered libraries, read-only summary); the plugin **no longer registers a DSH settings section**.
 
 Two things are easy to conflate: **Teams** are read from `.agent-teams` under every host workspace (no library needs to be registered there, so teams built elsewhere are visible); **rosters** only come from the directories listed under library directories — an unlisted directory simply does not appear (add one line in the gear dialog; it applies immediately).
+
+With several local library roots, the rosters tab groups by path by default (the header is the root, the count on the right) and can switch to flat; the library tab splits the local group per root, and flat rows still name their source. Import takes a single `v1` file (`.yaml/.yml/.json`) through the picker or drag-and-drop; a same-named roster is overwritten and the old file kept as `.bak`.
 
 A library that a tool has built a team from (the `path=` of `roster_team`/`roster_iterate`, or the create-team dialog) is **auto-registered**: no configuration change, it shows up under rosters on the next refresh and is marked "Auto-registered". The list lives in `.dsh-roster-preferences.json` at the global library root (at most 16 entries); use `node bin/cli.mjs libraries` to inspect, `libraries --add <dir>` to register, `libraries --forget <dir>` to undo.
 

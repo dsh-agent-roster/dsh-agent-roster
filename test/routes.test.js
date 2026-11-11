@@ -574,3 +574,40 @@ test("收藏：POST /favorites 写库根的点文件，下一次快照就带 fav
     rmSync(workspace, { recursive: true, force: true });
   }
 });
+
+test("自动登记：library-registry 能加、能撤销，登记的库出现在快照里", async () => {
+  const workspace = mkdtempSync(nodePath.join(tmpdir(), "roster-routes-reg-"));
+  try {
+    mkdirSync(nodePath.join(workspace, "demo"), { recursive: true });
+    writeFileSync(
+      nodePath.join(workspace, "demo", "roster.yaml"),
+      "kind: dsh-agent-roster/v1\nroster: demo\nversion: 1.0.0\ntitle: Demo\nmembers:\n  - name: alpha\n    role: researcher\n    systemPrompt: hi\n",
+    );
+    const host = makeHost();
+    apply(host.ctx, { ...CONFIG, rosterDirs: [] });
+
+    const added = await call(
+      host,
+      "/plugins/dsh-agent-roster/library-registry",
+      makeReq({ method: "POST", headers: { "content-type": "application/json" }, body: { action: "add", dir: workspace } }),
+    );
+    assert.equal(added.status, 200);
+    assert.deepEqual(added.body.dirs, [workspace]);
+
+    const snapshot = await call(host, "/plugins/dsh-agent-roster/library", makeReq());
+    const auto = snapshot.body.workspaces.find((item) => item.rootDir === workspace);
+    assert.ok(auto, "登记的库要真的出现在快照里");
+    assert.equal(auto.autoRegistered, true);
+    assert.equal(auto.rosters.find((roster) => roster.id === "demo") !== undefined, true);
+
+    const forgot = await call(
+      host,
+      "/plugins/dsh-agent-roster/library-registry",
+      makeReq({ method: "POST", headers: { "content-type": "application/json" }, body: { action: "forget", dir: workspace } }),
+    );
+    assert.equal(forgot.status, 200);
+    assert.deepEqual(forgot.body.dirs, []);
+  } finally {
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});

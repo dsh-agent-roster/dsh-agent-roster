@@ -2,6 +2,22 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.26.0] - 2026-11-11
+
+### Added
+
+- 导入改成「选文件或拖拽」：一次可选多份 `.yaml/.yml/.json`，逐份校验后写进选中的库；同名默认覆盖并保留 `.bak`，界面上不再有可编辑的文本框。
+- 档案页支持「按路径分组 / 平铺」切换；档案库的本机组也按库根拆开（平铺时行内仍标来源）。
+- 设置弹窗列出「自动登记的库」，可逐条撤销（`POST /library-registry`，`add`/`forget`）。
+
+### Changed
+
+- 档案页默认按路径分组，多个库根不会再混成一列。
+
+### Tests
+
+- 448 → 451（新增导入/分组/设置三条契约测试，以及 library-registry 路由的增删用例）。
+
 ## [1.25.1] - 2026-11-11
 
 ### Changed

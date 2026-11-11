@@ -29,7 +29,10 @@
     "saveFailed": "保存失败——设置表单当前不可用。",
     "mirror": "自定义镜像地址",
     "mirrorPlaceholder": "https://registry.npmmirror.com",
-    "mirrorHint": "填了就用它代替下载区：按 npm 包形式发布的公共档案源从这里取。支持带子路径的公司镜像（如 /repository/npm）；留空用下载区的预置。"
+    "mirrorHint": "填了就用它代替下载区：按 npm 包形式发布的公共档案源从这里取。支持带子路径的公司镜像（如 /repository/npm）；留空用下载区的预置。",
+    "autoDirs": "自动登记的库",
+    "autoDirsHint": "用工具建过团队的库会自动登记；换机器时它们跟着库根走。撤销后，档案页不再显示它（磁盘文件不动）。",
+    "forgetDir": "撤销"
   },
   "panel": {
     "title": "Agent 档案",
@@ -69,7 +72,11 @@
     "favAll": "全部 {count}",
     "emptyFavoritesTitle": "还没有收藏的档案",
     "emptyFavoritesBody": "档案页只列你收藏的档案。去档案库挑几份，点一下星标，它们就会出现在这里。",
-    "emptyFavoritesCta": "去档案库挑"
+    "emptyFavoritesCta": "去档案库挑",
+    "groupMode": "分组方式",
+    "groupByPath": "按路径",
+    "groupFlat": "平铺",
+    "countRosters": "{count} 份"
   },
   "roster": {
     "members": "{count} 名成员",
@@ -195,8 +202,12 @@
   },
   "importDialog": {
     "title": "导入档案",
-    "hint": "粘贴一份档案原文。宿主会先校验，再写进选中的目录。",
-    "placeholder": "kind: dsh-agent-roster/v1\nroster: my-team\nversion: 1.0.0\n…",
+    "hint": "选择或拖入档案文件。宿主会先校验，再写进选中的库。",
+    "dropTitle": "把档案文件拖到这里",
+    "dropHint": "支持 .yaml / .yml / .json，可以一次选多个",
+    "pick": "选择文件",
+    "remove": "移除",
+    "failedFiles": "有 {count} 个文件没导入（第一个：{name}）",
     "submit": "导入",
     "target": "写入"
   },

@@ -18,7 +18,7 @@ import nodePath from "node:path";
 import z from "@deepseek-ai/schemastery";
 
 import { configView } from "./lib/config-view.js";
-import { registeredLibraryDirs, rememberLibraryDir } from "./lib/preferences.js";
+import { forgetLibraryDir, registeredLibraryDirs, rememberLibraryDir } from "./lib/preferences.js";
 import { applyCaptain, listHostWorkspaces, listSessions } from "./lib/apply.js";
 import { collectLibrary } from "./lib/library.js";
 import { scanRosterLibrary } from "./lib/registry.js";
@@ -469,6 +469,45 @@ export function apply(ctx, config) {
 
     // 收藏：档案行上的星标与档案库里的星标都打到这里。
     // 只写库根下的点文件，不碰档案本体，也不碰团队状态——取消收藏不该改动任何定义。
+    register(
+      "/plugins/dsh-agent-roster/library-registry",
+      async (req, res) => {
+        if (guard(req, res)) return;
+        if (!requireMethod(req, res, "POST")) return;
+        const body = await readJsonBody(req);
+        if (!body.ok) {
+          sendError(res, body.status, body.code);
+          return;
+        }
+        const input = body.value !== null && typeof body.value === "object" ? body.value : {};
+        const dir = typeof input.dir === "string" ? input.dir : "";
+        if (dir === "") {
+          sendError(res, 400, "missing-dir");
+          return;
+        }
+        if (input.action === "add") {
+          const result = rememberLibraryDir(dir);
+          if (!result.ok) {
+            sendError(res, result.code === "invalid-dir" ? 400 : 500, result.code);
+            return;
+          }
+          sendJson(res, 200, { ok: true, dirs: registeredLibraryDirs() });
+          return;
+        }
+        if (input.action === "forget") {
+          // forgetLibraryDir 返回 boolean（true = 已不在表里或写成功），不是 result 对象。
+          if (forgetLibraryDir(dir) !== true) {
+            sendError(res, 500, "write-failed");
+            return;
+          }
+          sendJson(res, 200, { ok: true, dirs: registeredLibraryDirs() });
+          return;
+        }
+        sendError(res, 400, "unknown-action");
+      },
+      "library registry route",
+    );
+
     register(
       "/plugins/dsh-agent-roster/favorites",
       async (req, res) => {
