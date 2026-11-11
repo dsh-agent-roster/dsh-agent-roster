@@ -68,7 +68,9 @@ The repo ships two example libraries: [`examples/`](./examples) (v2) and [`examp
 
 The two roster versions share one semantic model; only the on-disk shape differs. The panel detail and `roster_list` / `roster_show` report `format: roster@1 | roster@2`. **v1 is frozen**: bug fixes only, no new fields — use v2 when you need role reuse, `{{> …}}` references, shared knowledge or orchestration. A single-collection install (`/install`) writes the flattened v1 document; use the whole-space pull to keep the space layout.
 
-`space.yaml` is an **optional** declaration layer: with it you get “declared vs on disk vs missing vs undeclared”; without it the library is still scanned, just without that reconciliation. Favourites live in `.dsh-roster-favorites.json` at the library root (a dotfile; the scanner skips it).
+`space.yaml` is an **optional** declaration layer: with it you get “declared vs on disk vs missing vs undeclared”; without it the library is still scanned, just without that reconciliation. Saving writes a roster back into the layout it already lives in: a v2 roster goes to `rosters/<id>/roster.yaml`, a v1 roster stays at `<id>/roster.yaml`. Putting a v1 document into a v2 library fails with `layout-mismatch` instead of creating a second roster with the same id.
+
+Favourites live in `.dsh-roster-favorites.json` at the library root (a dotfile; the scanner skips it).
 
 ## Roster format (v1, flat libraries)
 

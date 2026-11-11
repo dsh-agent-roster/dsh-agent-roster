@@ -2,6 +2,18 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.27.0] - 2026-11-11
+
+### Fixed
+
+- 面板保存 v2 档案会另建一份同名 v1：写入器只按 v1 布局落到 `<根>/<id>/roster.yaml`，原 `rosters/<id>/roster.yaml` 不动，面板却报成功。现在按该 id 已有的布局写回（v2 → `rosters/<id>/`，v1 → `<id>/`），并用对应一代的校验器（`validateRoster2` / `validateRoster`）。
+- 把 v1 文档存进 v2 库（或反过来）现在直接报 `layout-mismatch`，不再静默产生第二份档案。
+
+### Changed
+
+- 删除档案同样按布局定位，返回的 `removed` 是相对库根的真实路径（`rosters/<id>/roster.yaml`）。
+- 测试 451 → 454（v2 原地保存、布局不匹配拒绝、v2 删除三条）。
+
 ## [1.26.1] - 2026-11-11
 
 ### Fixed

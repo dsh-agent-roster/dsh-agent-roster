@@ -25,6 +25,60 @@ function fixture() {
   return { workspace, rootDir, roots };
 }
 
+
+const VALID_V2 = `kind: dsh-agent-roster/roster@2
+id: core-review
+version: 1.0.0
+title: Core review
+members:
+  - as: aa
+    role: reviewer@1.0.0
+`;
+
+describe("writeRosterDocument: v2 libraries", () => {
+  let workspace;
+  let rootDir;
+  let roots;
+
+  beforeEach(() => {
+    workspace = fs.mkdtempSync(path.join(os.tmpdir(), "dsh-agent-roster-write2-"));
+    rootDir = path.join(workspace, "lib");
+    fs.mkdirSync(path.join(rootDir, "rosters", "core-review"), { recursive: true });
+    fs.mkdirSync(path.join(rootDir, "roles"), { recursive: true });
+    fs.writeFileSync(path.join(rootDir, "rosters", "core-review", "roster.yaml"), VALID_V2);
+    roots = [{ dirSpec: "lib", workspacePath: workspace, rootDir, exists: true }];
+  });
+
+  afterEach(() => {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  });
+
+  it("edits the roster in place instead of creating a v1 twin beside it", () => {
+    const edited = VALID_V2.replace("title: Core review", "title: Core review (edited)");
+    const result = writeRosterDocument({ roots, rootDir, text: edited, overwrite: true });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.file, "rosters/core-review/roster.yaml");
+    assert.match(fs.readFileSync(path.join(rootDir, "rosters", "core-review", "roster.yaml"), "utf8"), /\(edited\)/);
+    assert.equal(fs.existsSync(path.join(rootDir, "core-review")), false);
+  });
+
+  it("refuses a v1 document in a v2 library instead of writing a parallel file", () => {
+    const result = writeRosterDocument({ roots, rootDir, text: VALID, overwrite: true });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.code, "layout-mismatch");
+    assert.equal(fs.existsSync(path.join(rootDir, "demo")), false);
+  });
+
+  it("deletes a v2 roster from rosters/<id>", () => {
+    const result = deleteRosterDocument({ roots, rootDir, id: "core-review" });
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.removed, ["rosters/core-review/roster.yaml"]);
+    assert.equal(fs.existsSync(path.join(rootDir, "rosters", "core-review")), false);
+  });
+});
 describe("writeRosterDocument", () => {
   let ctx;
 
