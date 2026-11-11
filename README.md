@@ -383,6 +383,8 @@ The design is a **ledger, not a card wall**: one row per roster — a 3px status
 
 Settings live only in the panel’s gear dialog (language, download region, mirror, library directories, read-only summary); the plugin **no longer registers a DSH settings section**.
 
+Two things are easy to conflate: **Teams** are read from `.agent-teams` under every host workspace (no library needs to be registered there, so teams built elsewhere are visible); **rosters** only come from the directories listed under library directories — an unlisted directory simply does not appear (add one line in the gear dialog; it applies immediately).
+
 ### Creating a team
 
 The row button and the `roster_team` tool share one `applyCaptain` path:

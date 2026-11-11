@@ -2,6 +2,20 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.24.0] - 2026-11-11
+
+### Fixed
+
+- The Teams tab only read `.agent-teams` under workspaces that happened to contain a
+  registered library. A team built in any other host workspace (for example a team
+  created there with `roster_team path=...`) was invisible even though it existed on
+  disk. Teams are now read from every workspace the host knows about; rosters still
+  come only from the directories listed under library directories.
+- README (both languages) now says this explicitly: an unlisted directory does not
+  show up as a library, and registering one takes a single line in the gear dialog.
+
+[1.24.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.23.1...v1.24.0
+
 ## [1.23.1] - 2026-11-11
 
 ### Changed

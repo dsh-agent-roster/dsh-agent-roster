@@ -148,6 +148,25 @@ describe("buildPanelSnapshot", () => {
     assert.equal(snapshot.teams.teams[0].members[0].promptChars, "SECRET PROMPT".length * 100);
   });
 
+  it("reads teams from every host workspace, not only from library roots", () => {
+    // 旧行为：只读"被登记成图书馆的库根"所在工作区 ⇒ 在别的目录里建的团队永远不可见。
+    const other = fs.mkdtempSync(path.join(os.tmpdir(), "dsh-agent-roster-other-"));
+    try {
+      writeTeam(other, "team-outside", {
+        id: "team-outside",
+        name: "outside",
+        captainSessionId: "session-x",
+        members: [{ id: "m1", name: "alpha", role: "researcher", status: "idle" }],
+      });
+      const registry = { list: () => [{ path: workspace, title: "here" }, { path: other, title: "elsewhere" }] };
+      const snapshot = buildPanelSnapshot({ get: (key) => (key === "workspaceRegistry" ? registry : undefined) }, CONFIG, META);
+
+      assert.ok(snapshot.teams.teams.some((team) => team.id === "team-outside"), "工作区里的团队要出现");
+    } finally {
+      fs.rmSync(other, { recursive: true, force: true });
+    }
+  });
+
   it("reports duplicate roster ids across libraries", () => {
     for (const dir of ["rosters", "shared"]) {
       fs.mkdirSync(path.join(workspace, dir, "demo"), { recursive: true });
