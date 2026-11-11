@@ -2,6 +2,12 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.28.2] - 2026-11-12
+
+### Fixed
+
+- `POST /apply-session` now registers the library it was called on, like `/apply` does. The restart-time lookup only scans registered roots, so a binding written into an otherwise-unregistered library was unreachable after a restart.
+
 ## [1.28.1] - 2026-11-12
 
 ### Fixed

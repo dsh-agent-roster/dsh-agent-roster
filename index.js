@@ -682,6 +682,8 @@ export function apply(ctx, config) {
         });
         if (result.ok) {
           addFavorites(rootDir, [raw.id]);
+          // 绑定要在重启后还能被找到：注入层只扫已登记的库根，这里与 /apply 一样登记。
+          rememberLibraryDir(rootDir);
           // 绑定要落盘：section 活在 live agent 上，宿主重启后由 agent/created 按它重挂。
           writeSessionBinding(rootDir, {
             sessionId,
