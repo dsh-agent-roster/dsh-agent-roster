@@ -35,7 +35,7 @@ import { listHostModels } from "./lib/host-models.js";
 import { createTtlCache, fetchCollection } from "./lib/remote.js";
 import { searchRosters } from "./lib/search.js";
 import { registerRosterTools } from "./lib/tools.js";
-import { attachRosterToSession, writeSessionBinding, installCaptainInjector } from "./lib/captain-inject.js";
+import { installCaptainInjector } from "./lib/captain-inject.js";
 import { deleteRosterDocument, findLibraryRoot, readRosterDocument, writeRosterDocument } from "./lib/write.js";
 
 const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
@@ -630,78 +630,6 @@ export function apply(ctx, config) {
         sendJson(res, status, result);
       },
       "apply route",
-    );
-
-    // 直接把一座档案的队长人设挂到一个已存在的会话（不建团）。
-    // 与 /apply 分开：那条路是「新建/唤起会话并让它建团」，这条路只改这个会话的人设。
-    register(
-      "/plugins/dsh-agent-roster/apply-session",
-      async (req, res) => {
-        if (guard(req, res)) return;
-        if (!requireMethod(req, res, "POST")) return;
-        const body = await readJsonBody(req);
-        if (!body.ok) {
-          sendError(res, body.status, body.code);
-          return;
-        }
-        const input = body.value !== null && typeof body.value === "object" ? body.value : {};
-        const sessionId = typeof input.sessionId === "string" ? input.sessionId : "";
-        if (sessionId === "") {
-          sendError(res, 400, "session-required");
-          return;
-        }
-        const rootEntry = findLibraryRoot(
-          resolveRoots(ctx, settings, { registeredLibraryDirs: registeredLibraryDirs() }),
-          input.rootDir,
-        );
-        if (rootEntry === null) {
-          sendError(res, 403, "unknown-root");
-          return;
-        }
-        // findLibraryRoot 返回的是库根条目（{rootDir, ...}），扫描要的是路径字符串。
-        const rootDir = typeof rootEntry === "string" ? rootEntry : rootEntry.rootDir;
-        const rosterId = typeof input.rosterId === "string" ? input.rosterId : "";
-        const registry = agentRegistryOf(ctx);
-        const agent = typeof registry?.get === "function" ? registry.get(sessionId) : undefined;
-        if (agent === undefined || agent === null) {
-          sendError(res, 404, "session-not-found");
-          return;
-        }
-        // 只认磁盘上的原始档案：面板投影不含 captain 正文，用它注入会注入一份空人设。
-        const scanned = scanRosterLibrary({ rootDir, knownToolPolicies: settings.knownToolPolicies ?? null });
-        const raw = scanned.rosters.find((item) => item.id === rosterId);
-        if (raw === undefined) {
-          sendError(res, 404, "roster-not-found");
-          return;
-        }
-        // 档案目录按布局算：v2 是 <root>/rosters/<id>，v1 是 <root>/<id>。
-        // 不能用 raw.file 反推——v2 的 file 是相对档案目录的 roster.yaml。
-        const v2Dir = nodePath.join(rootDir, "rosters", raw.id);
-        const rosterDir =
-          existsSync(nodePath.join(v2Dir, "roster.yaml")) || existsSync(nodePath.join(v2Dir, "roster.yml"))
-            ? v2Dir
-            : nodePath.join(rootDir, raw.id);
-        const result = attachRosterToSession(agent, {
-          rosterDir,
-          rosterId: raw.id,
-          version: raw.version,
-          logger: ctx.logger,
-        });
-        if (result.ok) {
-          addFavorites(rootDir, [raw.id]);
-          // 绑定要在重启后还能被找到：注入层只扫已登记的库根，这里与 /apply 一样登记。
-          rememberLibraryDir(rootDir);
-          // 绑定要落盘：section 活在 live agent 上，宿主重启后由 agent/created 按它重挂。
-          writeSessionBinding(rootDir, {
-            sessionId,
-            rosterId: raw.id,
-            version: typeof raw.version === "string" ? raw.version : "",
-            rosterDir,
-          });
-        }
-        sendJson(res, result.ok ? 200 : 400, { ...result, rosterId: raw.id, rootDir, rosterDir });
-      },
-      "apply-session route",
     );
 
     // 更新检查：账本在空间根目录；冲突不自动合并，只把两边摘要摆出来。

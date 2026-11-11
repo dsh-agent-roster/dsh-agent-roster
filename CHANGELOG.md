@@ -2,6 +2,18 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.28.5] - 2026-11-12
+
+### Removed
+
+- **The “apply the persona only” path is gone.** It existed for one case — a session that should follow a roster without building a team — and that case does not exist here, so it was carrying a second, weaker way to bind a roster to a session.
+  - Removed `POST /apply-session`, the “只应用人设” checkbox in the create-team dialog, `attachRosterToSession`, and the `.dsh-roster-bindings/*.json` records.
+  - Creating a team **into an existing session** is unchanged (`POST /apply` with `mode: "existing"`): that session becomes the captain, and `team.json` is what re-attaches the persona after a restart.
+
+### Changed
+
+- Tests 463 → 457 (the attach-only tests went with the feature).
+
 ## [1.28.4] - 2026-11-12
 
 ### Fixed
@@ -1392,6 +1404,7 @@ point is now one search field above the tabs.
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
 [Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.4...main
 [1.28.4]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.3...v1.28.4
+[1.28.5]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.4...v1.28.5
 [1.28.3]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.2...v1.28.3
 [1.23.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v1.23.0
 [1.22.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/releases/tag/v1.22.0

@@ -360,15 +360,6 @@ test("新建会话：要选空间与名字，两个入口发的是同一组字�
   assert.ok((source.match(/payload\.rootDir = roster\.rootDir/g) ?? []).length >= 2);
 });
 
-test("只应用人设：选已有会话时可勾选，走 apply-session 而不是建团", () => {
-  const client = readFileSync(new URL("../client.js", import.meta.url), "utf8");
-  assert.match(client, /APPLY_SESSION_ROUTE = "\/plugins\/dsh-agent-roster\/apply-session"/);
-  assert.match(client, /const \[attachOnly, setAttachOnly\] = useState\(false\)/);
-  assert.match(client, /mode === "existing" && attachOnly/);
-  assert.match(client, /teamCreate\.attachOnly/);
-  assert.match(client, /teamCreate\.applied/);
-  assert.match(client, /className: "rstr-toggle"/);
-});
 
 test("空间下拉：没有 host id 的工作区也能选中（用路径当值）", () => {
   const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");

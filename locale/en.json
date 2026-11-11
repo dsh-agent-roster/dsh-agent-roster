@@ -362,9 +362,6 @@
     "modelDefault": "Deployment default (no switch)",
     "modelUnknown": "Model catalog unavailable",
     "modelUnavailable": "Declared: {model} (not provided here)",
-    "modelMissing": "The roster declares {model}, which this deployment does not provide. The deployment default will be used; to run as written, provide that provider/model first.",
-    "attachOnly": "Only apply the captain persona",
-    "attachOnlyHint": "No new session, no team",
-    "applied": "Captain persona applied ({chars} chars)"
+    "modelMissing": "The roster declares {model}, which this deployment does not provide. The deployment default will be used; to run as written, provide that provider/model first."
   }
 }

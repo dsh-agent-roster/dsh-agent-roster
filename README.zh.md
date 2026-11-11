@@ -397,7 +397,6 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 - **新建会话**：选工作区（下拉，重名时补一级目录）+ 会话名；建好后自动改名。选中项以宿主的 `workspaceId` 发出（不是只给目录），会话因此会登记到该空间；只给目录时也会先按路径解析成工作区 id。
 - **已有会话**：只显示「空间 · 会话名」，不显示 id 与路径。
 - **已有会话建团**：那个会话自己成为队长。团队记录（`.agent-teams/<team>/team.json`）落盘后，插件把档案的队长人设挂到它身上；重启后会话重新打开时按团队记录恢复。
-- **只应用人设**：在「已有会话」下勾选它，不会新建会话、也不会建团——插件只把这份档案的队长人设挂到那个会话上（`POST /apply-session`），每个模型步重读档案，改档案下一步生效。绑定写在库根 `.dsh-roster-bindings/<sessionId>.json`；宿主重启后，这个会话下次被打开时插件按绑定把 section 重挂回去（档案目录被删就不挂，并记下原因）。
 - 队长人设走两条路：起始消息里原样带一份（一次性），以及会话建立后注入 `deployment:persona-prefix` section（每轮生效）。详见下节。模型仍来自部署，插件不写运行时。
 - **队长模型**：下拉列出这台部署**真的提供**的 provider/model（来自宿主的模型目录）。档案里的 `captain.route` 是作者那台机器的坐标，换一台可能不存在——声明的模型在目录里就默认沿用，不在则选项禁选并当场说明，默认落“部署默认（不切换）”。选中项随 `model` 一起发给 `/apply`，覆盖档案的 route；`reasoningEffort` 仍沿用档案。
 - 队长应用（`/apply`）与工具都只**排队**提示词，建队由会话里的模型调用 `agent_teams_*` 完成。
@@ -561,7 +560,7 @@ node bin/cli.mjs import-agency --from ~/.dsh/profiles/web/node_modules/@michenga
 设计说明：`docs/design.md`（模块地图、字段归宿、能力矩阵，以及「加一个能力要改哪些地方」的落点清单）。
 
 ```bash
-node --test                 # 463 个测试
+node --test                 # 457 个测试
 npm run smoke               # 宿主侧 13 个工具 + 客户端两槽位
 npm run check:host         # 宿主契约（单测里的假件证明不了它）
 npm run e2e                    # 起一个一次性宿主，问它真正看见了什么（不调模型，约 9 秒）

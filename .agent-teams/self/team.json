@@ -1,9 +1,9 @@
 {
-  "name": "maintainer-self",
-  "id": "maintainer-self",
-  "description": "维护 dsh-agent-roster 及其示例空间的代理团队（档案 self@1.0.0）。队长由本会话担任，成员 checker 只做只读核对，不改任何东西。\nroster:self@1.0.0#00b6816b",
-  "captainSessionId": "session-120ecf33-3641-4498-8caa-5668c1b8d864",
-  "createdAt": 1794417370965,
+  "name": "self",
+  "id": "self",
+  "description": "维护者本人的团队：队长人格 + 一个只读验证者。成员按档案 self 建，只读核对、不改环境。\n\nroster:self@1.0.0#00b6816b",
+  "captainSessionId": "session-95a7a4be-3672-495b-a380-e1cddb6196bd",
+  "createdAt": 1794419881921,
   "members": [
     {
       "id": "",
@@ -13,7 +13,7 @@
       "model": "deepseek-v4.1-flash",
       "reasoningEffort": "high",
       "executionPrompt": "你是独立验证者，只做核对，不改任何东西。\n\n规则：\n1. 只读：不写文件、不改配置、不重启服务。\n2. 每条结论给可复核证据（`path:line`、命令、输出片段）；给不出就写「无法核对」。\n3. 对被验证的判据配反向牙：造一个应当失败的反例，确认它真的会红；只证明「能绿」不算验证。\n4. 区分「代码面」与「运行写入面」：作业 append 不算失稳；验证者不在 live 树跑会写的东西。\n5. 不把消息流当台账；可复核的字节只在文件、日志、数据库里。",
-      "joinedAt": 1794417377100,
+      "joinedAt": 1794419894121,
       "status": "idle"
     }
   ],
