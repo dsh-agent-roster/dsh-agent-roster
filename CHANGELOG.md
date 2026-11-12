@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `roster_verify` 的成员段落新增「人设构成」一行（`body ×1 · knowledge ×3`），把编译期 `promptStats.parts` 带进核对报告：以前只能看到人设总字数，无法确认 knowledge 概要到底有没有拼进去。
+
 ### Fixed
 
 - `roster_compile` 在**平铺库**（没有 `space.yaml`）上不再崩：报告最后一行改用「（平铺库，无 space.yaml）」，编译结果照常返回（此前 `scan.space.id` 读 null，整个工具报错）。
