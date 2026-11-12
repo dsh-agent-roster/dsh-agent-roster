@@ -2,6 +2,13 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### Fixed
+
+- `roster_compile` 在**平铺库**（没有 `space.yaml`）上不再崩：报告最后一行改用「（平铺库，无 space.yaml）」，编译结果照常返回（此前 `scan.space.id` 读 null，整个工具报错）。
+- `roster_iterate` 不再把**排队**说成**已归档**：文案改为「已排队归档旧团队 … 新队长第一步会调 agent_teams_delete」，返回值新增 `archiveQueued` / `archivedNow: false`；归档真正发生前旧团队仍在 `.agent-teams/` 下。
+
 ## [1.31.0] - 2026-11-12
 
 ### Added

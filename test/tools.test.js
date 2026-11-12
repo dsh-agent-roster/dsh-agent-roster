@@ -12,7 +12,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
-import { cpSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
@@ -106,6 +106,16 @@ test("注册十三个工具，旧的六个能在 examples 上执行", async () =
   const verify = await call(tools, "roster_verify", { path: examples, stateDir: path.join(root, "test", "no-such-state") });
   assert.match(verify.firstLine, /state=unavailable/);
   assert.match(verify.firstLine, /missing=5/);
+});
+
+test("roster_compile：平铺库（没有 space.yaml）也该正常返回，而不是在最后一行崩掉", async () => {
+  const lib = mkdtempSync(path.join(tmpdir(), "flat-compile-"));
+  cpSync(examples, lib, { recursive: true });
+  rmSync(path.join(lib, "space.yaml"));
+  const { tools } = register();
+  const { text, value } = await call(tools, "roster_compile", { ref: "core-review", path: lib });
+  assert.equal(value.ok, true);
+  assert.match(text, /平铺库，无 space\.yaml/);
 });
 
 test("新工具：空间、搜索、编译预览、更新检查、建团队", async () => {
@@ -745,7 +755,10 @@ test("roster_iterate：归档确认后在同一会话重建，起始消息第一
   assert.equal(value.ok, true);
   assert.equal(value.sessionId, "session-live");
   assert.equal(calls.filter((item) => item[0] === "create").length, 0);
-  assert.match(text, /已归档旧团队：live-team/);
+  assert.match(text, /已排队归档旧团队：live-team/);
+  assert.doesNotMatch(text, /已归档旧团队/);
+  assert.equal(value.archiveQueued, true);
+  assert.equal(value.archivedNow, false);
   const sent = calls.find((item) => item[0] === "prompt")[1].content[0].text;
   assert.match(sent, /agent_teams_delete/);
   assert.ok(sent.indexOf("agent_teams_delete") < sent.indexOf("档案里的交接指南"));
