@@ -4,6 +4,7 @@ import test from "node:test";
 import { parseProvenanceLine, provenanceLine } from "../lib/bridge.js";
 import { sha256Hex, shortSha, toolFilterDigest } from "../lib/digest.js";
 import { memberVerdict, verifyBindings } from "../lib/verify.js";
+import { renderVerifyReport } from "../lib/render.js";
 import { validateRoster } from "../lib/validate.js";
 import { rosterDocument } from "./helpers.js";
 
@@ -73,6 +74,19 @@ test("核对：真实 team.json（无 executionPrompt）落进未核实桶，不
   assert.equal(report.summary.unverified, 1);
   assert.equal(report.summary.drift, 0);
   assert.equal(report.summary.faithful, 0);
+});
+
+test("核对：人设构成按 parts 汇总，knowledge 不必肉眼翻人设", () => {
+  const roster = rosterOf();
+  roster.members[0].promptParts = [
+    { kind: "body" },
+    { kind: "knowledge" },
+    { kind: "knowledge" },
+    { kind: "knowledge" },
+  ];
+  const report = verifyBindings([roster], [teamOf([persistedMember()])]);
+  const text = renderVerifyReport(report);
+  assert.match(text, /人设构成：body ×1 · knowledge ×3/);
 });
 
 test("核对：运行时真的换了模型 → 落进降级桶", () => {
