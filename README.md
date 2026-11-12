@@ -46,15 +46,11 @@
 
 ## 安装
 
-前置：DSH 提供 `tools` 服务，Node.js ≥ 22.19。
-
-```
-@stofone/dsh-agent-roster
+```bash
+dsh plugin --profile web add @stofone/dsh-agent-roster
 ```
 
-包内带 `cordis.patch.yml`，安装即把插件插进 profile。装好后能看到**十三个工具**（见 [docs/guide.md](./docs/guide.md#工具)）与左侧栏的 **Agent 档案** 面板。
-
-插件在 DSH 启动时加载：升级包后**必须重启 `dsh web`**，面板与工具才会换成新版本。
+装完重启 `dsh web`（插件在启动时加载）：左侧栏出现 **Agent 档案**，工具多出十三个。前置只要 Node.js ≥ 22.19。
 
 ## 快速开始
 

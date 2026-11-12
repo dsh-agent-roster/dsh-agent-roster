@@ -46,15 +46,11 @@ It does not run teams and does not replace `dsh-agent-teams`; it adds the layer 
 
 ## Install
 
-Requirements: DSH provides the `tools` service; Node.js ≥ 22.19.
-
-```
-@stofone/dsh-agent-roster
+```bash
+dsh plugin --profile web add @stofone/dsh-agent-roster
 ```
 
-The package ships `cordis.patch.yml`, so installing inserts the plugin into the profile. You should then see **thirteen tools** (see [docs/guide.md](./docs/guide.md#工具)) and the **Agent roster** panel in the left sidebar.
-
-The plugin is loaded at DSH start: after upgrading the package you **must restart `dsh web`** before the panel and tools become the new version.
+Then restart `dsh web` (the plugin loads at start): the **Agent roster** panel appears in the sidebar and thirteen tools are registered. Requires Node.js ≥ 22.19.
 
 ## Quick start
 
