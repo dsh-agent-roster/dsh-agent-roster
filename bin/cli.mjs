@@ -320,16 +320,20 @@ async function runCompile(options) {
   }
   const rosterDir = nodePath.resolve(process.cwd(), options.roster);
   const parent = nodePath.dirname(rosterDir);
-  const root = options.roles === null && nodePath.basename(parent) === "rosters" ? nodePath.dirname(parent) : null;
+  // 在 `<root>/rosters/<id>/` 里就不再替它猜角色目录：由 compileRosterAt 按
+  // 「档案本地 roles/ → 共享 shared-roles/ → 旧名 roles/」自己发现。
+  const underRosters = nodePath.basename(parent) === "rosters";
+  // 产物落在库根：`<root>/rosters/<id>/` → `<root>/dist/`；独立档案目录 → 它的父目录。
+  const root = underRosters ? nodePath.dirname(parent) : null;
   const rolesDir =
     options.roles === null
-      ? root === null
-        ? nodePath.join(parent, "roles")
-        : nodePath.join(root, "roles")
+      ? underRosters
+        ? null
+        : nodePath.join(parent, "roles")
       : nodePath.resolve(process.cwd(), options.roles);
 
   const result = compileRosterAt(rosterDir, {
-    rolesDir,
+    ...(rolesDir === null ? {} : { rolesDir }),
     knownToolPolicies: options.knownPolicies.length > 0 ? options.knownPolicies : null,
     source: { repo: options.repo ?? ownRepo(), ref: "main" },
   });

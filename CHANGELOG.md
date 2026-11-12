@@ -2,6 +2,22 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### Added
+
+- **角色支持档案本地作用域。** 除了库根的共享角色，现在可以写 `rosters/<id>/roles/<name>/AGENT.md`：
+  - 只被这一份档案解析得到；别的档案引用它会在编译期报 `unknown-role`，不会"碰巧"用上。
+  - 与共享角色同名时**本地优先**，并报 info `role-local-overrides-shared`，覆盖不静默。
+  - 只有本地角色、没有共享目录的库也识别为 v2。
+- 共享角色目录的标准名改为 **`shared-roles/`**；旧名 `roles/` 继续可读，只报 info `legacy-roles-dir`。`migrate`、`import-agency` 与示例库都写标准名，`clone` 按「本地 → shared-roles → roles」逐级探测。
+
+### Changed
+
+- `compileRosterAt` 整库编译时共享角色只扫一次（由调用方传入），不再每份档案重扫。
+- `captain-inject` 解析 `captain.role` 时先查档案本地角色，再查共享角色。
+- Tests 468 → 472。
+
 ## [1.30.0] - 2026-11-12
 
 ### Added

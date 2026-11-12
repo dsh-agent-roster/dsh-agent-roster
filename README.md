@@ -63,13 +63,14 @@ dsh plugin --profile web add @stofone/dsh-agent-roster
 ├── space.yaml                  # 可选：把这座库登记成一个空间
 ├── snippets/                   # 可选：正文共享片段（{{> snippets/x.md}}）
 ├── knowledge/                  # 可选：项目知识，提示词只放标题+概要+路径
-├── roles/
+├── shared-roles/               # 共享角色（旧名 roles/ 仍读）
 │   └── writer/
 │       ├── AGENT.md            # 必需：frontmatter + 人设正文
 │       └── parts/              # 可选：正文分段，按 prompt.parts 的顺序拼接
 ├── rosters/
 │   └── docs/
 │       ├── roster.yaml         # 必需：成员、队长、编排与门
+│       ├── roles/              # 可选：只属于这份档案的角色（同名压过共享）
 │       └── capabilities.yaml   # 可选：部署侧必须先提供什么
 └── dist/
     └── docs-1.0.0.json         # 编译产物（面板、/install 与订阅读它）

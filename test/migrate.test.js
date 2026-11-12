@@ -37,7 +37,7 @@ test("migrate：不写盘时只出计划，磁盘上不多任何东西", () => {
     const report = migrateLibrary(library.rootDir);
     assert.equal(report.write, false);
     assert.equal(report.entries.length, 1);
-    assert.equal(existsSync(nodePath.join(library.rootDir, "roles")), false);
+    assert.equal(existsSync(nodePath.join(library.rootDir, "shared-roles")), false);
     assert.equal(existsSync(nodePath.join(library.rootDir, "rosters")), false);
   } finally {
     library.cleanup();
@@ -52,7 +52,7 @@ test("migrate：写盘之后档案库变成 v2 布局，人设一个字不丢", 
     const report = migrateLibrary(library.rootDir, { write: true });
     assert.deepEqual(report.diagnostics.filter((item) => item.severity === "error"), []);
     assert.ok(existsSync(nodePath.join(library.rootDir, "rosters/core-review/roster.yaml")));
-    assert.ok(existsSync(nodePath.join(library.rootDir, "roles/core-review-reviewer/AGENT.md")));
+    assert.ok(existsSync(nodePath.join(library.rootDir, "shared-roles/core-review-reviewer/AGENT.md")));
     assert.ok(existsSync(nodePath.join(library.rootDir, "dist/core-review-1.2.0.json")));
     // 旧目录必须消失，否则它会被当成第二份档案。
     assert.equal(existsSync(nodePath.join(library.rootDir, "core-review")), false);
@@ -79,8 +79,8 @@ test("migrate：队长与成员同名时，队长单独成一个角色而不是�
   try {
     const report = migrateLibrary(directory.rootDir, { write: true });
     const names = report.entries[0].files.map((file) => file.path);
-    assert.ok(names.includes(nodePath.join("roles", "squad-reviewer", "AGENT.md")));
-    assert.ok(names.includes(nodePath.join("roles", "squad-reviewer-captain", "AGENT.md")));
+    assert.ok(names.includes(nodePath.join("shared-roles", "squad-reviewer", "AGENT.md")));
+    assert.ok(names.includes(nodePath.join("shared-roles", "squad-reviewer-captain", "AGENT.md")));
     const scan = scanRosterLibrary({ rootDir: directory.rootDir });
     assert.equal(scan.rosters[0].captain.name, "squad-reviewer-captain");
   } finally {
@@ -169,7 +169,7 @@ test("仓库根 + rosters/ 布局：--from 就地改成 v2，不删目录", () =
     assert.match(roster, /kind: "?dsh-agent-roster\/roster@2"?/);
     assert.equal(existsSync(nodePath.join(fromDir, "demo", "roster.json")), false);
     // 角色与产物落在仓库根上。
-    assert.match(readFileSync(nodePath.join(root, "roles", "demo-reviewer", "AGENT.md"), "utf8"), /kind: "?dsh-agent-roster\/role@1"?/);
+    assert.match(readFileSync(nodePath.join(root, "shared-roles", "demo-reviewer", "AGENT.md"), "utf8"), /kind: "?dsh-agent-roster\/role@1"?/);
     const dist = readdirSync(nodePath.join(root, "dist"));
     assert.equal(dist.some((name) => /^demo-.*\.json$/.test(name) && !name.endsWith(".tasks.json")), true);
     // 产物要署发布仓的名，而不是"生成它的那个工具仓库"的名。
