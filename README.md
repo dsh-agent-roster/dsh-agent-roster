@@ -16,6 +16,7 @@ A roster is a file on disk: who is on the team, what each member owns, which mod
 > - Versions only move by patch/minor; commit messages link their issue (`fixes #N` / `closes #N`); CHANGELOG says what changed, why, and what it touches.
 > - After a release the profile dependency is updated and WeCom is notified; **`dsh web` is never restarted automatically** — the maintainer says so explicitly.
 > - Anything that could not be verified is labelled “unverified”; the message stream is not a ledger.
+- Every change goes through a pull request: `main` is protected (no direct pushes, and the `verify` check must pass), including the maintainer's own commits.
 
 **Contents**: what it is · install · quick start · three on-disk shapes · role → roster → compiled · references · shared knowledge · where each field lands · capabilities · space · the sidebar panel · tools · CLI · routes · configuration · diagnostics · relationship with `dsh-agent-teams` · development. Design and maintenance rules: [`docs/design.md`](./docs/design.md).
 
