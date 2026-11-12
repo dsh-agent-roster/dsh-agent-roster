@@ -2,7 +2,7 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [1.30.0] - 2026-11-12
 
 ### Added
 
@@ -1433,6 +1433,7 @@ point is now one search field above the tabs.
 [1.16.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
 [Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.29.0...main
+[1.30.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.29.0...v1.30.0
 [1.29.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.5...v1.29.0
 [1.28.4]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.3...v1.28.4
 [1.28.5]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.4...v1.28.5
