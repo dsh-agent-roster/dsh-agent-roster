@@ -56,6 +56,27 @@ dsh plugin --profile web add @stofone/dsh-agent-roster
 
 档案库默认是**全局**的（一台机器一份），位于 `$DSH_HOME/agent-roster`（默认 `~/.dsh/agent-roster`），首次保存时自动创建。
 
+一份 v2 档案在磁盘上的完整结构（**必需**的两个文件是 `AGENT.md` 与 `roster.yaml`；其余可选，位置在这里列出，内容不展开）：
+
+```
+~/.dsh/agent-roster/
+├── space.yaml                  # 可选：把这座库登记成一个空间
+├── snippets/                   # 可选：正文共享片段（{{> snippets/x.md}}）
+├── knowledge/                  # 可选：项目知识，提示词只放标题+概要+路径
+├── roles/
+│   └── writer/
+│       ├── AGENT.md            # 必需：frontmatter + 人设正文
+│       └── parts/              # 可选：正文分段，按 prompt.parts 的顺序拼接
+├── rosters/
+│   └── docs/
+│       ├── roster.yaml         # 必需：成员、队长、编排与门
+│       └── capabilities.yaml   # 可选：部署侧必须先提供什么
+└── dist/
+    └── docs-1.0.0.json         # 编译产物（面板、/install 与订阅读它）
+```
+
+最小档案就是 `roles/writer/AGENT.md` + `rosters/docs/roster.yaml`，再跑一次 `compile` 得到 `dist/`。完整字段见 [docs/guide.md](./docs/guide.md)。
+
 ### 1. 写一个角色
 
 `roles/writer/AGENT.md`：
