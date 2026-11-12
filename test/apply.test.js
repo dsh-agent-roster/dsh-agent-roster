@@ -479,9 +479,9 @@ test("buildCaptainPrompt：空间登记的知识只给指针，不把正文塞�
       { path: "knowledge/plain.md", abs: "/tmp/lib/knowledge/plain.md", sha: "", title: "" },
     ],
   });
-  assert.match(text, /项目知识（只给指针，正文不在提示词里/);
-  assert.match(text, /\/tmp\/lib\/knowledge\/guide\.md  #aaaaaaaa  （项目指南）/);
-  assert.match(text, /\/tmp\/lib\/knowledge\/plain\.md\n/);
+  assert.match(text, /项目知识（这里只给概要，正文按需打开对应路径/);
+  assert.match(text, /- 项目指南（\/tmp\/lib\/knowledge\/guide\.md）/);
+  assert.match(text, /- plain（\/tmp\/lib\/knowledge\/plain\.md）\n/);
   assert.ok(!text.includes("这是项目指南正文"), "知识正文不该被贴进提示词");
 });
 

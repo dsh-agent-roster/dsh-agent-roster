@@ -82,6 +82,14 @@
         "$ref": "#/$defs/skill"
       }
     },
+    "knowledge": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/knowledgeRef"
+      },
+      "description": "共享知识（knowledge/<name>.md 或简写 name）：提示词里只放「标题 + 一行概要 + 路径」，正文按需打开；要整段内联请用 {{> knowledge/…}}"
+    },
     "examples": {
       "$ref": "#/$defs/relativePath"
     },
@@ -235,6 +243,12 @@
         }
       },
       "description": "只收有证据源的要求：技能目录、部署声明的 toolPolicies。其余一律 unknown-field。"
+    },
+    "knowledgeRef": {
+      "type": "string",
+      "pattern": "^(knowledge/)?[A-Za-z0-9][A-Za-z0-9._-]*(\\.md)?$",
+      "maxLength": 200,
+      "description": "knowledge/project-map.md 或 project-map"
     }
   }
 }

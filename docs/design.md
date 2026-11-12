@@ -82,7 +82,8 @@ lib/registry.js → lib/validate.js    → lib/compile2.js →  lib/bridge.js   
 | `lib/space.js` | `space.yaml` 校验与对账 |
 | `lib/validate.js` / `roster2.js` | v1 / v2 语义校验 |
 | `lib/role.js` / `frontmatter.js` / `paths.js` | 角色读取、拼装、路径守卫 |
-| `lib/includes.js` | `{{> path}}`（snippets/ 与 knowledge/） |
+| `lib/includes.js` | `{{> path}}`（snippets/ 与 knowledge/，整段内联） |
+| `lib/knowledge.js` | 共享知识：`knowledge:` 声明 → 「标题 + 概要 + 路径」块（正文不内联） |
 | `lib/compile2.js` / `plan.js` / `run.js` | 编译产物、施工图、回执合并 |
 | `lib/bridge.js` | 字段 → 运行时参数（`CARRIED_FIELDS`） |
 | `lib/verify.js` / `captain.js` / `capabilities.js` | 三张核对表 |
