@@ -80,6 +80,22 @@ export const Config = z.object({
         "版本号 patch+1、重编译 dist，不再询问。默认 false：工具只报告差异，等一次明确的 apply / capture 参数。",
     )
     .volatile(),
+  iterateMode: z
+    .union([z.const("ask"), z.const("new"), z.const("session")])
+    .default("ask")
+    .description(
+      "roster_iterate 没传 mode 时的默认动作：ask = 先问「新开会话还是当前会话」；new = 直接新开会话；" +
+        "session = 在当前会话里换代（当前会话已有团队时，按 iterateArchive 决定是否先归档旧队）。",
+    )
+    .volatile(),
+  iterateArchive: z
+    .union([z.const("ask"), z.const("replace")])
+    .default("ask")
+    .description(
+      "在当前会话迭代、而该会话已经领导一支团队时：ask = 先问是否归档旧队；replace = 直接归档（调用 " +
+        "agent_teams_delete，旧队进 archive/ 可复查）再重建。",
+    )
+    .volatile(),
   injectCaptainPersona: z
     .boolean()
     .default(true)

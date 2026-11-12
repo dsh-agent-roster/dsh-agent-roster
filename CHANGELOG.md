@@ -2,6 +2,20 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### Added
+
+- **`roster_iterate` 能在当前会话里换代了。** 新增 `mode`（`new` / `session`）、`sessionId`（省略 = 调用它的会话）与 `archiveOld`：
+  - 未传 `mode` 时读配置 `iterateMode`（`ask` / `new` / `session`，默认 `ask`）；`ask` 先返回「新开会话还是当前会话」并停住，不建会话。
+  - `session` 模式下，若该会话已领导一支**同源**团队，先问是否归档：`archiveOld: true` 或配置 `iterateArchive: "replace"` 才动手。归档写进起始消息第一步，由会话自己调 `agent_teams_delete`（中断成员、把任务与邮箱移进 `archive/`），插件不直接改 `.agent-teams`。
+  - 会话领导的团队来自别的档案时拒绝（`session-leads-other-team`）；没有溯源行时要求显式 `archiveOld: true`（`session-team-unverified`），不猜。
+- `remember: true` 会把这次的选择写进配置（`iterateMode` / `iterateArchive`），写不进配置就落到库根 `.dsh-roster-preferences.json`；面板「体检 → 配置」只读显示这两项。
+
+### Changed
+
+- Tests 457 → 462.
+
 ## [1.28.5] - 2026-11-12
 
 ### Removed

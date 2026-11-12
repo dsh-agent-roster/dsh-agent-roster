@@ -441,7 +441,11 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
 档案不会因为团队跑得好而自动变新——运行时单向消费档案。要把运行时的调整带回来，用两个工具：
 
 - `roster_capture`：把 `team.json` 与档案逐成员比一遍（`role` 比**展开后的角色名**，引用只作注记；`provider`/`model`/`reasoningEffort`/`toolPolicy` 比原值；人设只比拼装后的哈希与字数）。默认只读，并会把「可写回哪些字段」列出来问一句；`apply: true` 才把**机械字段**写回 `roster.yaml`，版本号 patch+1 并重编译 `dist/`；`apply: true` + `remember: true` 同时把「以后都自动写回」记下来（优先改配置 `captureAutoApply`，写不进配置就写进库根的 `.dsh-roster-preferences.json`）。人设写不回去：运行时存的是拼装结果，写回角色文件会把 `parts`/`{{> …}}` 结构压平——改人设请改角色正文。
-- `roster_iterate`：按溯源行找到旧团队 →（可选）先 capture/apply → 新建一个会话并排入建团提示。旧团队不删。有可写回差异而 `capture` 未指定时，它先返回差异并**停住、不建会话**，等你选：`capture: true`（写回再换代）、`capture: true` + `remember: true`（写回并记住以后都自动）、`capture: false`（不改档案直接换代）。
+- `roster_iterate`：按溯源行找到旧团队 →（可选）先 capture/apply → 按落点排入建团提示。落点由 `mode` 决定：
+  - `mode: "new"`：新建会话，旧团队原样保留；
+  - `mode: "session"`：在当前（或 `sessionId` 指定的）会话里换代。会话已经在领导一支**同源**团队时，先问是否归档：`archiveOld: true` 或配置 `iterateArchive: "replace"` 才动手；归档写进起始消息的第一步（让会话自己调 `agent_teams_delete`——中断成员、把任务与邮箱移进 `archive/`），插件不直接改状态目录。会话领导的团队来自别的档案时拒绝（`session-leads-other-team`）；没有溯源行时要求显式 `archiveOld: true`，不猜。
+  - 未传 `mode` 时看配置 `iterateMode`（`ask` / `new` / `session`，默认 `ask`）：`ask` 先返回「新开会话还是当前会话」并**停住、不建会话**；选定后加 `remember: true`，它会把 `iterateMode`（以及确认过的 `iterateArchive: "replace"`）写进配置，写不进配置就记进库根偏好，以后不再问。
+- 有可写回差异而 `capture` 未指定时，它先返回差异并**停住、不建会话**，等你选：`capture: true`（写回再换代）、`capture: true` + `remember: true`（写回并记住以后都自动）、`capture: false`（不改档案直接换代）。
 
 档案自己也能写交接指南：`handover` 是「换代时先读什么」的长期意见，不是动作脚本。条目可以是字符串，也可以是 `{title, detail?, verify?}`（最多 32 条，`title` ≤120 字符，`detail`/`verify` ≤400 字符）。它随 `roster_iterate` 进入新队长的起始消息，顺序是**档案指南 → 本次步骤（若有）→ 系统兜底**；插件不会照着它执行任何东西。
 
@@ -471,7 +475,7 @@ handover:
 | `roster_changes` | **[已废弃]** 逐文件更新检查；改用 `roster_space` 的 `changes`，2.0 移除 | `path?`、`refresh?` |
 | `roster_team` | 从档案创建团队（新会话或已有会话） | `id`、`teamName?`、`mode?`、`workspace?`、`sessionName?`、`sessionId?`、`target?`、`model?`、`path?` |
 | `roster_capture` | 比对 `team.json` 与档案；`apply:true` 才把机械字段写回，`remember:true` 记住以后都自动 | `id`、`team?`、`stateDir?`、`fields?`、`apply?`、`remember?`、`path?` |
-| `roster_iterate` | 从当前团队迭代出新会话：可选写回 + 交接清单 | `id`、`teamName?`、`sessionName?`、`workspace?`、`target?`、`model?`、`capture?`、`remember?`、`handover?`、`path?` |
+| `roster_iterate` | 从当前团队迭代出新一代：可选写回 + 新会话或当前会话 + 交接清单 | `id`、`mode?`、`sessionId?`、`archiveOld?`、`teamName?`、`sessionName?`、`workspace?`、`target?`、`model?`、`capture?`、`remember?`、`handover?`、`path?` |
 
 只有这三个工具会改东西，其余十个只读。档案的保存/导入/删除仍走 CLI 与面板 HTTP 路由。
 
@@ -532,13 +536,15 @@ node bin/cli.mjs import-agency --from ~/.dsh/profiles/web/node_modules/@michenga
 | `knownToolPolicies` | `[]` | 部署已声明的 toolPolicy id；填了才做交叉校验 |
 | `agentTeamsStateDir` | `.agent-teams` | 只读：`roster_verify`、`roster_team` 与会话注入的状态目录 |
 | `injectCaptainPersona` | `true` | 把档案 captain 段的人设注入队长会话的 system prompt（同名 section 遮蔽部署 persona，每个模型步重读）。关掉后只剩起始消息里那份 |
+| `iterateMode` | `"ask"` | `roster_iterate` 没传 `mode` 时的落点：`ask` 先问；`new` 直接新开会话；`session` 在当前会话换代。工具里的 `remember: true` 会写这一项 |
+| `iterateArchive` | `"ask"` | 在当前会话换代、而该会话已领导一支团队时：`ask` 先问；`replace` 直接归档旧队再重建。`remember: true` 会写这一项 |
 | `captureAutoApply` | `false` | 比对发现可写回的机械字段时直接写回（版本号 +1、重编译 `dist/`），不再询问。工具里的「以后都自动」会把它设为 `true`；写不进配置时落到库根的偏好文件 |
 | `language` | `"auto"` | `auto` 跟随 DSH，或固定 `zh` / `en` |
 | `indexes` | `[]` | 公共源：`https` 的 `registry.json` 或 `npm:pkg`；留空 = 官方源；`false` = 不连远端 |
 | `region` | `"auto"` | 下载区：`china` 走腾讯 npm 镜像；`auto` 等同 `global`，不探测 |
 | `registryMirror` | `""` | 自定义镜像地址（可带子路径），留空用下载区预置 |
 
-九项都是 volatile：改完不需要重启，但运行中的宿主重新注册工具时才生效。
+十一项都是 volatile：改完不需要重启，但运行中的宿主重新注册工具时才生效。
 
 ## 诊断
 
