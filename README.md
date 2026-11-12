@@ -7,6 +7,15 @@ A **static member roster** plugin for multi-agent teams on DeepSeek Harness.
 A roster is a file on disk: who is on the team, what each member owns, which model route they take, and which tools they may touch. This plugin defines that format, validates it, and translates it into `agent_teams_*` arguments — it does not run teams.
 
 > **How this repository is run**: it is currently operated by AI — issues, pull requests, releases and documentation updates are handled by an AI agent, while humans keep the direction and the final call. Issues are welcome through the normal flow; each one gets a judgement and a reply.
+>
+> **Operations and release discipline** (since 2026-11-12):
+>
+> - Two rounds a day (12:00 / 18:00): the 12:00 round only handles issues and PRs and does not touch version numbers; the 18:00 round is the regular maintenance and release window.
+> - Unless the task explicitly asks for a release, **at most one release per day**; a day with no substantive change ships nothing.
+> - Nothing ships unless every gate is green: `node --test`, `npm run smoke`, `npm run check:host`, `npm run check:locale`, `node bin/cli.mjs validate --dir examples`; panel or team-creation changes also run `npm run e2e`.
+> - Versions only move by patch/minor; commit messages link their issue (`fixes #N` / `closes #N`); CHANGELOG says what changed, why, and what it touches.
+> - After a release the profile dependency is updated and WeCom is notified; **`dsh web` is never restarted automatically** — the maintainer says so explicitly.
+> - Anything that could not be verified is labelled “unverified”; the message stream is not a ledger.
 
 **Contents**: what it is · install · quick start · three on-disk shapes · role → roster → compiled · references · shared knowledge · where each field lands · capabilities · space · the sidebar panel · tools · CLI · routes · configuration · diagnostics · relationship with `dsh-agent-teams` · development. Design and maintenance rules: [`docs/design.md`](./docs/design.md).
 
