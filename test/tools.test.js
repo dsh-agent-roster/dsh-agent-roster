@@ -775,3 +775,31 @@ test("roster_iterate：配置 iterateMode=new 时不再询问，直接新开会�
   assert.equal(done.value.sessionId, "session-cfg");
   assert.equal(calls.filter((item) => item === "create").length, 1);
 });
+
+test("roster_iterate：一个会话同时领导两支队时拒绝，不猜该归档哪一支", async () => {
+  const lib = mkdtempSync(path.join(tmpdir(), "iter-multi-lib-"));
+  const stateDir = mkdtempSync(path.join(tmpdir(), "iter-multi-state-"));
+  cpSync(examples, lib, { recursive: true });
+  for (const id of ["team-a", "team-b"]) {
+    writeTeamFixture(stateDir, {
+      id,
+      name: id,
+      phase: "running",
+      description: "roster:core-review@1.0.0#abc12345",
+      captainSessionId: "session-live",
+      members: [],
+    });
+  }
+  const { tools } = register({ services: { sessionController: { async list() { return { items: [] }; } } }, agentTeamsStateDir: stateDir });
+  const blocked = await call(tools, "roster_iterate", {
+    id: "core-review",
+    path: lib,
+    stateDir,
+    mode: "session",
+    sessionId: "session-live",
+    capture: false,
+  });
+  assert.equal(blocked.value.ok, false);
+  assert.equal(blocked.value.code, "session-leads-multiple-teams");
+  assert.deepEqual(blocked.value.teams, ["team-a", "team-b"]);
+});
