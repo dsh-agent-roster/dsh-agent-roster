@@ -288,6 +288,9 @@ async function main(argv) {
           process.stdout.write("  诊断：\n");
           for (const item of diagnostics) process.stdout.write(`${formatDiagnostic(item)}\n`);
         }
+        if (diagnostics.some((item) => item.code === "legacy-roles-dir")) {
+          process.stdout.write("  弃用：这座库仍用旧目录名 roles/，建议 git mv roles shared-roles（编译结果不变）\n");
+        }
       }
       process.stdout.write("\n");
     }

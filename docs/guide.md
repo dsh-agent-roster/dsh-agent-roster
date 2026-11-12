@@ -73,7 +73,7 @@ captain:                     # 可选：记录队长（= 创建团队的那个�
 
 角色有两处作用域，指向同一套 `AGENT.md` 格式：
 
-- **共享角色** `shared-roles/<name>/AGENT.md`：整座库都能引用，适合通用角色；旧名 `roles/` 仍能读，只会报一条 info 提示改名。
+- **共享角色** `shared-roles/<name>/AGENT.md`：整座库都能引用，适合通用角色；旧名 `roles/` 仍能读（**已弃用**），报一条 info 并给出改名命令。
 - **档案本地角色** `rosters/<id>/roles/<name>/AGENT.md`：只被这一份档案解析得到，另一份档案引用它会在编译期报 `unknown-role`。
 - 两处同名时按**就近原则**用本地这一份，并报 info `role-local-overrides-shared`（覆盖不静默）。
 
