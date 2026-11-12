@@ -86,7 +86,9 @@ test("旧名 roles/ 仍能读，并提示改成 shared-roles", () => {
   const compiled = compileRosterAt(nodePath.join(root, "rosters/demo"));
   assert.equal(compiled.ok, true);
   assert.equal(compiled.rolesDir, "roles");
-  assert.ok(compiled.diagnostics.some((item) => item.code === "legacy-roles-dir" && item.severity === "info"));
+  const deprecation = compiled.diagnostics.find((item) => item.code === "legacy-roles-dir");
+  assert.ok(deprecation && deprecation.severity === "info");
+  assert.match(deprecation.reason, /已弃用/, "要说清楚这是弃用，而不是随便一个提示");
 });
 
 test("只有本地角色、没有共享目录的库也算 v2", () => {
