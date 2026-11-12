@@ -403,6 +403,7 @@ test("roster_iterate：档案里的交接指南会排进起始消息，并与本
   const { value } = await call(tools, "roster_iterate", {
     id: "core-review",
     path: lib,
+    mode: "new",
     sessionName: "iter-1",
     capture: false,
     handover: { steps: [{ kind: "note", detail: "把旧会话的读数贴过来" }] },
@@ -559,13 +560,13 @@ test("roster_iterate：有可写回差异时先问，不建会话；capture:fals
     agentTeamsStateDir: stateDir,
   });
 
-  const asked = await call(tools, "roster_iterate", { id: "core-review", path: lib, stateDir, sessionName: "next" });
+  const asked = await call(tools, "roster_iterate", { id: "core-review", path: lib, stateDir, mode: "new", sessionName: "next" });
   assert.equal(asked.value.needsConfirmation, true);
   assert.equal(asked.value.sessionId, null);
   assert.equal(calls.filter((item) => item[0] === "create").length, 0);
   assert.match(asked.text, /capture: true/);
 
-  const skipped = await call(tools, "roster_iterate", { id: "core-review", path: lib, stateDir, sessionName: "next", capture: false });
+  const skipped = await call(tools, "roster_iterate", { id: "core-review", path: lib, stateDir, mode: "new", sessionName: "next", capture: false });
   assert.equal(skipped.value.sessionId, "session-new");
   assert.equal(calls.filter((item) => item[0] === "create").length, 1);
 });
@@ -607,6 +608,7 @@ test("roster_iterate：旧团队按溯源匹配，交接清单落盘并附进起
     id: "core-review",
     path: lib,
     stateDir,
+    mode: "new",
     sessionName: "core-review-next",
     teamName: "core-review-next",
     handover: { steps: [{ kind: "note", detail: "先看一遍差异" }] },
@@ -618,4 +620,158 @@ test("roster_iterate：旧团队按溯源匹配，交接清单落盘并附进起
   const promptCall = calls.find((item) => item[0] === "prompt");
   assert.match(promptCall[1].content[0].text, /交接清单/);
   assert.match(promptCall[1].content[0].text, /系统级迭代补充/);
+});
+
+/** 写一份最小的团队状态（只放迭代要读的字段）。 */
+function writeTeamFixture(stateDir, team) {
+  mkdirSync(path.join(stateDir, team.id), { recursive: true });
+  writeFileSync(path.join(stateDir, team.id, "team.json"), JSON.stringify(team, null, 2));
+}
+
+test("roster_iterate：没传 mode 时先问落点，不建会话、不改档案", async () => {
+  const lib = mkdtempSync(path.join(tmpdir(), "iter-ask-mode-"));
+  cpSync(examples, lib, { recursive: true });
+  const calls = [];
+  const sessionController = {
+    async create() { calls.push("create"); return { sessionId: "session-x" }; },
+    async prompt() { calls.push("prompt"); return {}; },
+    async list() { return { items: [] }; },
+  };
+  const { tools } = register({ services: { sessionController } });
+  const asked = await call(tools, "roster_iterate", { id: "core-review", path: lib });
+  assert.equal(asked.value.ok, true);
+  assert.equal(asked.value.needsConfirmation, true);
+  assert.deepEqual(asked.value.options, ["new", "session"]);
+  assert.equal(calls.length, 0);
+  assert.match(asked.text, /mode: "new"/);
+  assert.match(asked.text, /remember: true/);
+});
+
+test("roster_iterate：session 模式遇到别的档案的团队时拒绝，不归档别人的队", async () => {
+  const lib = mkdtempSync(path.join(tmpdir(), "iter-other-lib-"));
+  const stateDir = mkdtempSync(path.join(tmpdir(), "iter-other-state-"));
+  cpSync(examples, lib, { recursive: true });
+  writeTeamFixture(stateDir, {
+    id: "other-team",
+    name: "other-team",
+    phase: "running",
+    description: "roster:other-roster@1.0.0#deadbeef",
+    captainSessionId: "session-live",
+    members: [],
+  });
+  const { tools } = register({ services: { sessionController: { async list() { return { items: [] }; } } }, agentTeamsStateDir: stateDir });
+  const blocked = await call(tools, "roster_iterate", {
+    id: "core-review",
+    path: lib,
+    stateDir,
+    mode: "session",
+    sessionId: "session-live",
+    capture: false,
+  });
+  assert.equal(blocked.value.ok, false);
+  assert.equal(blocked.value.code, "session-leads-other-team");
+  assert.match(blocked.text, /other-roster/);
+});
+
+test("roster_iterate：session 模式已有同源团队时先问是否归档，不动手", async () => {
+  const lib = mkdtempSync(path.join(tmpdir(), "iter-archive-ask-"));
+  const stateDir = mkdtempSync(path.join(tmpdir(), "iter-archive-state-"));
+  cpSync(examples, lib, { recursive: true });
+  writeTeamFixture(stateDir, {
+    id: "live-team",
+    name: "live-team",
+    phase: "running",
+    description: "roster:core-review@1.0.0#abc12345",
+    captainSessionId: "session-live",
+    members: [],
+  });
+  const calls = [];
+  const sessionController = {
+    async create() { calls.push("create"); return { sessionId: "session-y" }; },
+    async prompt() { calls.push("prompt"); return {}; },
+    async list() { return { items: [] }; },
+  };
+  const { tools } = register({ services: { sessionController }, agentTeamsStateDir: stateDir });
+  const asked = await call(tools, "roster_iterate", {
+    id: "core-review",
+    path: lib,
+    stateDir,
+    mode: "session",
+    sessionId: "session-live",
+    capture: false,
+  });
+  assert.equal(asked.value.needsConfirmation, true);
+  assert.equal(asked.value.team, "live-team");
+  assert.equal(calls.length, 0);
+  assert.match(asked.text, /agent_teams_delete/);
+  assert.match(asked.text, /archiveOld: true/);
+});
+
+test("roster_iterate：归档确认后在同一会话重建，起始消息第一步调 agent_teams_delete，并记住选择", async () => {
+  const lib = mkdtempSync(path.join(tmpdir(), "iter-archive-run-"));
+  const stateDir = mkdtempSync(path.join(tmpdir(), "iter-archive-run-state-"));
+  cpSync(examples, lib, { recursive: true });
+  writeTeamFixture(stateDir, {
+    id: "live-team",
+    name: "live-team",
+    phase: "running",
+    description: "roster:core-review@1.0.0#abc12345",
+    captainSessionId: "session-live",
+    members: [],
+  });
+  const calls = [];
+  const sessionController = {
+    async create() { calls.push(["create"]); return { sessionId: "session-z" }; },
+    async selectModel() { return { selected: {} }; },
+    async prompt(request, signal) { signal.throwIfAborted(); calls.push(["prompt", request]); return {}; },
+    async list() { return { items: [] }; },
+  };
+  const patches = [];
+  const configEditor = {
+    entries: () => [{ name: "@stofone/dsh-agent-roster", config: {} }],
+    async edit(entry, mutate) { patches.push(mutate(entry.config)); },
+  };
+  const { tools } = register({ services: { sessionController, configEditor }, agentTeamsStateDir: stateDir });
+  const { text, value } = await call(tools, "roster_iterate", {
+    id: "core-review",
+    path: lib,
+    stateDir,
+    mode: "session",
+    sessionId: "session-live",
+    archiveOld: true,
+    capture: false,
+    remember: true,
+  });
+  assert.equal(value.ok, true);
+  assert.equal(value.sessionId, "session-live");
+  assert.equal(calls.filter((item) => item[0] === "create").length, 0);
+  assert.match(text, /已归档旧团队：live-team/);
+  const sent = calls.find((item) => item[0] === "prompt")[1].content[0].text;
+  assert.match(sent, /agent_teams_delete/);
+  assert.ok(sent.indexOf("agent_teams_delete") < sent.indexOf("档案里的交接指南"));
+  assert.equal(patches.length, 1);
+  assert.equal(patches[0].iterateArchive, "replace");
+  assert.equal(patches[0].iterateMode, "session");
+});
+
+test("roster_iterate：配置 iterateMode=new 时不再询问，直接新开会话", async () => {
+  const lib = mkdtempSync(path.join(tmpdir(), "iter-config-new-"));
+  const ws = mkdtempSync(path.join(tmpdir(), "iter-config-new-ws-"));
+  cpSync(examples, lib, { recursive: true });
+  const calls = [];
+  const sessionController = {
+    async create() { calls.push("create"); return { sessionId: "session-cfg" }; },
+    async rename() { return {}; },
+    async selectModel() { return { selected: {} }; },
+    async prompt() { return {}; },
+    async list() { return { items: [] }; },
+  };
+  const { tools } = register({
+    services: { sessionController, workspaceRegistry: { list: () => [{ id: "ws-1", path: ws, title: "ws" }] } },
+    iterateMode: "new",
+  });
+  const done = await call(tools, "roster_iterate", { id: "core-review", path: lib, sessionName: "cfg-next", capture: false });
+  assert.equal(done.value.ok, true);
+  assert.equal(done.value.sessionId, "session-cfg");
+  assert.equal(calls.filter((item) => item === "create").length, 1);
 });

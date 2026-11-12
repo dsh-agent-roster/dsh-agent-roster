@@ -2730,6 +2730,20 @@ window.__ModuleLoader__.load({
           ),
           configRow(t("settings.dataDir"), snapshot?.config?.dshHome ?? ""),
           configRow(t("settings.stateDir"), snapshot?.teams?.stateDir ?? ""),
+          configRow(
+            t("settings.iterateMode"),
+            {
+              ask: t("iterateMode.ask"),
+              new: t("iterateMode.new"),
+              session: t("iterateMode.session"),
+            }[snapshot?.config?.iterateMode] ?? snapshot?.config?.iterateMode ?? "",
+          ),
+          configRow(
+            t("settings.iterateArchive"),
+            { ask: t("iterateArchive.ask"), replace: t("iterateArchive.replace") }[snapshot?.config?.iterateArchive] ??
+              snapshot?.config?.iterateArchive ??
+              "",
+          ),
           configRow(t("settings.policies"), snapshot?.config?.knownToolPolicies?.length ? t("settings.policiesCount", { count: snapshot.config.knownToolPolicies.length }) : t("settings.policiesNone")),
           configRow(t("settings.version"), snapshot?.version ?? ""),
         ),

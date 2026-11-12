@@ -32,7 +32,9 @@
     "mirrorHint": "When set, this replaces the region preset for index sources published as npm packages. Company mirrors with a sub-path (e.g. /repository/npm) work too; leave empty to use the region preset.",
     "autoDirs": "Auto-registered libraries",
     "autoDirsHint": "A library a tool has built a team from is registered automatically; it follows the library root across machines. Undo only hides it here — files on disk stay.",
-    "forgetDir": "Undo"
+    "forgetDir": "Undo",
+    "iterateMode": "Iteration target",
+    "iterateArchive": "Old team when iterating in place"
   },
   "panel": {
     "title": "Agent Roster",
@@ -363,5 +365,14 @@
     "modelUnknown": "Model catalog unavailable",
     "modelUnavailable": "Declared: {model} (not provided here)",
     "modelMissing": "The roster declares {model}, which this deployment does not provide. The deployment default will be used; to run as written, provide that provider/model first."
+  },
+  "iterateMode": {
+    "ask": "Ask each time",
+    "new": "New session",
+    "session": "Current session"
+  },
+  "iterateArchive": {
+    "ask": "Ask each time",
+    "replace": "Archive and replace"
   }
 }

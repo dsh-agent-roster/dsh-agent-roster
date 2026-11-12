@@ -444,7 +444,11 @@ Favourites live in `.dsh-roster-favorites.json` at the library root (`dsh-agent-
 A roster does not get fresher because the team ran well — the runtime consumes rosters in one direction. Two tools bring changes back:
 
 - `roster_capture`: compares `team.json` with the roster member by member (`role` by the **expanded role name**, with the reference kept as a note; `provider`/`model`/`reasoningEffort`/`toolPolicy` by value; the persona only by the assembled hash and length). Read-only by default, and it lists what could be written back; `apply: true` writes the **mechanical fields** back to `roster.yaml`, bumps the patch version and recompiles `dist/`; `apply: true` plus `remember: true` also records “always write back from now on” (first as the `captureAutoApply` setting, then, if that cannot be written, into `.dsh-roster-preferences.json` at the library root). The persona is never written back: the runtime stores the assembled text, and writing it into the role file would flatten `parts` and `{{> …}}`; edit the role body instead.
-- `roster_iterate`: finds the old team by its provenance line, optionally captures/applies, then creates a new session and queues the build prompt. The old team is left alone. When there are writable differences and `capture` is omitted, it returns the diff and **stops without creating a session**, so you can pick `capture: true` (write back, then iterate), `capture: true` + `remember: true` (write back and remember), or `capture: false` (iterate without touching the roster).
+- `roster_iterate`: finds the old team by its provenance line, optionally captures/applies, then queues the build prompt into the chosen target:
+  - `mode: "new"`: create a session; the old team is left alone;
+  - `mode: "session"`: iterate inside the current (or `sessionId`) session. If that session already leads a **same-roster** team, it asks first; `archiveOld: true` or `iterateArchive: "replace"` is required to act. The archive step is the first thing in the kick-off message (the session itself calls `agent_teams_delete`, which interrupts members and moves tasks/mailboxes into `archive/`); the plugin never edits the state directory directly. A team from a different roster is refused (`session-leads-other-team`); a team with no provenance line requires an explicit `archiveOld: true`.
+  - When `mode` is omitted, the `iterateMode` setting decides (`ask` / `new` / `session`, default `ask`): `ask` returns “new session or this session” and **stops without creating anything**. Add `remember: true` to write `iterateMode` (and a confirmed `iterateArchive: "replace"`) into the settings, falling back to the library-root preferences, so it stops asking.
+- When there are writable differences and `capture` is omitted, it returns the diff and **stops without creating a session**, so you can pick `capture: true` (write back, then iterate), `capture: true` + `remember: true` (write back and remember), or `capture: false` (iterate without touching the roster).
 
 A roster can also carry its own hand-over guide: `handover` is the long-lived answer to "what should the next captain read first", not a script. Items are strings or `{title, detail?, verify?}` (up to 32; `title` ≤120 characters, `detail`/`verify` ≤400). `roster_iterate` puts it into the new captain's first message, in the order **archive guide → this run's steps (if any) → system fallback**; the plugin never executes it.
 
@@ -474,7 +478,7 @@ Hand-over steps go in `handover.steps` (`timer.cancel`/`timer.create`/`wake.upda
 | `roster_changes` | **[deprecated]** per-file update check; use `roster_space`'s `changes` instead (removed in 2.0) | `path?`, `refresh?` |
 | `roster_team` | create a team from a roster (new or existing session) | `id`, `teamName?`, `mode?`, `workspace?`, `sessionName?`, `sessionId?`, `target?`, `model?`, `path?` |
 | `roster_capture` | compare `team.json` with the roster; `apply:true` writes mechanical fields back, `remember:true` records auto-apply | `id`, `team?`, `stateDir?`, `fields?`, `apply?`, `remember?`, `path?` |
-| `roster_iterate` | iterate from the current team into a new session: optional write-back plus a hand-over checklist | `id`, `teamName?`, `sessionName?`, `workspace?`, `target?`, `model?`, `capture?`, `remember?`, `handover?`, `path?` |
+| `roster_iterate` | iterate from the current team: optional write-back plus a new session or the current one, with a hand-over checklist | `id`, `mode?`, `sessionId?`, `archiveOld?`, `teamName?`, `sessionName?`, `workspace?`, `target?`, `model?`, `capture?`, `remember?`, `handover?`, `path?` |
 
 Only these three change anything; the other ten are read-only. Saving/importing/deleting rosters still goes through the CLI and the panel’s HTTP routes.
 
@@ -535,13 +539,15 @@ All are exact routes behind the host `connection` fence; a wrong method is 405. 
 | `knownToolPolicies` | `[]` | toolPolicy ids declared by the deployment; cross-checking only happens when set |
 | `agentTeamsStateDir` | `.agent-teams` | read-only state directory for `roster_verify`, `roster_team`, and captain injection |
 | `injectCaptainPersona` | `true` | inject the roster captain persona into the captain session's system prompt (same-named section shadows the deployment persona, re-read every step). Off: kick-off message only |
+| `iterateMode` | `"ask"` | `roster_iterate` target when `mode` is omitted: `ask` asks first; `new` always creates a session; `session` iterates in the current session. `remember: true` writes this |
+| `iterateArchive` | `"ask"` | in-session iteration when the session already leads a team: `ask` asks first; `replace` archives the old team and rebuilds. `remember: true` writes this |
 | `captureAutoApply` | `false` | when a comparison finds writable mechanical fields, write them back without asking (version +1, recompile `dist/`). The tools' “always” option sets it to `true`; if the setting cannot be written, the library-root preference file is used |
 | `language` | `"auto"` | `auto` follows DSH, or pin `zh` / `en` |
 | `indexes` | `[]` | public sources: an `https` `registry.json` or `npm:pkg`; empty = official source; `false` = local only |
 | `region` | `"auto"` | download region: `china` uses the Tencent npm mirror; `auto` means `global` (no probing) |
 | `registryMirror` | `""` | custom mirror URL (sub-paths allowed); empty uses the region preset |
 
-All nine are volatile: changes apply without a restart, but the running host re-registers tools on its own schedule.
+All eleven are volatile: changes apply without a restart, but the running host re-registers tools on its own schedule.
 
 ## Diagnostics
 
