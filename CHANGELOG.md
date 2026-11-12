@@ -2,7 +2,7 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [1.31.0] - 2026-11-12
 
 ### Added
 
@@ -10,7 +10,7 @@
   - 只被这一份档案解析得到；别的档案引用它会在编译期报 `unknown-role`，不会"碰巧"用上。
   - 与共享角色同名时**本地优先**，并报 info `role-local-overrides-shared`，覆盖不静默。
   - 只有本地角色、没有共享目录的库也识别为 v2。
-- 共享角色目录的标准名改为 **`shared-roles/`**；旧名 `roles/` 继续可读，只报 info `legacy-roles-dir`。`migrate`、`import-agency` 与示例库都写标准名，`clone` 按「本地 → shared-roles → roles」逐级探测。
+- 共享角色目录的标准名改为 **`shared-roles/`**；旧名 `roles/` **已弃用（仍可读）**，诊断文案与 `validate` 的弃用行都给出改名命令。`migrate`、`import-agency` 与示例库都写标准名，`clone` 按「本地 → shared-roles → roles」逐级探测。
 
 ### Changed
 
@@ -1450,6 +1450,7 @@ point is now one search field above the tabs.
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
 [Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.29.0...main
 [1.30.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.29.0...v1.30.0
+[1.31.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.30.0...v1.31.0
 [1.29.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.5...v1.29.0
 [1.28.4]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.3...v1.28.4
 [1.28.5]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.4...v1.28.5
