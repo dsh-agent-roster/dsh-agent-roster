@@ -20,20 +20,8 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/registry.yml"
+  # 每个 PR 都要跑：main 要求 verify 通过才能合并，路径过滤会让文档类 PR 永远等不到这个检查。
   pull_request:
-    paths:
-      - "index/registry.json"
-      - "examples/**"
-      - "examples-orchestration/**"
-      - "orgs/**"
-      - "schema/**"
-      - "docs/**"
-      - "test/**"
-      - "bin/**"
-      - "lib/**"
-      - "package.json"
-      - "package-lock.json"
-      - ".github/workflows/registry.yml"
   workflow_dispatch:
 
 jobs:
