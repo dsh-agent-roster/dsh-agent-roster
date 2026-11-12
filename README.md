@@ -579,7 +579,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 Design notes: `docs/design.md` (module map, field homes, capability matrix, and the checklist of every place a change must land).
 
 ```bash
-node --test                 # 457 tests
+node --test                 # 463 tests
 npm run smoke               # host: 13 tools; client: two slots
 npm run check:host         # host contracts the unit tests fake
 npm run e2e                    # boot a throwaway host and ask what it actually sees (~9 s, no model calls)
