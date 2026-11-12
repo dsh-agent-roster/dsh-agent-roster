@@ -273,24 +273,33 @@ A persona body may place a shared block inline, **on a line of its own**:
 
 `knowledge/` at the library root is **shared knowledge**, next to `snippets/` but consumed differently:
 
-| Mode | How | Where it goes | Good for |
+| Form | How to declare | Where it goes | Good for |
 |---|---|---|---|
-| inline | `{{> knowledge/xxx.md}}` on a line of its own | into `executionPrompt`, under the 12000 budget | short rules, conventions, checklists |
-| pointer | declared under `knowledge:` in `space.yaml` | only "absolute path + content hash + title" reaches the captain's kick-off | long documents, project maps |
+| Inline full text | `{{> knowledge/xxx.md}}` on a line of its own | the whole excerpt into `executionPrompt`, under the 12000 budget | short rules, conventions, checklists |
+| **Summary + path** | `knowledge: [xxx]` on a role or roster | "title + one-line summary + library-relative path" into the captain's and every member's `executionPrompt` | most project knowledge: the model knows what exists and opens it when needed |
+| Pointer (space declaration) | `knowledge:` in `space.yaml` | "absolute path + hash + title" reaches the captain's kick-off; `clone`/`update` pull and check it | long documents used mainly at hand-over |
 
 ```yaml
-# space.yaml
+# frontmatter of roles/writer/AGENT.md (the same field on a roster applies to every member)
 knowledge:
-  - path: knowledge/project-map.md
-    title: Project map
-    sha256: 8db26ddabbdd897063625438d852e0641fe329a1eff084b526737e41ee993332   # optional
+  - project-map            # shorthand for knowledge/project-map.md
 ```
 
-- **A declaration is not content**: bodies never enter the prompt; the pointer lets the session open them on demand.
-- `clone` pulls every declared file (even if no role references it); `clone-knowledge-missing` is a warning.
-- `validate`/`scan` check the disk: missing file is error `space-knowledge-missing`, hash mismatch is warn `space-knowledge-drift`, an undeclared file under `knowledge/` is info `space-knowledge-undeclared`.
-- Paths must stay under `knowledge/` and be safe relative paths; hashes are 64 lowercase hex characters.
-- No second source of truth: the file is the only copy; the declaration records path and hash only.
+```markdown
+<!-- knowledge/project-map.md: title and summary may live in frontmatter -->
+---
+title: Project map
+summary: Repository layout, key directories and verification commands.
+---
+
+Body… (never enters the prompt; the model opens the path)
+```
+
+- Frontmatter is optional: the title falls back to the first `# heading`, the summary to the first non-heading paragraph (capped at 200 characters).
+- **Only the summary enters the prompt, never the body**; with no summary the entry degrades to "title + path" instead of silently pasting the file.
+- A missing file is error `missing-knowledge` (the compile goes red); with more than 8 declared entries only the first 8 reach the prompt, the rest stay openable by path.
+- The `space.yaml` declaration still only declares: `clone` pulls every declared file (even if no role references it); `validate` checks existence and hash (`space-knowledge-missing` error, `space-knowledge-drift` warning, undeclared file `space-knowledge-undeclared` info).
+- No second source of truth: the file is the only copy; the declaration records path and hash.
 
 ## Where each field actually lands
 
@@ -579,7 +588,7 @@ Every diagnostic is `{severity, code, path, message, file}`; `validate` exits 1 
 Design notes: `docs/design.md` (module map, field homes, capability matrix, and the checklist of every place a change must land).
 
 ```bash
-node --test                 # 463 tests
+node --test                 # 468 tests
 npm run smoke               # host: 13 tools; client: two slots
 npm run check:host         # host contracts the unit tests fake
 npm run e2e                    # boot a throwaway host and ask what it actually sees (~9 s, no model calls)

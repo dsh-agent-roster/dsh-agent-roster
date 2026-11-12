@@ -274,21 +274,30 @@ npx dsh-agent-roster compile --roster examples/rosters/core-review --write
 
 | 方式 | 写法 | 去向 | 适合 |
 |---|---|---|---|
-| 内联 | 正文里 `{{> knowledge/xxx.md}}`（独占一行） | 进 `executionPrompt`，受 12000 预算 | 短规则、约定、清单 |
-| 指针 | `space.yaml` 的 `knowledge:` 登记 | 只把「绝对路径 + 内容哈希 + 标题」给队长起始消息 | 长文档、项目手册、地图 |
+| 内联全文 | 正文里 `{{> knowledge/xxx.md}}`（独占一行） | 整段进 `executionPrompt`，受 12000 预算 | 短规则、约定、清单 |
+| **概要 + 路径** | 角色或 roster 的 `knowledge: [xxx]` | 「标题 + 一行概要 + 库根相对路径」进队长与成员的 `executionPrompt` | 大多数项目知识：模型知道有什么、要时自己打开 |
+| 指针（空间登记） | `space.yaml` 的 `knowledge:` | 「绝对路径 + 哈希 + 标题」给队长起始消息；`clone`/`update` 据此拉取与核对 | 长文档、只在交接时用到的材料 |
 
 ```yaml
-# space.yaml
+# roles/writer/AGENT.md 的 frontmatter（roster 级同名字段作用于全员）
 knowledge:
-  - path: knowledge/project-map.md
-    title: 项目地图
-    sha256: 8db26ddabbdd897063625438d852e0641fe329a1eff084b526737e41ee993332   # 可选
+  - project-map            # 简写，等价于 knowledge/project-map.md
 ```
 
-- **登记是声明，不是内容**：正文永远不进提示词；指针让会话自己按需打开。
-- `clone` 会按登记把文件拉下来（没被任何角色引用也拉）；缺文件只记 warn `clone-knowledge-missing`。
-- `validate`/`scan` 核对磁盘：缺文件是 error `space-knowledge-missing`，哈希不符是 warn `space-knowledge-drift`，`knowledge/` 下没登记的文件是 info `space-knowledge-undeclared`。
-- 路径必须落在 `knowledge/` 下、必须是安全相对路径；哈希必须是 64 位小写十六进制。
+```markdown
+<!-- knowledge/project-map.md：标题与概要可直接写在 frontmatter -->
+---
+title: 项目地图
+summary: 仓库布局、关键目录与验证命令。
+---
+
+正文……（不进提示词，模型按路径打开）
+```
+
+- 没有 frontmatter 也能用：标题取第一个 `# 标题`，概要取第一个非标题段落（截断到 200 字符）。
+- **只有概要进提示词，正文永不进**——概要缺失时退化成「只有标题 + 路径」，不会静默贴全文。
+- 缺失文件是 error `missing-knowledge`（编译即红）；声明超过 8 条时提示词只放前 8 条，其余仍可按路径打开。
+- `space.yaml` 的登记仍是**声明**：`clone` 会按登记把文件拉下来（没被任何角色引用也拉），`validate` 核对存在与哈希（缺文件 error `space-knowledge-missing`、哈希不符 warn `space-knowledge-drift`、未登记 info `space-knowledge-undeclared`）。
 - 不做第二真源：知识只有这一份文件，登记只记路径与哈希，不复制正文。
 
 ## 每个字段到底落在哪
@@ -576,7 +585,7 @@ node bin/cli.mjs import-agency --from ~/.dsh/profiles/web/node_modules/@michenga
 设计说明：`docs/design.md`（模块地图、字段归宿、能力矩阵，以及「加一个能力要改哪些地方」的落点清单）。
 
 ```bash
-node --test                 # 463 个测试
+node --test                 # 468 个测试
 npm run smoke               # 宿主侧 13 个工具 + 客户端两槽位
 npm run check:host         # 宿主契约（单测里的假件证明不了它）
 npm run e2e                    # 起一个一次性宿主，问它真正看见了什么（不调模型，约 9 秒）

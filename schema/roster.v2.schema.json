@@ -58,6 +58,14 @@
         "$ref": "#/$defs/tag"
       }
     },
+    "knowledge": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/knowledgeRef"
+      },
+      "description": "整份 roster 共享的知识（队长与所有成员都会拿到「标题 + 概要 + 路径」）"
+    },
     "defaults": {
       "$ref": "#/$defs/defaults"
     },
@@ -497,6 +505,11 @@
           "maxLength": 400
         }
       }
+    },
+    "knowledgeRef": {
+      "type": "string",
+      "pattern": "^(knowledge/)?[A-Za-z0-9][A-Za-z0-9._-]*(\\.md)?$",
+      "maxLength": 200
     }
   }
 }

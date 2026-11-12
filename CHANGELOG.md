@@ -2,6 +2,22 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### Added
+
+- **共享知识可以像角色一样声明，提示词里只放「标题 + 一行概要 + 路径」。** 角色 frontmatter 与 roster 顶层新增 `knowledge: [project-map | knowledge/project-map.md]`：
+  - 编译时把每个条目的标题、概要、库根相对路径追加进队长与成员的 `executionPrompt`（`promptStats.parts` 记 `kind: "knowledge"` 与文件哈希）；正文永远不进提示词，模型按路径自己打开。
+  - 知识文件可带 frontmatter `title` / `summary`；没有时标题取第一个 `# 标题`、概要取第一个非标题段落（截断 200 字符）。
+  - 缺文件是 error `missing-knowledge`（编译即红）；声明超过 8 条时只放前 8 条并给 warn `knowledge-truncated`。
+  - `space.yaml` 的 `knowledge:` 保持原义（空间指针：clone/update/核对），`/apply` 起始消息里的那段也改用同一格式。
+- `lib/knowledge.js`：`normalizeKnowledgeRef` / `parseKnowledgeText` / `loadKnowledgeEntry` / `formatKnowledgeBlock`。
+
+### Changed
+
+- 角色扫描阶段的错误（如知识文件缺失）现在会让 `compileRosterAt` 整体失败，而不是「报了 error 仍产出产物」。
+- Tests 463 → 468。
+
 ## [1.29.0] - 2026-11-12
 
 ### Added
