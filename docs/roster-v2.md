@@ -24,7 +24,8 @@ v1 把四类不同性质的权威塞进同一份 `roster.yaml`：
 v2 的答案是三层，每层只有一个权威：
 
 ```
-roles/<任意目录>/AGENT.md      ← 角色：frontmatter=参数，正文=人设，parts/=可选片段
+shared-roles/<任意目录>/AGENT.md  ← 共享角色：frontmatter=参数，正文=人设，parts/=可选片段
+rosters/<id>/roles/<目录>/AGENT.md ← 档案本地角色：只被这份档案引用，同名压过共享
 rosters/<id>/roster.yaml       ← 组装：成员是引用，队长独立成段，编排是一等公民
 dist/<id>-<ver>.json           ← 编译产物：自包含、可哈希、消费者只看这个
 ```
@@ -33,14 +34,14 @@ dist/<id>-<ver>.json           ← 编译产物：自包含、可哈希、消费
 
 | 文件 | 判别键 |
 |---|---|
-| `roles/*/AGENT.md` 的 frontmatter | `kind: dsh-agent-roster/role@1` |
+| `shared-roles/*/AGENT.md`、`rosters/<id>/roles/*/AGENT.md` 的 frontmatter | `kind: dsh-agent-roster/role@1` |
 | `rosters/*/roster.yaml` | `kind: dsh-agent-roster/roster@2` |
 | `dist/*.json`、`compiled/` | `kind: dsh-agent-roster/compiled@1` |
 | `.agent-roster/lock.yaml` | `kind: dsh-agent-roster/lock@1` |
 
 **判别键决定版本，目录与文件名不决定版本。** 同一个目录不允许两种格式共存：v1 文件被 v2 加载器读到就报 `kind` 不符，`roster migrate` 负责原地重写。
 
-## 3. 角色：`roles/<dir>/AGENT.md`
+## 3. 角色：`shared-roles/<dir>/AGENT.md` 或 `rosters/<id>/roles/<dir>/AGENT.md`
 
 ```markdown
 ---
@@ -169,7 +170,7 @@ gates:
 ```
 
 - **消费者只看产物**：桥接层、registry、面板都从 `compiled` 读，不再各自解析源文件。
-- **自包含**：产物里有人设全文与哈希、有每个成员的来源角色与短哈希，不需要回头再读 `roles/`。
+- **自包含**：产物里有人设全文与哈希、有每个成员的来源角色与短哈希，不需要回头再读 `shared-roles/`。
 - **可 diff、可哈希**：产物序列化稳定（键顺序固定、无时间戳），`sha256` 直接当发布指纹。
 - **声明清单显式化**：凡是"写下来但不会被运行时执行"的字段，都在 `declarations[]` 里点名，避免第二次"看起来生效了"。
 
@@ -202,8 +203,8 @@ gates:
 
 ## 8. 迁移
 
-- `roster migrate --dir <库> [--write]` 读 v1 档案，把 `systemPrompt` 拆成角色（`roles/<member>/AGENT.md`）+ 组装（成员改为引用），原地重写并生成 `dist/`。默认只出计划，`--write` 才落盘——这是唯一会删旧目录的命令。
-- `roster migrate --dir <库根> --from <旧目录> [--repo <owner/repo>] [--write]`：v1 档案放在子目录（`rosters/<id>/roster.yaml`，即"仓库本身就是库、只是档案隔了一层"）时用这条。它就地重写 `rosters/<id>/roster.yaml`、在库根补 `roles/` 与 `dist/`、删掉并排的 `roster.json`/`roster.yml`（同义文件=第二真源），**不删** `rosters/<id>/` —— 那个目录就是新档案的落脚处。`--repo` 写进产物的 `source.repo`，避免发布仓的产物署错名。
+- `roster migrate --dir <库> [--write]` 读 v1 档案，把 `systemPrompt` 拆成角色（`shared-roles/<member>/AGENT.md`）+ 组装（成员改为引用），原地重写并生成 `dist/`。默认只出计划，`--write` 才落盘——这是唯一会删旧目录的命令。
+- `roster migrate --dir <库根> --from <旧目录> [--repo <owner/repo>] [--write]`：v1 档案放在子目录（`rosters/<id>/roster.yaml`，即"仓库本身就是库、只是档案隔了一层"）时用这条。它就地重写 `rosters/<id>/roster.yaml`、在库根补 `shared-roles/` 与 `dist/`、删掉并排的 `roster.json`/`roster.yml`（同义文件=第二真源），**不删** `rosters/<id>/` —— 那个目录就是新档案的落脚处。`--repo` 写进产物的 `source.repo`，避免发布仓的产物署错名。
 - **collection 的 `path` 可以是空字符串**，表示仓库根就是库：`roles/`、`rosters/`、`dist/` 直接躺在根上。配合 `files` 映射指向 `dist/<id>-<ver>.json`。
 - **角色名带档案 id 前缀**（`core-review-reviewer`）：v2 要求同库角色名唯一，而真实档案库里几十套组装都可能叫 `lead`。队长与成员同名时，队长得到 `-captain` 后缀，不与人设合并。
 - `maintainers` 用 `handle` 模式（允许大写与点），不复用档案 id 的小写短横线规则——维护者是账号，不是标识符。

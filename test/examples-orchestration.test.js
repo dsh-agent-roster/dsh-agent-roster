@@ -21,7 +21,7 @@ import { splitFrontmatter } from "../lib/frontmatter.js";
 const root = nodePath.dirname(fileURLToPath(new URL("../package.json", import.meta.url)));
 const example = nodePath.join(root, "examples-orchestration");
 const rosterDir = nodePath.join(example, "rosters", "core-review");
-const rolesDir = nodePath.join(example, "roles");
+const rolesDir = nodePath.join(example, "shared-roles");
 
 const compile = () =>
   compileRosterAt(rosterDir, {

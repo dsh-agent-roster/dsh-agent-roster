@@ -33,7 +33,7 @@
 | 文件 | 格式 | 作用 | 谁写 |
 |---|---|---|---|
 | `roster.yaml`（v2，`rosters/<id>/`） | `dsh-agent-roster/roster@2` | 成员引用角色、队长、编排与门 | 人 / 面板 / capture |
-| `roles/<name>/AGENT.md` | frontmatter + 正文 + `parts/` | 人设的唯一真源 | 人 |
+| `shared-roles/<name>/AGENT.md`（或 `rosters/<id>/roles/<name>/`） | frontmatter + 正文 + `parts/` | 人设的唯一真源 | 人 |
 | `roster.yaml`（v1，平铺） | `dsh-agent-roster/v1` | 单文件交换形态；**已冻结** | 人 / `/install` 摊平 |
 | `dist/<id>-<ver>.json` | `compiled@1` | 编译产物：拼装后的人设、施工图、回执合并 | CLI `compile --write` |
 | `space.yaml` | `dsh-agent-roster/space@1` | 一座库的封面：登记、布局、知识、拉取来源 | 人 / `clone` |

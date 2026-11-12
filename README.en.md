@@ -63,13 +63,14 @@ A v2 roster on disk looks like this (**required**: `AGENT.md` and `roster.yaml`;
 ├── space.yaml                  # optional: register this library as a space
 ├── snippets/                   # optional: shared text ({{> snippets/x.md}})
 ├── knowledge/                  # optional: project knowledge; prompts carry title+summary+path
-├── roles/
+├── shared-roles/               # shared roles (legacy name roles/ is still read)
 │   └── writer/
 │       ├── AGENT.md            # required: frontmatter + persona body
 │       └── parts/              # optional: body parts, joined in prompt.parts order
 ├── rosters/
 │   └── docs/
 │       ├── roster.yaml         # required: members, captain, orchestration and gates
+│       ├── roles/              # optional: roles private to this roster (shadow shared)
 │       └── capabilities.yaml   # optional: what the deployment must provide first
 └── dist/
     └── docs-1.0.0.json         # compiled artifact (panel, /install and subscriptions read it)

@@ -9,7 +9,7 @@
 | 形态 | 目录特征 | 由谁产生 |
 |---|---|---|
 | **平铺库（v1）** | `<根>/<id>/roster.yaml` | 手写、单份安装、老库 |
-| **空间（v2）** | `<根>/roles/` + `<根>/rosters/`（+ 可选 `snippets/`、`space.yaml`） | 手写、`migrate`、`clone` |
+| **空间（v2）** | `<根>/shared-roles/` + `<根>/rosters/`（+ 可选 `snippets/`、`space.yaml`；旧名 `<根>/roles/` 仍读） | 手写、`migrate`、`clone` |
 | **拉取副本** | 空间或平铺库 + `.dsh-roster-origin.json`（来源账本） | `clone` / 面板「拉取整个空间」 |
 
 两种档案版本语义同一套，只是磁盘形态不同；面板的档案详情与 `roster_list` / `roster_show` 都会标出 `format: roster@1 | roster@2`。**v1 已冻结**：只修 bug、不再加字段；需要角色复用、`{{> …}}` 引用、公共知识或编排时用 v2。按合集安装（`/install`）落的是摊平后的 v1，要保留空间布局请用整空间拉取。
@@ -69,7 +69,15 @@ captain:                     # 可选：记录队长（= 创建团队的那个�
 
 ## 角色 → 档案 → 产物（v2）
 
-### 角色 `roles/<name>/AGENT.md`
+### 角色
+
+角色有两处作用域，指向同一套 `AGENT.md` 格式：
+
+- **共享角色** `shared-roles/<name>/AGENT.md`：整座库都能引用，适合通用角色；旧名 `roles/` 仍能读，只会报一条 info 提示改名。
+- **档案本地角色** `rosters/<id>/roles/<name>/AGENT.md`：只被这一份档案解析得到，另一份档案引用它会在编译期报 `unknown-role`。
+- 两处同名时按**就近原则**用本地这一份，并报 info `role-local-overrides-shared`（覆盖不静默）。
+
+`shared-roles/<name>/AGENT.md` 的格式：
 
 角色是「一个目录 + 一份精确命名为 `AGENT.md` 的文件」；目录可以嵌套（最多 3 层），但**一个目录只能有一份角色**。角色身份取 frontmatter 的 `name`，不是目录名；重名是 error。
 
@@ -451,7 +459,7 @@ node bin/cli.mjs import-agency --from ~/.dsh/profiles/web/node_modules/@michenga
   --dir ~/.dsh/agent-roster/agency-experts --write
 ```
 
-- 每位专家 → 一个角色（`roles/agency-<slug>/AGENT.md`），frontmatter 的 `notes` 记来源文件与正文哈希。
+- 每位专家 → 一个角色（`shared-roles/agency-<slug>/AGENT.md`），frontmatter 的 `notes` 记来源文件与正文哈希。
 - 每个领域 → 若干份档案（每份 ≤24 人，`as` 用专家 slug），`targets: [agent-teams/members]`。
 - 正文超过 8000 字符的拆成 `parts/rest.md`；超过 12000 的**跳过并写明原因**（当前 331 位里有 23 位）。
 - 库根写 `NOTICE-agency.txt` 保留 Apache-2.0 归属；导入后与源包再无联动，源包升级不会自动更新。

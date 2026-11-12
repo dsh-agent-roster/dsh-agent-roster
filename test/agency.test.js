@@ -104,7 +104,7 @@ test("agency：目标库非空默认拒绝写；--force 才覆盖", () => {
   const written = writeAgencyLibrary(target, plan, { force: true });
   assert.equal(written.ok, true);
   assert.ok(fs.existsSync(nodePath.join(target, "space.yaml")));
-  assert.ok(fs.existsSync(nodePath.join(target, "roles/agency-hr-recruiter/AGENT.md")));
+  assert.ok(fs.existsSync(nodePath.join(target, "shared-roles/agency-hr-recruiter/AGENT.md")));
   assert.ok(fs.existsSync(nodePath.join(target, "NOTICE-agency.txt")));
   assert.equal(fs.readFileSync(nodePath.join(target, "space.yaml"), "utf8").includes("rosters:"), true);
 });
