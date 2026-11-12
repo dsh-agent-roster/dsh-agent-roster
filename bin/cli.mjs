@@ -323,6 +323,8 @@ async function runCompile(options) {
   // 在 `<root>/rosters/<id>/` 里就不再替它猜角色目录：由 compileRosterAt 按
   // 「档案本地 roles/ → 共享 shared-roles/ → 旧名 roles/」自己发现。
   const underRosters = nodePath.basename(parent) === "rosters";
+  // 产物落在库根：`<root>/rosters/<id>/` → `<root>/dist/`；独立档案目录 → 它的父目录。
+  const root = underRosters ? nodePath.dirname(parent) : null;
   const rolesDir =
     options.roles === null
       ? underRosters
