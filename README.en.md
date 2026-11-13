@@ -154,7 +154,7 @@ roster_iterate           # succession: new session, or in place (asks before arc
 ## Development and verification
 
 ```bash
-node --test              # 468 tests
+node --test              # 481 tests
 npm run smoke            # host + client smoke
 npm run check:host       # four host contracts, read from the installed DSH
 npm run check:locale     # panel strings, en/zh parity
