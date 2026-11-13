@@ -28,7 +28,7 @@ After upgrading, restart `dsh web` to load the new version.
 | Roster definition | v2 is three layers: `roles/<name>/AGENT.md` (+ `parts/` and `{{> include}}`) → `rosters/<id>/roster.yaml` → self-contained `dist/` | `roster_compile` |
 | Validation | Every field is direct / config / declaration; a gate needs an executable `verify`; capabilities report present / missing / unknown | `validate`, `roster_verify` |
 | Team creation | Turn a roster into member arguments; new session or a named existing one, with workspace and title | `roster_team` |
-| Succession | Compare roster with runtime → optional write-back → new session, or **replace within the current session** (asks before archiving the old team); carry context with `handover.summary` | `roster_iterate` |
+| Succession | Compare roster with runtime → optional write-back → new session, or **replace within the current session** (asks before archiving the old team); carry captain context with `handover.summary` and per-member context with `handover.members` | `roster_iterate` |
 | Verification | Read what `team.json` actually stored (provider / model / reasoningEffort / toolPolicy) and report match, degraded, or unverifiable | `roster_verify` |
 | Write-back | Put runtime values back into the roster; asks first by default | `roster_capture` |
 | Knowledge | Roles and rosters can declare `knowledge:`; the prompt carries title + summary + path only, the body is opened on demand | `roster_compile` |

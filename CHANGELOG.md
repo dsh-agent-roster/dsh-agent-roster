@@ -5,6 +5,7 @@
 ## [Unreleased]
 
 ### Added
+- `roster_iterate` 的成员上下文包：从旧 `team.json` 收集每名成员的旧会话 id、日志目录与最近任务回执，`handover.members` 补上一代的总结，整段要求新队长注入到该成员第一个任务的 description（成员之间不共享对话）。
 - `roster_iterate` 的 `handover.summary`（≤2000 字符）：新会话没有旧会话的对话记录，摘要随起始消息送达，是唯一的上下文载体；可以只写摘要、不写动作步骤。结果里明说两种落点的上下文差异（新会话：记录不继承；当前会话：记录保留）。
 
 
