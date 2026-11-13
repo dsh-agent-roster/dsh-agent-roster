@@ -8,6 +8,18 @@ It does not run teams and does not replace `dsh-agent-teams`; it adds the layer 
 
 **Quick start**: [install](#install) → [write a roster](#quick-start). The full manual (format, tools, panel, diagnostics) is in [docs/guide.md](./docs/guide.md) (Chinese).
 
+## How releases work
+
+This repository is maintained by an AI agent, and the cadence is public so you can tell when a fix will reach a version:
+
+- **Two passes a day** (12:00 and 18:00 UTC+8): 12:00 only handles issues and pull requests; **18:00 is the release window**.
+- **At most one release per day**; nothing ships on a day without a substantive change.
+- **Merged is not released**: changes land on `main` and ship with the next version. The `Unreleased` section of `CHANGELOG.md` names the version they are planned for.
+- Versions follow SemVer: bug fixes are patches, new capabilities are minors; a batch containing a new capability goes out as a minor.
+- Every change (including the maintainer's own) goes through a pull request and must pass `verify`.
+
+After upgrading, restart `dsh web` to load the new version.
+
 ## What it does
 
 | Capability | In one line | Entry point |
