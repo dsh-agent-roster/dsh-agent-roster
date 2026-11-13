@@ -708,11 +708,18 @@ test("roster_iterate：为每名成员生成上下文包，上一代的总结随
   assert.equal(value.handover.members, 2);
   assert.match(text, /2 名成员包/);
   const sent = calls.find((item) => item[0] === "prompt")[1].content[0].text;
-  assert.match(sent, /成员上下文包（来自旧团队 members-team，2 名成员）/);
-  assert.match(sent, /上一代总结：上一代查过入职流程，只差回滚/);
-  assert.match(sent, /把每一名成员的包原文发给他本人/);
-  assert.match(sent, /最近任务：t1 审一遍入职流程（completed）——结论：缺回滚步骤/);
-  assert.match(sent, /helper[\s\S]*上一代总结：未写/);
+  assert.match(sent, /成员上下文（来自旧团队 members-team，2 名成员/);
+  assert.match(sent, /投递方式：`agent_teams_add_member` 之后，逐个成员发一条消息/);
+  assert.match(sent, /上一代查过入职流程，只差回滚/);
+  assert.match(sent, /agent_teams_send_message\(\{ to: "reviewer", content: "你的上一代交接包：/);
+  // 包落盘：文件存在、里面有总结与任务回执
+  const packetFile = sent.match(/你的上一代交接包：([^。]+。?md)/)[1].trim();
+  const packetText = readFileSync(packetFile, "utf8");
+  assert.match(packetText, /# 上一代交接包：reviewer/);
+  assert.match(packetText, /上一代查过入职流程，只差回滚/);
+  assert.match(packetText, /### t1 审一遍入职流程（completed）/);
+  assert.match(packetText, /结论：缺回滚步骤/);
+  assert.match(sent, /helper（idle）：未写总结/);
 });
 
 /** 写一份最小的团队状态（只放迭代要读的字段）。 */
