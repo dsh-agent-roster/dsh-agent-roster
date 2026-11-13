@@ -721,6 +721,28 @@ function writeTeamFixture(stateDir, team) {
   writeFileSync(path.join(stateDir, team.id, "team.json"), JSON.stringify(team, null, 2));
 }
 
+test("roster_iterate：多支队都声称来自同一份档案时拒绝，不猜换代哪一支", async () => {
+  const lib = mkdtempSync(path.join(tmpdir(), "iter-amb-"));
+  const stateDir = mkdtempSync(path.join(tmpdir(), "iter-amb-state-"));
+  const ws = mkdtempSync(path.join(tmpdir(), "iter-amb-ws-"));
+  cpSync(examples, lib, { recursive: true });
+  for (const id of ["core-review-a", "core-review-b"]) {
+    writeTeamFixture(stateDir, { id, name: id, phase: "running", description: "roster:core-review@1.0.0#abc12345", captainSessionId: `session-${id}`, members: [], tasks: [] });
+    // 第一支队写完就被第二支队覆盖同一目录 → 这里显式写两次不同目录名
+  }
+  const sessionController = {
+    async create() { return { sessionId: "session-amb" }; },
+    async selectModel() { return { selected: {} }; },
+    async prompt() { return {}; },
+    async list() { return { items: [] }; },
+  };
+  const { tools } = register({ services: { sessionController, workspaceRegistry: { list: () => [{ id: "ws-1", path: ws, title: "ws" }] } }, agentTeamsStateDir: stateDir });
+  const { value } = await call(tools, "roster_iterate", { id: "core-review", path: lib, stateDir, mode: "new", capture: false });
+  assert.equal(value.ok, false);
+  assert.equal(value.code, "ambiguous-team");
+  assert.deepEqual(value.teams.sort(), ["core-review-a", "core-review-b"]);
+});
+
 test("roster_iterate：没传 mode 时先问落点，不建会话、不改档案", async () => {
   const lib = mkdtempSync(path.join(tmpdir(), "iter-ask-mode-"));
   cpSync(examples, lib, { recursive: true });
