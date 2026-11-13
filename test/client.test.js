@@ -66,6 +66,7 @@ async function loadClient(options = {}) {
     slots: {
       inject(name, fn) {
         slots.push(name);
+        if (options.throwInSlot === name) throw new Error(`slot ${name} is not available in this host`);
         return fn();
       },
       register(meta, component) {
@@ -113,6 +114,22 @@ test("apply 在 locale / configForms 缺失时不抛，槽位仍全部登记", a
   const { registrations, slots } = await loadClient();
   assert.deepEqual(slots.slice().sort(), ["main", "sidebar.panellist"]);
   assert.equal(registrations.length, 2);
+});
+
+test("槽位不可用或登记抛错时 apply 不抛，宿主照常启动", async () => {
+  const errors = [];
+  const original = console.error;
+  console.error = (...args) => errors.push(args);
+  try {
+    const { registrations, slots } = await loadClient({ throwInSlot: "sidebar.panellist" });
+    assert.deepEqual(slots.slice().sort(), ["main", "sidebar.panellist"]);
+    assert.equal(registrations.length, 1, "侧栏失败时主面板仍要登记");
+    assert.equal(registrations[0].meta.name, "main");
+    assert.equal(errors.length, 1, "失败要留一条可诊断的 console.error");
+    assert.match(String(errors[0][0]), /slot sidebar\.panellist failed/);
+  } finally {
+    console.error = original;
+  }
 });
 
 test("main 槽用键控登记，key 是面板 id", async () => {

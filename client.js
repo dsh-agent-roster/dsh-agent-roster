@@ -3691,7 +3691,34 @@ window.__ModuleLoader__.load({
      * @param {object} ctx
      * @returns {void}
      */
+    // 面板挂载绝不能让宿主启动失败：任何一步抛错都只记录、不向上抛。
+    // issue #23（Desktop 0.2.2-rc.1）里 client entry 被判 failed，崩溃日志却没有
+    // 插件自己的异常文本，无法定位具体抛出点；这里把责任收回来——面板坏了，宿主照常起。
+    function reportPanelFailure(where, error) {
+      try {
+        console.error(`[dsh-agent-roster] ${where} failed; the panel is disabled but the host keeps running:`, error);
+      } catch {
+        /* 连 console 都没有时（极端宿主）只能放弃上报。 */
+      }
+    }
+
+    function tryInject(ctx, name, factory) {
+      try {
+        ctx.slots.inject(name, factory);
+      } catch (error) {
+        reportPanelFailure(`slot ${name}`, error);
+      }
+    }
+
     function apply(ctx) {
+      try {
+        mountPanel(ctx);
+      } catch (error) {
+        reportPanelFailure("panel mount", error);
+      }
+    }
+
+    function mountPanel(ctx) {
       ensureStyle();
       if (typeof document !== "undefined") void i18n.load();
 
@@ -3756,7 +3783,7 @@ window.__ModuleLoader__.load({
 
       HOST.form = form;
 
-      ctx.slots.inject("sidebar.panellist", () =>
+      tryInject(ctx, "sidebar.panellist", () =>
         ctx.slots.register(
           {
             name: "sidebar.panellist",
@@ -3788,7 +3815,7 @@ window.__ModuleLoader__.load({
         ),
       );
 
-      ctx.slots.inject("main", () =>
+      tryInject(ctx, "main", () =>
         ctx.slots.register({ name: "main", key: PANEL_ID, locale: NS }, Panel),
       );
 
