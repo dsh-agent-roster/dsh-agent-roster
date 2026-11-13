@@ -25,10 +25,11 @@ function fixture() {
   return { sessions, team };
 }
 
-test("member-context：收集成员、最近任务与旧会话目录，移除的成员不进包", () => {
+test("member-context：收集成员、最近任务与旧会话目录；退役成员也进包（归档团队全是 removed）", () => {
   const { sessions, team } = fixture();
   const { members } = collectMemberPackets(team, { sessionsRootDir: sessions });
-  assert.equal(members.length, 2);
+  assert.equal(members.length, 3);
+  assert.equal(members.find((item) => item.name === "removed-one").status, "removed");
   const dev = members.find((item) => item.name === "pipeline-dev");
   assert.equal(dev.sessionId, "8bad8912-cb57-46ab-9ba7-33f743688e22");
   assert.ok(dev.sessionPath.endsWith("8bad8912-cb57-46ab-9ba7-33f743688e22"));
@@ -61,7 +62,7 @@ test("member-context：渲染写明「成员之间不共享对话」，没总结
   const { members } = collectMemberPackets(team, { sessionsRootDir: sessions });
   mergeMemberSummaries(members, [{ name: "pipeline-dev", summary: "做到 t1" }]);
   const text = renderMemberPackets(members, { teamId: "old-team" });
-  assert.match(text, /成员上下文包（来自旧团队 old-team，2 名成员）/);
+  assert.match(text, /成员上下文包（来自旧团队 old-team，3 名成员）/);
   assert.match(text, /成员之间不共享对话记录/);
   assert.match(text, /pipeline-dev（角色 pipeline-dev，状态 idle，旧会话 8bad8912/);
   assert.match(text, /上一代总结：做到 t1/);
