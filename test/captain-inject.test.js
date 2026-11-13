@@ -251,6 +251,36 @@ test("已有会话建团：mark 时把 live agent 交给注入层，团队已在
 });
 
 
+test("installCaptainInjector：插件装上时已经存在的队长会话也补挂人设", () => {
+  resetCaptainInjector();
+  const lib = tempRoot();
+  makeLibrary(lib);
+  const ws = tempRoot();
+  makeTeam(ws);
+  const agent = fakeAgent(ws);
+
+  const handlers = new Map();
+  const ctx = {
+    on(name, fn) {
+      handlers.set(name, fn);
+    },
+    off(name, fn) {
+      if (handlers.get(name) === fn) handlers.delete(name);
+    },
+    get(name) {
+      return name === "agents" ? { list: () => [agent] } : undefined;
+    },
+  };
+  const dispose = installCaptainInjector(ctx, { agentTeamsStateDir: ".agent-teams" }, {
+    roots: () => [{ rootDir: lib, exists: true }],
+  });
+  assert.equal(agent.sections.length, 1, "不会等到一次永远不会来的 agent/created");
+  assert.equal(attachedCaptain("session-1").rosterId, "demo");
+  dispose();
+  resetCaptainInjector();
+});
+
+
 test("installCaptainInjector：团队晚落盘也能挂上，agent 销毁后清掉", async () => {
   resetCaptainInjector();
   const lib = tempRoot();
