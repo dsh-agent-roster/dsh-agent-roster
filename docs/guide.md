@@ -398,7 +398,8 @@ npx dsh-agent-roster update --dir /tmp/clone/agent-teams --accept  # 把本地�
   - `mode: "new"`：新建会话，旧团队原样保留。**新会话没有旧会话的对话记录**——上下文要靠 `handover.summary` 带过去；
   - `mode: "session"`：在当前（或 `sessionId` 指定的）会话里换代。会话已经在领导一支**同源**团队时，先问是否归档：`archiveOld: true` 或配置 `iterateArchive: "replace"` 才动手；归档写进起始消息的第一步（让会话自己调 `agent_teams_delete`——中断成员、把任务与邮箱移进 `archive/`），插件不直接改状态目录。会话领导的团队来自别的档案时拒绝（`session-leads-other-team`）；没有溯源行时要求显式 `archiveOld: true`；一个会话同时领导多支队时也直接拒绝（先归档到只剩一支）——都不猜。
   - 未传 `mode` 时看配置 `iterateMode`（`ask` / `new` / `session`，默认 `ask`）：`ask` 先返回「新开会话还是当前会话」并**停住、不建会话**；选定后加 `remember: true`，它会把 `iterateMode`（以及确认过的 `iterateArchive: "replace"`）写进配置，写不进配置就记进库根偏好，以后不再问。
-- 换代上下文：`handover.summary`（≤2000 字符）由**当前会话**写下——做到哪了、结论与理由、未完成项、踩过的坑——随起始消息送到新会话；没写摘要就只能靠交接清单与档案，细节得回旧会话日志里翻。清单本身（`handover.steps`）只承载动作，不承载上下文。
+- 成员上下文：`handover.members`（≤32 条，`{name, summary}`，每条 ≤800 字符）由**旧会话**为每名成员写「做到哪、结论、坑」。插件另外自动补上客观事实：该成员的旧会话 id、会话日志目录、最近 3 个任务及回执。整段以「成员上下文包」进入起始消息，并明确要求新队长把每名成员的包放进他**第一个任务的 description**——成员之间不共享对话记录，这是唯一能把上一代经验送到成员手里的地方。没写总结的成员如实标「未写」，不拿任务回执冒充总结。
+- 队长上下文：`handover.summary`（≤2000 字符）由**当前会话**写下——做到哪了、结论与理由、未完成项、踩过的坑——随起始消息送到新会话；没写摘要就只能靠交接清单与档案，细节得回旧会话日志里翻。清单本身（`handover.steps`）只承载动作，不承载上下文。
 - 有可写回差异而 `capture` 未指定时，它先返回差异并**停住、不建会话**，等你选：`capture: true`（写回再换代）、`capture: true` + `remember: true`（写回并记住以后都自动）、`capture: false`（不改档案直接换代）。
 
 档案自己也能写交接指南：`handover` 是「换代时先读什么」的长期意见，不是动作脚本。条目可以是字符串，也可以是 `{title, detail?, verify?}`（最多 32 条，`title` ≤120 字符，`detail`/`verify` ≤400 字符）。它随 `roster_iterate` 进入新队长的起始消息，顺序是**档案指南 → 本次步骤（若有）→ 系统兜底**；插件不会照着它执行任何东西。

@@ -667,6 +667,54 @@ test("roster_iterate：handover.summary 是唯一上下文载体，写进起始�
   assert.doesNotMatch(sent, /交接清单（这些动作不在档案里/);
 });
 
+test("roster_iterate：为每名成员生成上下文包，上一代的总结随首个任务注入", async () => {
+  const lib = mkdtempSync(path.join(tmpdir(), "iter-members-"));
+  const stateDir = mkdtempSync(path.join(tmpdir(), "iter-members-state-"));
+  const ws = mkdtempSync(path.join(tmpdir(), "iter-members-ws-"));
+  cpSync(examples, lib, { recursive: true });
+  writeTeamFixture(stateDir, {
+    id: "members-team",
+    name: "members-team",
+    phase: "running",
+    description: "roster:core-review@1.0.0#abc12345",
+    captainSessionId: "session-members",
+    members: [
+      { id: "sess-dev-1", name: "reviewer", role: "reviewer", status: "idle" },
+      { id: "", name: "helper", role: "helper", status: "idle" },
+    ],
+    tasks: [{ id: "t1", subject: "审一遍入职流程", status: "completed", assignee: "reviewer", updatedAt: 2, output: "结论：缺回滚步骤" }],
+  });
+  const calls = [];
+  const sessionController = {
+    async create() { return { sessionId: "session-next" }; },
+    async selectModel() { return { selected: {} }; },
+    async prompt(request, signal) { signal.throwIfAborted(); calls.push(["prompt", request]); return {}; },
+    async list() { return { items: [] }; },
+  };
+  const { tools } = register({
+    services: { sessionController, workspaceRegistry: { list: () => [{ id: "ws-1", path: ws, title: "ws" }] } },
+    agentTeamsStateDir: stateDir,
+  });
+  const { text, value } = await call(tools, "roster_iterate", {
+    id: "core-review",
+    path: lib,
+    stateDir,
+    mode: "new",
+    sessionName: "core-review-members",
+    capture: false,
+    handover: { members: [{ name: "reviewer", summary: "上一代查过入职流程，只差回滚" }] },
+  });
+  assert.equal(value.ok, true);
+  assert.equal(value.handover.members, 2);
+  assert.match(text, /2 名成员包/);
+  const sent = calls.find((item) => item[0] === "prompt")[1].content[0].text;
+  assert.match(sent, /成员上下文包（来自旧团队 members-team，2 名成员）/);
+  assert.match(sent, /上一代总结：上一代查过入职流程，只差回滚/);
+  assert.match(sent, /把每一名成员的包原文放进他第一个任务的 description/);
+  assert.match(sent, /最近任务：t1 审一遍入职流程（completed）——结论：缺回滚步骤/);
+  assert.match(sent, /helper[\s\S]*上一代总结：未写/);
+});
+
 /** 写一份最小的团队状态（只放迭代要读的字段）。 */
 function writeTeamFixture(stateDir, team) {
   mkdirSync(path.join(stateDir, team.id), { recursive: true });
