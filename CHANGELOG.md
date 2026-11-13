@@ -4,12 +4,15 @@
 
 ## [Unreleased]
 
+计划随 **1.31.1**（patch）发布。
+
 ### Added
 
 - `roster_verify` 的成员段落新增「人设构成」一行（`body ×1 · knowledge ×3`），把编译期 `promptStats.parts` 带进核对报告：以前只能看到人设总字数，无法确认 knowledge 概要到底有没有拼进去。
 
 ### Fixed
 
+- 面板挂载失败不再让整个宿主启动失败（issue #23）：客户端入口的 `apply()` 现在整体 try/catch，两个槽位注册各自兜底，失败只在 console 留一行 `[dsh-agent-roster] … failed`；此前任一槽位抛错都会让该 client entry 被判 `failed`，Web 启动掉进崩溃页。
 - `roster_compile` 在**平铺库**（没有 `space.yaml`）上不再崩：报告最后一行改用「（平铺库，无 space.yaml）」，编译结果照常返回（此前 `scan.space.id` 读 null，整个工具报错）。
 - `roster_iterate` 不再把**排队**说成**已归档**：文案改为「已排队归档旧团队 … 新队长第一步会调 agent_teams_delete」，返回值新增 `archiveQueued` / `archivedNow: false`；归档真正发生前旧团队仍在 `.agent-teams/` 下。
 
