@@ -908,6 +908,9 @@ window.__ModuleLoader__.load({
                 : `${engine.label} · ${t("teamCreate.engineMissing")}`,
           ),
         ),
+        noEngine
+          ? h("p", { className: "rstr-hint" }, t("teamCreate.engineInstall"))
+          : null,
         h(
           Field,
           { label: t("teamCreate.model"), hint: t("teamCreate.modelHint") },
