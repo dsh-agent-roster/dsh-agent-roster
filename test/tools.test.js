@@ -632,6 +632,41 @@ test("roster_iterate：旧团队按溯源匹配，交接清单落盘并附进起
   assert.match(promptCall[1].content[0].text, /系统级迭代补充/);
 });
 
+test("roster_iterate：handover.summary 是唯一上下文载体，写进起始消息并落盘", async () => {
+  const lib = mkdtempSync(path.join(tmpdir(), "iter-summary-"));
+  const stateDir = mkdtempSync(path.join(tmpdir(), "iter-summary-state-"));
+  const ws = mkdtempSync(path.join(tmpdir(), "iter-summary-ws-"));
+  cpSync(examples, lib, { recursive: true });
+  const calls = [];
+  const sessionController = {
+    async create() { return { sessionId: "session-summary" }; },
+    async selectModel() { return { selected: {} }; },
+    async prompt(request, signal) { signal.throwIfAborted(); calls.push(["prompt", request]); return {}; },
+    async list() { return { items: [] }; },
+  };
+  const { tools } = register({
+    services: { sessionController, workspaceRegistry: { list: () => [{ id: "ws-1", path: ws, title: "ws" }] } },
+    agentTeamsStateDir: stateDir,
+  });
+  const { text, value } = await call(tools, "roster_iterate", {
+    id: "core-review",
+    path: lib,
+    stateDir,
+    mode: "new",
+    sessionName: "core-review-summary",
+    capture: false,
+    handover: { summary: "做到 0.7 了，卡在验证脚本超时；结论：不要重跑全量。" },
+  });
+  assert.equal(value.ok, true);
+  assert.equal(value.handover.steps, 0);
+  assert.ok(value.handover.summaryChars > 0);
+  assert.match(text, /上下文：新会话没有旧会话的对话记录/);
+  const sent = calls.find((item) => item[0] === "prompt")[1].content[0].text;
+  assert.match(sent, /交接摘要（来自旧会话/);
+  assert.match(sent, /卡在验证脚本超时/);
+  assert.doesNotMatch(sent, /交接清单（这些动作不在档案里/);
+});
+
 /** 写一份最小的团队状态（只放迭代要读的字段）。 */
 function writeTeamFixture(stateDir, team) {
   mkdirSync(path.join(stateDir, team.id), { recursive: true });

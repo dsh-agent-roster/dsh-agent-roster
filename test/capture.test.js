@@ -148,5 +148,16 @@ test("handover：清单写盘、渲染与非法步骤", () => {
   const bad = buildHandoverPlan({ roster: { id: "x" }, steps: [{ kind: "reboot", detail: "x" }] });
   assert.equal(bad.ok, false);
   assert.ok(bad.diagnostics.some((item) => item.code === "handover-kind-unknown"));
-  fs.rmSync(lib, { recursive: true, force: true });
+
+
+  const withSummary = buildHandoverPlan({ roster: { id: "core-review" }, summary: "只交接上下文", steps: [] });
+  assert.equal(withSummary.ok, true);
+  assert.equal(withSummary.plan.summary, "只交接上下文");
+  const rendered = renderHandover(withSummary.plan, "/x.json");
+  assert.match(rendered, /交接摘要（来自旧会话/);
+  assert.match(rendered, /只交接上下文/);
+  assert.doesNotMatch(rendered, /交接清单（这些动作不在档案里/);
+  const tooLong = buildHandoverPlan({ roster: { id: "core-review" }, summary: "x".repeat(2001), steps: [{ kind: "note", detail: "d", verify: "" }] });
+  assert.equal(tooLong.ok, false);
+  assert.ok(tooLong.diagnostics.some((item) => item.code === "handover-summary-too-long"));  fs.rmSync(lib, { recursive: true, force: true });
 });
