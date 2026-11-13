@@ -710,7 +710,7 @@ test("roster_iterate：为每名成员生成上下文包，上一代的总结随
   const sent = calls.find((item) => item[0] === "prompt")[1].content[0].text;
   assert.match(sent, /成员上下文包（来自旧团队 members-team，2 名成员）/);
   assert.match(sent, /上一代总结：上一代查过入职流程，只差回滚/);
-  assert.match(sent, /把每一名成员的包原文放进他第一个任务的 description/);
+  assert.match(sent, /把每一名成员的包原文发给他本人/);
   assert.match(sent, /最近任务：t1 审一遍入职流程（completed）——结论：缺回滚步骤/);
   assert.match(sent, /helper[\s\S]*上一代总结：未写/);
 });
