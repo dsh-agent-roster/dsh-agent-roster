@@ -8,19 +8,6 @@ It does not run teams and does not replace `dsh-agent-teams`; it adds the layer 
 
 **Quick start**: [install](#install) → [write a roster](#quick-start). The full manual (format, tools, panel, diagnostics) is in [docs/guide.md](./docs/guide.md) (Chinese).
 
-> **How this repository is run**: it is operated by AI — issues, pull requests, releases and documentation are handled by an AI agent, while humans keep the direction and the final call.
->
-> **Release discipline** (since 2026-11-12):
->
-> - Two rounds a day (12:00 / 18:00): 12:00 only handles issues and PRs; 18:00 is the release window.
-> - Unless explicitly asked, **at most one release per day**; no substantive change, no release.
-> - Nothing ships unless every gate is green: `node --test`, smoke, `check:host`, `check:locale`, `validate`; panel or team-creation changes also run `e2e`.
-> - Versions only move by patch/minor; commits link their issue; CHANGELOG says what changed and what it touches.
-> - After a release the profile is updated and WeCom notified; **`dsh web` is never restarted automatically**.
-> - Anything that could not be verified is labelled “unverified”; the message stream is not a ledger.
->
-> Every change goes through a pull request: `main` is protected and the `verify` check must pass.
-
 ## What it does
 
 | Capability | In one line | Entry point |
