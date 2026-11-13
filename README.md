@@ -28,7 +28,7 @@
 | 档案定义 | v2 三层：`roles/<name>/AGENT.md`（+ `parts/` 与 `{{> 引用}}`）→ `rosters/<id>/roster.yaml` → 自包含产物 `dist/` | `roster_compile` |
 | 校验 | 字段归宿三分（direct / config / declaration）、门必须有可执行的 `verify`、能力要求只报 present / missing / unknown | `validate`、`roster_verify` |
 | 建团 | 从档案生成建员参数；新开会话或落到指定会话，可选工作区与会话名 | `roster_team` |
-| 换代 | 先比对档案与运行时 → 可选回写 → 新开会话，或**在当前会话里换代**（已带队时先问是否归档） | `roster_iterate` |
+| 换代 | 先比对档案与运行时 → 可选回写 → 新开会话或**在当前会话里换代**（已带队时先问是否归档）；上下文用 `handover.summary` 带过去 | `roster_iterate` |
 | 核对 | 读 `team.json` 里**实际存下的** provider / model / reasoningEffort / toolPolicy，逐项报一致、降级、无法核对 | `roster_verify` |
 | 回写 | 把运行时值写回档案；默认**先问再做**，确认后才动文件 | `roster_capture` |
 | 知识层 | 角色与档案可声明 `knowledge:`，提示词只放「标题 + 概要 + 路径」，正文按需打开 | `roster_compile` |
