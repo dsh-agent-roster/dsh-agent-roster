@@ -4,7 +4,7 @@
 
 面向多 Agent 团队的**静态成员档案**层（DeepSeek Harness）：把「团队里有谁、各自负责什么、走哪个模型、能碰哪些工具」写成可评审、可校验的文件，并在建团之后**核对运行时真实存下的值**。
 
-它不运行团队，也不替代 `dsh-agent-teams`——它补的是「建团前能 review、建完能核、跑偏能回写」这一层。
+它不运行团队，也不替代 `dsh-agent-teams`——它补的是「建团前能 review、建完能核、跑偏能回写、**人设能随会话继续进化**」这一层。
 
 **一分钟上手**：[安装](#安装) → [快速开始](#快速开始)；完整的格式、工具参数、面板与诊断在 [docs/guide.md](./docs/guide.md)。
 
@@ -24,7 +24,7 @@
 
 | 能力 | 一句话 | 入口 |
 |---|---|---|
-| **队长人设运行时注入** | 队长会话的 system prompt 用同名 section 换成档案人设，**每个模型步重读**：改档案下一步生效，不用重启或重建会话 | 自动 |
+| **会话人设可进化** | 队长的 system prompt 由同名 section 承载档案人设，**每个模型步重读**：你改、或会话自己改，下一步就生效——不用重启，也不用重建会话。人设因此是一条能随运行继续生长的活文件，而不是 spawn 时冻死的一段文字 | 自动 |
 | 档案定义 | v2 三层：`roles/<name>/AGENT.md`（+ `parts/` 与 `{{> 引用}}`）→ `rosters/<id>/roster.yaml` → 自包含产物 `dist/` | `roster_compile` |
 | 校验 | 字段归宿三分（direct / config / declaration）、门必须有可执行的 `verify`、能力要求只报 present / missing / unknown | `validate`、`roster_verify` |
 | 建团 | 从档案生成建员参数；新开会话或落到指定会话，可选工作区与会话名 | `roster_team` |

@@ -4,7 +4,7 @@
 
 A **static member roster** layer for multi-agent teams on DeepSeek Harness: who is on the team, what each member owns, which model route they take, and which tools they may touch — written as reviewable, validatable files, and **checked against what the runtime actually stored** after the team is created.
 
-It does not run teams and does not replace `dsh-agent-teams`; it adds the layer around it — review the roster before creating a team, verify after, and write drift back.
+It does not run teams and does not replace `dsh-agent-teams`; it adds the layer around it — review the roster before creating a team, verify after, write drift back, and **keep the persona evolving with the session**.
 
 **Quick start**: [install](#install) → [write a roster](#quick-start). The full manual (format, tools, panel, diagnostics) is in [docs/guide.md](./docs/guide.md) (Chinese).
 
@@ -24,7 +24,7 @@ After upgrading, restart `dsh web` to load the new version.
 
 | Capability | In one line | Entry point |
 |---|---|---|
-| **Captain persona, live** | The captain session's system prompt is replaced (same-name section) with the roster persona and **re-read on every model step**: edit the file, next step reflects it — no restart, no new session | automatic |
+| **A persona that keeps evolving** | The captain's system prompt is a same-name section carrying the roster persona, **re-read on every model step**: edit it — yourself or from inside the session — and the next step reflects it, with no restart and no new session. The persona stays a living file rather than text frozen at spawn time | automatic |
 | Roster definition | v2 is three layers: `roles/<name>/AGENT.md` (+ `parts/` and `{{> include}}`) → `rosters/<id>/roster.yaml` → self-contained `dist/` | `roster_compile` |
 | Validation | Every field is direct / config / declaration; a gate needs an executable `verify`; capabilities report present / missing / unknown | `validate`, `roster_verify` |
 | Team creation | Turn a roster into member arguments; new session or a named existing one, with workspace and title | `roster_team` |
