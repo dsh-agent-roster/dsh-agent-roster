@@ -10,6 +10,10 @@
 
 - `roster_verify` 的成员段落新增「人设构成」一行（`body ×1 · knowledge ×3`），把编译期 `promptStats.parts` 带进核对报告：以前只能看到人设总字数，无法确认 knowledge 概要到底有没有拼进去。
 
+### Changed
+
+- 团队引擎 `@nanmicoder/dsh-agent-teams` 现在声明为**可选 peer 依赖**（`>=0.1.27`，`optional: true`）：只表明关系，不随本插件自动安装；未安装时创建团队对话框直接给出 `dsh plugin --profile <profile> add @nanmicoder/dsh-agent-teams`，不让人去猜包名。
+
 ### Fixed
 
 - 面板挂载失败不再让整个宿主启动失败（issue #23）：客户端入口的 `apply()` 现在整体 try/catch，两个槽位注册各自兜底，失败只在 console 留一行 `[dsh-agent-roster] … failed`；此前任一槽位抛错都会让该 client entry 被判 `failed`，Web 启动掉进崩溃页。
