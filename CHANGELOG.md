@@ -23,6 +23,7 @@
 - 面板挂载失败不再让整个宿主启动失败（issue #23）：客户端入口的 `apply()` 现在整体 try/catch，两个槽位注册各自兜底，失败只在 console 留一行 `[dsh-agent-roster] … failed`；此前任一槽位抛错都会让该 client entry 被判 `failed`，Web 启动掉进崩溃页。
 - `roster_compile` 在**平铺库**（没有 `space.yaml`）上不再崩：报告最后一行改用「（平铺库，无 space.yaml）」，编译结果照常返回（此前 `scan.space.id` 读 null，整个工具报错）。
 - `roster_iterate` 不再把**排队**说成**已归档**：文案改为「已排队归档旧团队 … 新队长第一步会调 agent_teams_delete」，返回值新增 `archiveQueued` / `archivedNow: false`；归档真正发生前旧团队仍在 `.agent-teams/` 下。
+- 插件在宿主启动中途装上时，**比它先存在的队长会话**不会再有 `agent/created`：现在装完先扫一遍活着的 agent（2 秒后再补一次，覆盖懒加载），补挂队长人设，`roster_verify` 不再把「已注入」误报成「未嵌入」。成员会话不受影响。
 - `roster_iterate` 的成员包不再跳过已归档团队的成员（旧代成员状态都是 `removed`，过滤后恰好把要交接的那一代清空）；状态改为写在包里。
 
 ## [1.31.0] - 2026-11-12
