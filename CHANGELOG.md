@@ -4,28 +4,26 @@
 
 ## [Unreleased]
 
-### Added
-- `roster_iterate` 把每名成员的上下文包写成独立文件（`.dsh-handover/<档案>-<时间>-members/<成员>.md`），起始消息里列出路径、一句总结和可照抄的 `agent_teams_send_message` 投递指令；完整回执不再整段塞进消息（十名成员原本 12.4k 字符，会被截断）。
-- `roster_iterate` 在多支队都声称来自同一份档案时拒绝（`ambiguous-team`，列出 id），不猜换代哪一支；会话绑定优先，会话里那一支不受影响。
-- `roster_iterate` 的成员上下文包：从旧 `team.json` 收集每名成员的旧会话 id、日志目录与最近任务回执，`handover.members` 补上一代的总结，整段要求新队长注入到该成员第一个任务的 description（成员之间不共享对话）。包有上限：每条总结 ≤800 字符、最多 32 名；角色压成 48 字符、任务回执压成 180 字符且每人 2 条；整段封顶 6000 字符，超出只列名字并指向交接清单文件。
-- `roster_iterate` 的 `handover.summary`（≤2000 字符）：新会话没有旧会话的对话记录，摘要随起始消息送达，是唯一的上下文载体；可以只写摘要、不写动作步骤。结果里明说两种落点的上下文差异（新会话：记录不继承；当前会话：记录保留）。
-
-
-计划随 **1.31.1**（patch）发布。
+## [1.32.0] - 2026-11-13
 
 ### Added
 
+- **换代带上上下文。** `roster_iterate` 新增 `handover.summary`（≤2000 字符）：新会话不继承旧会话的对话记录，摘要随起始消息送达，是唯一的上下文载体；可以只写摘要、不写动作步骤。结果里明说两种落点的差异（新会话：记录不继承；当前会话：记录保留，但新团队仍从零开始）。
+- **成员上下文包。** 从旧 `team.json` 收集每名成员的旧会话 id、日志目录与最近任务回执，`handover.members` 补上一代的总结。每名成员的包写成独立文件 `.dsh-handover/<档案>-<时间>-members/<成员>.md`，起始消息只列路径 + 一句总结 + 可照抄的 `agent_teams_send_message` 投递指令（十名成员原本 12.4k 字符，会被截断）。包有上限：每条总结 ≤800 字符、最多 32 名；角色压到 48 字符、任务回执 180 字符且每人 2 条；整段封顶 6000 字符，超出只列名字并指向清单文件。
+- **成员包按「首条消息」投递。** 引擎只有 `persona`（spawn 时冻结）、`initialPrompt`（成员的**第一条消息**，只发一次）、`executionPrompt`（每次派单重发）三条通道；起始消息因此要求新队长在 `agent_teams_add_member` 之后逐名发一条消息，对他来说这就是初始提示。不走 `executionPrompt`：它会被冻结成人设、每次派单重复，而且正是 `roster_verify` 比对 `systemPrompt` 的字段，会制造假红。
 - `roster_verify` 的成员段落新增「人设构成」一行（`body ×1 · knowledge ×3`），把编译期 `promptStats.parts` 带进核对报告：以前只能看到人设总字数，无法确认 knowledge 概要到底有没有拼进去。
 
 ### Changed
 
 - 团队引擎 `@nanmicoder/dsh-agent-teams` 现在声明为**可选 peer 依赖**（`>=0.1.27`，`optional: true`）：只表明关系，不随本插件自动安装；未安装时创建团队对话框直接给出 `dsh plugin --profile <profile> add @nanmicoder/dsh-agent-teams`，不让人去猜包名。
+- `roster_iterate` 在多支队都声称来自同一份档案时**拒绝**（`ambiguous-team`，列出 id），不猜换代哪一支；会话绑定优先——会话里领导的那一支不受影响。
 
 ### Fixed
 
 - 面板挂载失败不再让整个宿主启动失败（issue #23）：客户端入口的 `apply()` 现在整体 try/catch，两个槽位注册各自兜底，失败只在 console 留一行 `[dsh-agent-roster] … failed`；此前任一槽位抛错都会让该 client entry 被判 `failed`，Web 启动掉进崩溃页。
 - `roster_compile` 在**平铺库**（没有 `space.yaml`）上不再崩：报告最后一行改用「（平铺库，无 space.yaml）」，编译结果照常返回（此前 `scan.space.id` 读 null，整个工具报错）。
 - `roster_iterate` 不再把**排队**说成**已归档**：文案改为「已排队归档旧团队 … 新队长第一步会调 agent_teams_delete」，返回值新增 `archiveQueued` / `archivedNow: false`；归档真正发生前旧团队仍在 `.agent-teams/` 下。
+- `roster_iterate` 的成员包不再跳过已归档团队的成员（旧代成员状态都是 `removed`，过滤后恰好把要交接的那一代清空）；状态改为写在包里。
 
 ## [1.31.0] - 2026-11-12
 
@@ -1475,6 +1473,7 @@ point is now one search field above the tabs.
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
 [Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.29.0...main
 [1.30.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.29.0...v1.30.0
+[1.32.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.31.0...v1.32.0
 [1.31.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.30.0...v1.31.0
 [1.29.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.5...v1.29.0
 [1.28.4]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.3...v1.28.4
