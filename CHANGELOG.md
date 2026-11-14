@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+## [1.32.1] - 2026-11-14
+
+### Fixed
+
+- **桌面端面板不显示（issue #23 的根因）。** `mountPanel()` 里用 `ctx.get?.("locale") ?? ctx.locale` 探测可选服务；Cordis 的上下文代理对**没有写进 inject** 的服务属性会直接抛 `cannot get property "locale" without inject`，而宿主早期还没有 locale 服务时，`get()` 返回 undefined，兜底分支正好撞上代理——1.31.0 时它让整个 client entry 判 failed（Web 启动中止），1.32.0 的护栏只是把它降级成「面板不显示」。现在只用 `ctx.get`（明确的 without-the-inject-requirement 读取方式，服务缺席返回 undefined），配置表单同理。新增一条严格上下文回归测试（属性访问抛错），去掉修复即失败。
+
 ## [1.32.0] - 2026-11-13
 
 ### Added
@@ -1474,6 +1480,7 @@ point is now one search field above the tabs.
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
 [Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.29.0...main
 [1.30.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.29.0...v1.30.0
+[1.32.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.32.0...v1.32.1
 [1.32.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.31.0...v1.32.0
 [1.31.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.30.0...v1.31.0
 [1.29.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.28.5...v1.29.0
