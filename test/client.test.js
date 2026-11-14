@@ -76,6 +76,18 @@ async function loadClient(options = {}) {
     },
   };
 
+  // Cordis 的上下文代理：未写进 inject 的服务属性直接抛。真实宿主里
+  // `ctx.locale` 就是这样炸的（1.32.0 桌面端事故），只读 get() 才安全。
+  if (options.strictServices) {
+    for (const name of ["locale", "configForms"]) {
+      Object.defineProperty(ctx, name, {
+        get() {
+          throw new Error(`cannot get property "${name}" without inject`);
+        },
+      });
+    }
+  }
+
   module.apply(ctx);
   return { module, registrations, slots, disposers };
 }
@@ -114,6 +126,20 @@ test("apply 在 locale / configForms 缺失时不抛，槽位仍全部登记", a
   const { registrations, slots } = await loadClient();
   assert.deepEqual(slots.slice().sort(), ["main", "sidebar.panellist"]);
   assert.equal(registrations.length, 2);
+});
+
+test("宿主禁读未 inject 的服务属性时也不碰 ctx.locale（1.32.0 桌面端事故）", async () => {
+  const errors = [];
+  const original = console.error;
+  console.error = (...args) => errors.push(args);
+  try {
+    const { registrations, slots } = await loadClient({ strictServices: true });
+    assert.deepEqual(slots.slice().sort(), ["main", "sidebar.panellist"]);
+    assert.equal(registrations.length, 2);
+    assert.equal(errors.length, 0, "只用 ctx.get 探测，不该触发宿主代理的 inject 报错");
+  } finally {
+    console.error = original;
+  }
 });
 
 test("槽位不可用或登记抛错时 apply 不抛，宿主照常启动", async () => {
