@@ -3725,8 +3725,11 @@ window.__ModuleLoader__.load({
       ensureStyle();
       if (typeof document !== "undefined") void i18n.load();
 
-      const locale = ctx.get?.("locale") ?? ctx.locale;
-      const configForms = ctx.get?.("configForms") ?? ctx.configForms;
+      // 只用 ctx.get：Cordis 的上下文代理对未 inject 的服务属性会抛
+      // `cannot get property "<name>" without inject`（1.32.0 的桌面端事故）。
+      // get() 明确是「without the inject requirement」的读取方式，服务缺席时返回 undefined。
+      const locale = ctx.get?.("locale");
+      const configForms = ctx.get?.("configForms");
       const form = configForms?.get?.(NS) ?? null;
 
       const readActive = () => {
