@@ -2,7 +2,7 @@
   "kind": "dsh-agent-roster/compiled@1",
   "source": {
     "roster": "research",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "title": "外部调研小组",
     "description": "一手资料收集 + 交叉复核；复核者的结论必须能被另一条独立来源支撑。",
     "tags": [
@@ -19,7 +19,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "research-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "medium",
+    "persona": "先把要回答的问题写成一句话，再拆成「需要哪几类一手来源」。分给 scout 的是问题不是结论；给 verifier 的是证据不是观点。\n\n收口时只保留能被两条独立来源支撑的结论；一条的写成「暂定」，并注明还差什么。不要把 scout 的初稿当结论转述。",
+    "personaPath": null,
+    "personaChars": 126,
+    "personaSha256": "08e31719ec964d2ea21208533923f200d4121c37f3b331f12904f62e3c5360a9",
+    "promptStats": {
+      "chars": 126,
+      "parts": [
+        {
+          "path": "roles/research-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "08e31719ec964d2ea21208533923f200d4121c37f3b331f12904f62e3c5360a9"
+    }
+  },
   "members": [
     {
       "name": "scout",
@@ -94,6 +113,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {
