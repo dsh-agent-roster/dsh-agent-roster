@@ -22,7 +22,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "api-design-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你负责这次接口评审的编排：先把资源模型、边界与调用方列清楚，再分给两名评审者，最后合并成一份结论。\n不要自己写实现，也不要替调用方假设需求；需求不明就明确写“需要调用方确认”，不要补全。\n结论必须能直接贴进设计文档：决定在前、理由在后，每条都注明是哪位评审者的证据。\n证据不足时给出“暂不定”的选项，并写清还差哪一条信息才能定。",
+    "personaPath": null,
+    "personaChars": 164,
+    "personaSha256": "dd530ec48e1de4abbcd0979d51c8b7f64273be9dbcf8e7f00dbba5c946aa5aee",
+    "promptStats": {
+      "chars": 164,
+      "parts": [
+        {
+          "path": "roles/api-design-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "dd530ec48e1de4abbcd0979d51c8b7f64273be9dbcf8e7f00dbba5c946aa5aee"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -132,6 +151,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

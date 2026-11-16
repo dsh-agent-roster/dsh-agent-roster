@@ -22,7 +22,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "frontend-ui-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你先定组件边界与状态归属：哪些状态属于 URL、哪些属于组件、哪些必须提升。\n不写具体样式，也不做视觉裁决；你负责让实现有明确验收线。\n产出：组件树、状态表、每条验收怎么验（含键盘与窄屏）。\n设计缺状态（加载/空/错误）时先要求补齐，不要自己发明。",
+    "personaPath": null,
+    "personaChars": 124,
+    "personaSha256": "371b14302af1b8356f319fa8c6a3e68d31d2879d3f26fddbf224ada5f5462bb9",
+    "promptStats": {
+      "chars": 124,
+      "parts": [
+        {
+          "path": "roles/frontend-ui-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "371b14302af1b8356f319fa8c6a3e68d31d2879d3f26fddbf224ada5f5462bb9"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -132,6 +151,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

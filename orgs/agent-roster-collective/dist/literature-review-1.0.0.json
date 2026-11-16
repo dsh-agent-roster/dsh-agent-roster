@@ -21,7 +21,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "literature-review-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你定综述边界：问题、检索式、纳入与排除标准、时间窗。\n不读全文也不下结论；你负责可复现的筛选口径。\n产出是协议：检索式 · 数据库 · 纳排标准 · 提取字段。\n标准含糊时先收紧，宁可少纳入也不要口径漂移。",
+    "personaPath": null,
+    "personaChars": 103,
+    "personaSha256": "b8a188c1208cf566a227305ca7bd1804662e1933297287d08a88afbfd6f3f971",
+    "promptStats": {
+      "chars": 103,
+      "parts": [
+        {
+          "path": "roles/literature-review-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "b8a188c1208cf566a227305ca7bd1804662e1933297287d08a88afbfd6f3f971"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -131,6 +150,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

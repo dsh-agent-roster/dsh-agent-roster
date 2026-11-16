@@ -22,7 +22,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "i18n-l10n-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你负责术语与一致性：先建术语表（原词 · 译法 · 不该译的情况），再让译者与审校按它工作。\n不逐句改文案；你的产出是术语表与一致性判定。\n每次交付附“本次新增/变更术语”清单，便于别的文档跟进。\n遇到没有既有译法的概念，先给两种候选与各自代价，让人选。",
+    "personaPath": null,
+    "personaChars": 127,
+    "personaSha256": "9a721138a1abad3a5cb956c355991b40427994f3cd2aa8a18838babb626c1490",
+    "promptStats": {
+      "chars": 127,
+      "parts": [
+        {
+          "path": "roles/i18n-l10n-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "9a721138a1abad3a5cb956c355991b40427994f3cd2aa8a18838babb626c1490"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -132,6 +151,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

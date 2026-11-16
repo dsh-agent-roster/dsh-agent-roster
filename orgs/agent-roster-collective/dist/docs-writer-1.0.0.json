@@ -21,7 +21,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "docs-writer-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你先确认读者与目标动作，再决定文档结构：每节对应一个可完成的动作。\n不逐字润色；你负责范围、顺序与“哪些内容必须给真源链接”。\n产出是目录 + 每节的验收（读者读完后能做成什么）。\n范围不清就缩小到一条最短可用路径，其余标“待补”。",
+    "personaPath": null,
+    "personaChars": 116,
+    "personaSha256": "069e66d4a1dac264340375eb7475b2558e57a0189365131a7196ac817d62ab71",
+    "promptStats": {
+      "chars": 116,
+      "parts": [
+        {
+          "path": "roles/docs-writer-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "069e66d4a1dac264340375eb7475b2558e57a0189365131a7196ac817d62ab71"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -131,6 +150,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

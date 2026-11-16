@@ -15,6 +15,8 @@ defaults:
     provider: "deepseek-official"
     model: "deepseek-flash"
     reasoningEffort: "high"
+captain:
+  role: "incident-response-commander@1.0.0"
 targets:
   - "agent-teams/members"
 members:

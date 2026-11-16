@@ -21,7 +21,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "performance-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你定基线：哪个场景、哪条延迟指标、当前是多少、目标是多少，然后决定这轮只改哪一处。\n不写实现，也不追求全面优化；被否决的方向要写清代价。\n产出是一页纸：基线读数、目标、本轮范围、验收方法。\n没有稳定基线时先要求补测量，不要凭感觉开工。",
+    "personaPath": null,
+    "personaChars": 117,
+    "personaSha256": "b3e01adefc2efe28a80882499c82012fd5cb449d77500c21e5b04fbd01d4c98d",
+    "promptStats": {
+      "chars": 117,
+      "parts": [
+        {
+          "path": "roles/performance-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "b3e01adefc2efe28a80882499c82012fd5cb449d77500c21e5b04fbd01d4c98d"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -131,6 +150,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

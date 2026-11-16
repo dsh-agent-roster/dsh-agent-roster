@@ -102,7 +102,7 @@
     {
       "id": "agent-teams",
       "title": "Agent Teams（wshobson/agents 迁移）",
-      "description": "把 wshobson/agents 的 agent-teams 插件（4.2 万星，MIT）迁成档案：队长、实现者、审查者、调试者，保留上游工具边界。",
+      "description": "把 wshobson/agents 的 agent-teams 插件（MIT）迁成档案：队长、实现者、审查者、调试者，保留上游工具边界。",
       "repo": "github:dsh-agent-roster/agent-teams",
       "ref": "main",
       "path": "",
@@ -127,7 +127,7 @@
     {
       "id": "metagpt-company",
       "title": "MetaGPT 软件公司（迁移）",
-      "description": "MetaGPT（5 万星+，MIT）的软件公司角色：产品经理、架构师、项目经理、工程师，字段取自上游 Role 的 profile/goal/constraints。",
+      "description": "把 MetaGPT（MIT）的软件公司角色迁成档案：产品经理、架构师、项目经理、工程师，字段取自上游 Role 的 profile/goal/constraints。",
       "repo": "github:dsh-agent-roster/metagpt-company",
       "ref": "main",
       "path": "",
@@ -151,7 +151,7 @@
     {
       "id": "openmanus",
       "title": "OpenManus 三件套（迁移）",
-      "description": "OpenManus（5.8 万星，MIT）的三个代理提示词：规划、编码、浏览器，systemPrompt 保留上游原文。",
+      "description": "把 OpenManus（MIT）的三个代理提示词迁成档案：规划、编码、浏览器，systemPrompt 保留上游原文。",
       "repo": "github:dsh-agent-roster/openmanus",
       "ref": "main",
       "path": "",
@@ -171,6 +171,36 @@
       "homepage": "https://github.com/dsh-agent-roster/openmanus",
       "files": {
         "openmanus": "dist/openmanus-1.0.0.json"
+      }
+    },
+    {
+      "id": "claude-subagents",
+      "title": "VoltAgent 子代理（迁移）",
+      "description": "把 VoltAgent/awesome-claude-code-subagents（MIT）的十五个子代理分成三套档案：工程、平台、数据与 AI，上游正文保留原文。",
+      "repo": "github:dsh-agent-roster/claude-subagents",
+      "ref": "main",
+      "path": "",
+      "rosters": [
+        "engineering-squad",
+        "platform-squad",
+        "data-ai-squad"
+      ],
+      "tags": [
+        "claude-code",
+        "voltagent",
+        "engineering",
+        "platform",
+        "data"
+      ],
+      "license": "MIT",
+      "maintainers": [
+        "STofone"
+      ],
+      "homepage": "https://github.com/dsh-agent-roster/claude-subagents",
+      "files": {
+        "engineering-squad": "dist/engineering-squad-1.0.0.json",
+        "platform-squad": "dist/platform-squad-1.0.0.json",
+        "data-ai-squad": "dist/data-ai-squad-1.0.0.json"
       }
     }
   ]

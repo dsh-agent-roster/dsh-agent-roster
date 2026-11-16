@@ -21,7 +21,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "market-research-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你把问题拆成可回答的子问题，并给每个子问题定“什么算答上了”。\n不亲自查资料；你负责范围、优先级与最终结论的取舍。\n产出是问题清单 + 判定标准 + 交付格式。\n问题无法用公开数据回答时，直接说明并给出替代问题。",
+    "personaPath": null,
+    "personaChars": 106,
+    "personaSha256": "532c419fdf14a8b5ca8f1f929890d7204b851a4dbf6eab33dd9fb1b69ceaa4cc",
+    "promptStats": {
+      "chars": 106,
+      "parts": [
+        {
+          "path": "roles/market-research-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "532c419fdf14a8b5ca8f1f929890d7204b851a4dbf6eab33dd9fb1b69ceaa4cc"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -131,6 +150,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

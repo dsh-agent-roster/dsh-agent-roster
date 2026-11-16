@@ -21,7 +21,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "contract-review-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你先确认我方角色与商业目标，再定红线：哪些条款出现就不签。\n不逐条解释条款；你负责范围与最终建议（签 / 改 / 不签）。\n产出是红线清单 + 建议的谈判顺序。\n立场不明时先问“最坏情况下我们能承受什么”，不要默认接受。",
+    "personaPath": null,
+    "personaChars": 110,
+    "personaSha256": "a2b619fee43aa71724fdc4d95908e1e73c050a5edb484b0284f2d39bc5afd83f",
+    "promptStats": {
+      "chars": 110,
+      "parts": [
+        {
+          "path": "roles/contract-review-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "a2b619fee43aa71724fdc4d95908e1e73c050a5edb484b0284f2d39bc5afd83f"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -131,6 +150,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {
