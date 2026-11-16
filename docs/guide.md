@@ -16,6 +16,10 @@
 
 `space.yaml` 是**可选**的登记层：有它就有「声明了几份、实际几份、缺了谁、谁没登记」的核对；没有它，库仍按目录扫描，只是没有这层对账。收藏存在库根的 `.dsh-roster-favorites.json`（点文件，扫描器跳过）。
 
+### 人设档案（没有成员的档案）
+
+`members: []` 是合法写法，但**必须有队长人设**（`captain.persona` 指一个文件，或 `captain.role` 引一个角色）；否则报 `persona-without-captain`。这种档案叫**人设档案**：它描述的是「一个会话该以谁的身份工作」，不建团队、没有成员，用面板应用到已有会话即可。`roster_team` / `roster_iterate` 会对它返回 `persona-roster`（建团至少要有一个成员）。
+
 ## 档案格式（v1，平铺库）
 
 ```yaml
