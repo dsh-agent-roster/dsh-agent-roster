@@ -66,8 +66,11 @@ test("面板投影：真实样例的队长段不会丢（role 式也算）", () 
 });
 
 test("面板投影：没有队长的档案保持 null，而不是空对象", () => {
+  // 用活的样例做底座、就地摘掉 captain：这条测的是投影函数，不该由仓库里某份样例有没有队长来决定。
   const rosters = realRosters();
-  const research = rosters.find(({ roster }) => roster.id === "research");
-  assert.ok(research, "examples 里应当有 research");
-  assert.equal(serializeRoster(research.roster, []).captain, null);
+  const base = rosters.find(({ roster }) => roster.id === "core-review")?.roster;
+  assert.ok(base, "examples 里应当有 core-review");
+  const { captain, ...withoutCaptain } = base;
+  assert.ok(captain, "底座本身要有 captain，才谈得上摘掉");
+  assert.equal(serializeRoster(withoutCaptain, []).captain, null);
 });

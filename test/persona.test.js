@@ -96,3 +96,34 @@ test("人设库：没有任何角色目录也按 v2 扫出一份档案", () => {
   assert.equal(scan.rosters[0].id, "solo");
   assert.equal(scan.rosters[0].members.length, 0);
 });
+
+test("没有队长的团队档案：给出 captain-absent 提示，不拦编译", () => {
+  const root = scratch();
+  write(root, "space.yaml", "kind: dsh-agent-roster/space@1\nspace: no-captain\nlayout: monorepo\nrosters:\n  - id: squad\n");
+  write(
+    root,
+    "rosters/squad/roster.yaml",
+    [
+      'kind: "dsh-agent-roster/roster@2"',
+      "id: squad",
+      "version: 1.0.0",
+      'title: "没有队长的队伍"',
+      "members:",
+      '  - as: "worker"',
+      '    role: "worker@1.0.0"',
+      "",
+    ].join("\n"),
+  );
+  write(
+    root,
+    "shared-roles/worker/AGENT.md",
+    '---\nkind: "dsh-agent-roster/role@1"\nname: "worker"\nversion: "1.0.0"\nrole: "执行"\n---\n\n把交代的事做完。\n',
+  );
+
+  const compiled = compileRosterAt(nodePath.join(root, "rosters", "squad"), { libraryRoot: root });
+  assert.equal(compiled.ok, true, compiled.diagnostics.map((item) => `${item.code}: ${item.reason}`).join("; "));
+  const absent = compiled.diagnostics.find((item) => item.code === "captain-absent");
+  assert.ok(absent, "没有 captain 时要提示回落到部署 preset");
+  assert.equal(absent.severity, "info");
+  assert.equal(compiled.compiled.captain, null);
+});

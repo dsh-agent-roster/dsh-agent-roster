@@ -29,7 +29,7 @@
       "homepage": "https://github.com/dsh-agent-roster/dsh-agent-roster#examples",
       "files": {
         "core-review": "dist/core-review-1.0.0.json",
-        "research": "dist/research-0.1.0.json"
+        "research": "dist/research-0.2.0.json"
       }
     },
     {

@@ -8,6 +8,11 @@
 
 - **人设档案（没有成员的档案）。** `members: []` 现在合法，但必须带队长人设（`captain.persona` 指文件，或 `captain.role` 引角色），否则报 `persona-without-captain`。这种档案描述「一个会话该以谁的身份工作」，不建团队、不派成员，用面板应用到已有会话即可；`roster_team` / `roster_iterate` 对它返回 `persona-roster`（建团至少要有一个成员）。**影响面**：`schema/roster.v2.schema.json` 的 `members.minItems` 1 → 0；`roster members` 的报错文案改了；只有 `rosters/<id>/roster.yaml`、没有任何角色目录的库现在也按 v2 扫描（以前会被当成散落目录扫成 0 份）。
 
+### Changed
+
+- **`examples/research` 补上队长**（0.1.0 → 0.2.0）：六份远端合集里它原本是唯一没有 `captain` 的团队档案，建团时队长会静默回落到部署 preset。新增角色 `research-lead`（定问题、分证据、合结论），`examples/dist/research-0.2.0.json` 同步进 registry。
+- **没有队长的团队档案给出提示**：`validate` / `compile` 对「有成员、没有 `captain`」的 v2 档案新增 info `captain-absent`，说明队长会回落到部署 preset、这份档案对队长不生效。不拦编译——没有队长的档案仍能建团，只是别让人误以为档案定义了所有人的身份。
+
 ## [1.32.1] - 2026-11-14
 
 ### Fixed
