@@ -139,11 +139,23 @@ test("handover：清单写盘、渲染与非法步骤", () => {
   assert.ok(fs.existsSync(written.file));
   assert.match(written.file, /\.dsh-handover\/core-review-\d{8}-\d{6}\.json$/);
   const text = renderHandover(built.plan, written.file);
+  // 交接文件必须写清「上一代上下文到哪去找」：会话 id 与日志目录（找不到时如实说明）。
+  assert.match(text, /上一代队长会话/);
+  assert.match(text, /会话 id：session-1/);
+  assert.match(text, /会话日志：/);
   assert.match(text, /timer\.cancel/);
   assert.match(text, /核对：schedule_list 不再列出/);
   assert.match(text, /系统级迭代补充（兜底；用户步骤优先）/);
   assert.match(text, /档案承载不了、但换代必须继承的东西/);
   assert.equal(handoverPath(lib, "core-review").includes(".dsh-handover"), true);
+
+  // 没有来源会话（首次建队）时不该出现「上一代」块；会话 id 查不到日志时如实说未找到。
+  const firstBuild = buildHandoverPlan({ roster: { id: "core-review" }, steps: [{ kind: "note", detail: "记一笔", verify: "" }] });
+  assert.equal(firstBuild.plan.from.captainSessionId, "");
+  assert.doesNotMatch(renderHandover(firstBuild.plan, "/x.json"), /上一代队长会话/);
+  const lost = renderHandover({ ...built.plan, from: { teamId: "team-x", captainSessionId: "no-such-session" } }, "/x.json");
+  assert.match(lost, /会话 id：no-such-session/);
+  assert.match(lost, /未找到/);
 
   const bad = buildHandoverPlan({ roster: { id: "x" }, steps: [{ kind: "reboot", detail: "x" }] });
   assert.equal(bad.ok, false);

@@ -2,6 +2,12 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### Added
+
+- **交接文件写明「上一代上下文到哪去找」。** `roster_iterate` 的交接文件（以及起始消息里的同段内容）现在带上一代队长会话 id 与会话日志目录；总结之外要回查细节时，不用再猜旧会话在哪，也明确写了「找不到」的情况（别的机器、已归档、或本机没有该工作区目录）。来源是 `handover.from.captainSessionId`，之前只存在 JSON 里、没渲染给人看。
+
 ## [1.33.1] - 2026-11-16
 
 ### Fixed
