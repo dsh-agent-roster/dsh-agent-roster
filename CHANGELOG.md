@@ -2,6 +2,13 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.33.1] - 2026-11-16
+
+### Fixed
+
+- **拉取人设档案时报「members 必须是非空数组」。** 1.33.0 只放宽了 v2 校验，远端拉取编译产物走的是 v1 文档校验（`lib/validate.js`），仍然要求成员非空；摊平编译产物时队长也只有 `persona`、没有 v1 要求的 `captain.name`。两处都补上：v1 文档现在接受空成员（但和 v2 同一条不变量——没有成员就必须有队长人设，否则 `persona-without-captain`）；摊平器给没有角色引用的队长按档案 id 派生稳定名字（`<id>-captain`）。`captain-absent` 与 `persona-without-captain` 因此对 v1/v2 一致。
+- **登记 `personas` 合集**（第 7 个订阅源，6 份单人人设）。实例验证：`fetchCollection` 拉回 6 份、0 成员、0 诊断。
+
 ## [1.33.0] - 2026-11-16
 
 ### Added
@@ -1487,7 +1494,8 @@ point is now one search field above the tabs.
 [1.16.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.33.0...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.33.1...main
+[1.33.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.33.0...v1.33.1
 [1.33.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.32.1...v1.33.0
 [1.30.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.29.0...v1.30.0
 [1.32.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.32.0...v1.32.1
