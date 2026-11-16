@@ -14,6 +14,8 @@ defaults:
     provider: "deepseek-official"
     model: "deepseek-flash"
     reasoningEffort: "high"
+captain:
+  role: "ml-eval-lead@1.0.0"
 targets:
   - "agent-teams/members"
 members:

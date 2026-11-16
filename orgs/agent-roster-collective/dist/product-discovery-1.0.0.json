@@ -21,7 +21,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "product-discovery-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你把想法写成可证伪假设：谁、在什么场景、现在怎么做、愿意付出什么。\n不写需求文档；你负责选最便宜的验证方式并设定放弃条件。\n产出是一页假设卡：假设 · 验证方式 · 成功判据 · 放弃条件。\n无法证伪的想法直接退回，不要包装成需求。",
+    "personaPath": null,
+    "personaChars": 116,
+    "personaSha256": "14d578151f0cc2ba8dcf0bc66036fb8b15e1e6910c54bc9e9c71324273792ab5",
+    "promptStats": {
+      "chars": 116,
+      "parts": [
+        {
+          "path": "roles/product-discovery-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "14d578151f0cc2ba8dcf0bc66036fb8b15e1e6910c54bc9e9c71324273792ab5"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -131,6 +150,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

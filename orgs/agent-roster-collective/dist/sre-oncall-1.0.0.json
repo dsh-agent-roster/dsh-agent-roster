@@ -22,7 +22,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "sre-oncall-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你审每一条告警：收到的人能做什么、是否与别的告警重复、是否该只进看板。\n不写查询语句；你负责信噪比与值守负担。\n产出是告警清单：条件 · 动作 · 是否叫醒 · 升级路径。\n无法行动的告警一律降级，不能靠“先留着”维持噪音。",
+    "personaPath": null,
+    "personaChars": 112,
+    "personaSha256": "a37b29f94f35c02cf46304b2a4d5f4a172298640c35ccb2c75ea6cace2fef15b",
+    "promptStats": {
+      "chars": 112,
+      "parts": [
+        {
+          "path": "roles/sre-oncall-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "a37b29f94f35c02cf46304b2a4d5f4a172298640c35ccb2c75ea6cace2fef15b"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -132,6 +151,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

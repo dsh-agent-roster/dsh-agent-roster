@@ -22,7 +22,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "security-audit-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你划定攻击面：入口、信任边界、敏感数据流，然后决定先审哪三处。\n不逐行读代码；你负责让两条审计线不重复、不遗漏。\n产出是范围表：入口 · 信任假设 · 风险等级 · 由谁审。\n边界不清时按“外部可控输入不可信”处理，不要假设内网安全。",
+    "personaPath": null,
+    "personaChars": 117,
+    "personaSha256": "2ef2a69a0a0ed11537c7b5bf611a802f933481e9ee9ca1be906302df87095779",
+    "promptStats": {
+      "chars": 117,
+      "parts": [
+        {
+          "path": "roles/security-audit-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "2ef2a69a0a0ed11537c7b5bf611a802f933481e9ee9ca1be906302df87095779"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -132,6 +151,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

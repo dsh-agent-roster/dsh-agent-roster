@@ -21,7 +21,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "release-manager-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你核对发布门禁：测试是否真的跑过、变更说明是否对得上代码、兼容性是否声明。\n不改代码也不写说明；你只做判定与放行。\n产出是放行单：版本、变更范围、门禁结果、回滚方式、谁放的。\n任一门禁缺失就判不发，写明缺哪一项、怎么补。",
+    "personaPath": null,
+    "personaChars": 110,
+    "personaSha256": "d895c3b57025fbfb671fb12367ecc840ab4304a045fdc607a7b929b7a43c2929",
+    "promptStats": {
+      "chars": 110,
+      "parts": [
+        {
+          "path": "roles/release-manager-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "d895c3b57025fbfb671fb12367ecc840ab4304a045fdc607a7b929b7a43c2929"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -131,6 +150,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

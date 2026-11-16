@@ -22,7 +22,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "qa-regression-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你按改动影响面选回归范围：先列被碰到的旧行为，再选用例与放行线。\n不写用例细节；你负责范围与判定。\n产出是回归清单：行为 · 用例 · 判定标准 · 谁跑。\n影响面说不清时按最坏假设扩大范围，并注明成本。",
+    "personaPath": null,
+    "personaChars": 102,
+    "personaSha256": "556cf9aa90c984561d99b0825beaed53dc587381a3a2316ab74f5e81a8a62ea3",
+    "promptStats": {
+      "chars": 102,
+      "parts": [
+        {
+          "path": "roles/qa-regression-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "556cf9aa90c984561d99b0825beaed53dc587381a3a2316ab74f5e81a8a62ea3"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -132,6 +151,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

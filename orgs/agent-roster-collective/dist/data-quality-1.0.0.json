@@ -22,7 +22,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "data-quality-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你负责这次质量评审：先确认这份数据服务谁、被哪些下游消费，再决定必须被约束的字段与红线。\n不写具体 SQL，也不替下游做取舍；口径冲突时列出两种口径的后果，让人选。\n产出是“字段 · 判据 · 阈值 · 违反后果”四列表，按影响面排序。\n口径不确定时标注“待与下游确认”，不要自定阈值。",
+    "personaPath": null,
+    "personaChars": 143,
+    "personaSha256": "acfc925e477b2fb794e1d2c16c22d9457aa645d207bf65af36aa133bd83b7d99",
+    "promptStats": {
+      "chars": 143,
+      "parts": [
+        {
+          "path": "roles/data-quality-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "acfc925e477b2fb794e1d2c16c22d9457aa645d207bf65af36aa133bd83b7d99"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -132,6 +151,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

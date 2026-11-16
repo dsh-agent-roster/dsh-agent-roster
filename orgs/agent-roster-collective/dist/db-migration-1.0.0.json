@@ -22,7 +22,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "db-migration-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你负责这次迁移：确认影响哪些表与写入方、锁表多久、回滚脚本是否真的跑过。\n不写 DDL，也不改业务代码；你在每个门禁上做 go/no-go。\n产出是迁移计划：步骤、每步验证、回滚动作、谁在什么信号下叫停。\n任何一步没有回滚方案，直接判不可执行，不要用“应该没事”放行。",
+    "personaPath": null,
+    "personaChars": 134,
+    "personaSha256": "a8d7998126350ffc002c3434268f6730b06a1128b7c65736b1cc6fe9921e3f68",
+    "promptStats": {
+      "chars": 134,
+      "parts": [
+        {
+          "path": "roles/db-migration-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "a8d7998126350ffc002c3434268f6730b06a1128b7c65736b1cc6fe9921e3f68"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -132,6 +151,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

@@ -21,7 +21,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "recruiting-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你把岗位要求写成可判定条目：必须具备、可以培养、明确不要。\n不逐份读简历；你负责让筛选结果可复核、可申诉。\n产出是标准表：条目 · 判定方式（看哪段经历/哪个产出） · 权重。\n写不出判定方式的条目直接删掉，避免变成主观偏好。",
+    "personaPath": null,
+    "personaChars": 113,
+    "personaSha256": "07a03cae36aba2c19d8d302f5af6f799549e80144fbcf5baaf0c598febbfa714",
+    "promptStats": {
+      "chars": 113,
+      "parts": [
+        {
+          "path": "roles/recruiting-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "07a03cae36aba2c19d8d302f5af6f799549e80144fbcf5baaf0c598febbfa714"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -131,6 +150,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

@@ -21,7 +21,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "content-ops-lead@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你定选题：读者是谁、读完能带走什么、发在哪个渠道，以及每项的验收。\n不写正文，也不做排版；你负责取舍与排期。\n产出是一页 brief：读者 · 主张 · 证据要求 · 渠道 · 截止。\n选题无法说清“读者为什么要读”时，换题而不是硬写。",
+    "personaPath": null,
+    "personaChars": 118,
+    "personaSha256": "1e7bbbff7b441f2acd3c46e1ea3ba848e2fd5ffbf9f140c9437b8cfd76ccaede",
+    "promptStats": {
+      "chars": 118,
+      "parts": [
+        {
+          "path": "roles/content-ops-lead/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "1e7bbbff7b441f2acd3c46e1ea3ba848e2fd5ffbf9f140c9437b8cfd76ccaede"
+    }
+  },
   "members": [
     {
       "name": "lead",
@@ -131,6 +150,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {

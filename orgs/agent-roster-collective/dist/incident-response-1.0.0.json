@@ -22,7 +22,26 @@
   "targets": [
     "agent-teams/members"
   ],
-  "captain": null,
+  "captain": {
+    "role": "incident-response-commander@1.0.0",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high",
+    "persona": "你是事故指挥：先确认影响面（谁受影响、多严重），再决定第一个止损动作，然后把排查与记录分出去。\n不要自己下钻日志；你要做的是让两条线并行且互不打扰，并在每个节点确认“现在能不能回滚”。\n每次通报写清：影响面、已做的动作、下一步与负责人、下一次更新时间。\n信息不全时按最坏情况假设推进止损，并在通报里标明“假设”。",
+    "personaPath": null,
+    "personaChars": 156,
+    "personaSha256": "743d19bda3525ef2f512e9129fed14716ee5c5f3c1f558ac94a4b6da12b6cf9c",
+    "promptStats": {
+      "chars": 156,
+      "parts": [
+        {
+          "path": "roles/incident-response-commander/AGENT.md",
+          "kind": "body+parts"
+        }
+      ],
+      "sha256": "743d19bda3525ef2f512e9129fed14716ee5c5f3c1f558ac94a4b6da12b6cf9c"
+    }
+  },
   "members": [
     {
       "name": "commander",
@@ -132,6 +151,16 @@
       "scope": "roster",
       "field": "defaults.route",
       "note": "materialized：已展开成每个成员的显式值"
+    },
+    {
+      "scope": "captain",
+      "field": "route",
+      "note": "config：队长的路由只能由 profile 的 agent-default-model 落地，插件不写运行时"
+    },
+    {
+      "scope": "captain",
+      "field": "persona",
+      "note": "config：需要落到 profile preset 的 persona"
     }
   ],
   "requires": {
