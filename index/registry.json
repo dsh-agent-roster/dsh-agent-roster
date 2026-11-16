@@ -202,6 +202,42 @@
         "platform-squad": "dist/platform-squad-1.0.0.json",
         "data-ai-squad": "dist/data-ai-squad-1.0.0.json"
       }
+    },
+    {
+      "id": "personas",
+      "title": "单人人设（应用到一个会话）",
+      "description": "六份单人人设：代码审查、架构评审、故障排查，以及参照 SWE-agent / browser-use / gemini-cli 重写的修 bug、浏览器操作、CLI 工程助手。没有成员，只带 captain.persona；应用到一个会话即可，不建团。需要插件 >= 1.33.0。",
+      "repo": "github:dsh-agent-roster/personas",
+      "ref": "main",
+      "path": "",
+      "rosters": [
+        "code-reviewer",
+        "architect",
+        "debugger",
+        "swe-fixer",
+        "browser-operator",
+        "cli-engineer"
+      ],
+      "tags": [
+        "persona",
+        "review",
+        "architecture",
+        "debugging",
+        "coding"
+      ],
+      "license": "MIT",
+      "maintainers": [
+        "STofone"
+      ],
+      "homepage": "https://github.com/dsh-agent-roster/personas",
+      "files": {
+        "code-reviewer": "dist/code-reviewer-1.0.0.json",
+        "architect": "dist/architect-1.0.0.json",
+        "debugger": "dist/debugger-1.0.0.json",
+        "swe-fixer": "dist/swe-fixer-1.0.0.json",
+        "browser-operator": "dist/browser-operator-1.0.0.json",
+        "cli-engineer": "dist/cli-engineer-1.0.0.json"
+      }
     }
   ]
 }

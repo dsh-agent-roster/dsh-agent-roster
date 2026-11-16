@@ -141,10 +141,19 @@ test("version 必须是精确 SemVer", () => {
   assert.ok(codes.includes("invalid-semver"));
 });
 
-test("members 为空被拒绝", () => {
-  const { result, codes } = check(rosterDocument({ members: [] }));
-  assert.equal(result.ok, false);
-  assert.ok(codes.includes("missing-field"));
+test("members 为空：没有队长人设的拒绝，有队长人设的通过", () => {
+  const rejected = check(rosterDocument({ members: [] }));
+  assert.equal(rejected.result.ok, false);
+  assert.ok(rejected.codes.includes("persona-without-captain"));
+
+  const persona = check(
+    rosterDocument({
+      members: [],
+      captain: { name: "solo-captain", personaPrefix: "你只审不改。" },
+    }),
+  );
+  assert.equal(persona.result.ok, true, persona.codes.join(","));
+  assert.equal(persona.result.roster.members.length, 0);
 });
 
 test("toolScope 只接受 allow/deny，且值必须是工具名", () => {

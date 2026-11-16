@@ -14,7 +14,8 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import nodePath from "node:path";
 
-import { compileRosterAt } from "../lib/compile2.js";
+import { compileRosterAt, flattenCompiledToRoster } from "../lib/compile2.js";
+import { validateRoster } from "../lib/validate.js";
 import { scanRosterLibrary } from "../lib/registry.js";
 import { validateRoster2 } from "../lib/roster2.js";
 
@@ -126,4 +127,51 @@ test("没有队长的团队档案：给出 captain-absent 提示，不拦编译"
   assert.ok(absent, "没有 captain 时要提示回落到部署 preset");
   assert.equal(absent.severity, "info");
   assert.equal(compiled.compiled.captain, null);
+});
+
+test("v1 文档：空成员 + 队长人设通过；空成员没有队长人设 → persona-without-captain", () => {
+  const withPersona = validateRoster(
+    {
+      kind: "dsh-agent-roster/v1",
+      roster: "reviewer",
+      version: "1.0.0",
+      captain: { name: "reviewer-captain", personaPrefix: "你只审不改。" },
+      members: [],
+    },
+    { file: "roster.yaml", expectedId: "reviewer" },
+  );
+  assert.equal(
+    withPersona.ok,
+    true,
+    withPersona.diagnostics.map((item) => `${item.code}: ${item.reason}`).join("; "),
+  );
+
+  const withoutPersona = validateRoster(
+    {
+      kind: "dsh-agent-roster/v1",
+      roster: "reviewer",
+      version: "1.0.0",
+      members: [],
+    },
+    { file: "roster.yaml", expectedId: "reviewer" },
+  );
+  assert.equal(withoutPersona.ok, false);
+  assert.ok(withoutPersona.diagnostics.some((item) => item.code === "persona-without-captain"));
+});
+
+test("编译产物摊平成人设文档：队长没有 role 时派生出 captain.name，人设进 personaPrefix", () => {
+  const compiled = {
+    kind: "dsh-agent-roster/compiled@1",
+    source: { roster: "code-reviewer", version: "1.0.0" },
+    captain: { role: null, persona: BODY },
+    members: [],
+  };
+  const flat = flattenCompiledToRoster(compiled);
+  assert.equal(flat.members.length, 0);
+  assert.equal(flat.captain.name, "code-reviewer-captain");
+  assert.equal(flat.captain.personaPrefix, BODY);
+
+  // 摊平后必须还能过 v1 校验——远端拉取走的正是这条路。
+  const checked = validateRoster(flat, { file: "dist/code-reviewer-1.0.0.json", expectedId: "code-reviewer" });
+  assert.equal(checked.ok, true, checked.diagnostics.map((item) => `${item.code}: ${item.reason}`).join("; "));
 });
