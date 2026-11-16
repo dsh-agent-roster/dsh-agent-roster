@@ -103,7 +103,7 @@ test("roster schema：顶层字段、required、成员/队长/编排子结构与
 
 test("roster schema：上限与 LIMITS2 同值（不各写一个数）", () => {
   assert.equal(roster.properties.members.maxItems, LIMITS2.members);
-  assert.equal(roster.properties.members.minItems, 1);
+  assert.equal(roster.properties.members.minItems, 0);
   assert.equal(roster.properties.title.maxLength, LIMITS2.titleChars);
   assert.equal(roster.properties.description.maxLength, LIMITS2.descriptionChars);
   assert.equal(roster.properties.notes.maxLength, LIMITS2.notesChars);

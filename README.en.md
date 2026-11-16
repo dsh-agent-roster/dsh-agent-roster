@@ -31,6 +31,7 @@ After upgrading, restart `dsh web` to load the new version.
 | Succession | Compare roster with runtime → optional write-back → new session, or **replace within the current session** (asks before archiving the old team); carry captain context with `handover.summary` and per-member context with `handover.members` | `roster_iterate` |
 | Verification | Read what `team.json` actually stored (provider / model / reasoningEffort / toolPolicy) and report match, degraded, or unverifiable | `roster_verify` |
 | Write-back | Put runtime values back into the roster; asks first by default | `roster_capture` |
+| Persona roster | `members: []` plus `captain.persona`: one persona is one session's identity, with no team; apply it to an existing session | Panel "Apply" |
 | Knowledge | Roles and rosters can declare `knowledge:`; the prompt carries title + summary + path only, the body is opened on demand | `roster_compile` |
 | Panel | “Agent roster” in the left panel: rosters / library / teams / health, with search, tag filters, favourites, space pulls and import | Web UI |
 | Spaces | `space.yaml` describes a library; `clone` pulls it, `update` compares six states (conflicts are never auto-merged) | `roster_space`, CLI |

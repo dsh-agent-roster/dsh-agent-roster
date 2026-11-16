@@ -31,6 +31,7 @@
 | 换代 | 先比对档案与运行时 → 可选回写 → 新开会话或**在当前会话里换代**（已带队时先问是否归档）；队长用 `handover.summary`、成员用 `handover.members` 带过去 | `roster_iterate` |
 | 核对 | 读 `team.json` 里**实际存下的** provider / model / reasoningEffort / toolPolicy，逐项报一致、降级、无法核对 | `roster_verify` |
 | 回写 | 把运行时值写回档案；默认**先问再做**，确认后才动文件 | `roster_capture` |
+| 人设档案 | `members: []` + `captain.persona`：一个人设就是一个会话的身份，不建团队；应用到已有会话即刻生效 | 面板「应用」 |
 | 知识层 | 角色与档案可声明 `knowledge:`，提示词只放「标题 + 概要 + 路径」，正文按需打开 | `roster_compile` |
 | 面板 | 左侧栏「Agent 档案」：档案 / 档案库 / 团队 / 体检四页签，搜索、标签筛选、收藏、拉取空间、导入 | Web UI |
 | 空间与订阅 | `space.yaml` 描述一座档案库；可用 `clone` 拉取、`update` 比对六态（不自动合并冲突） | `roster_space`、CLI |
