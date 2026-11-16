@@ -172,6 +172,36 @@
       "files": {
         "openmanus": "dist/openmanus-1.0.0.json"
       }
+    },
+    {
+      "id": "claude-subagents",
+      "title": "VoltAgent 子代理（迁移）",
+      "description": "把 VoltAgent/awesome-claude-code-subagents（MIT）的十五个子代理分成三套档案：工程、平台、数据与 AI，上游正文保留原文。",
+      "repo": "github:dsh-agent-roster/claude-subagents",
+      "ref": "main",
+      "path": "",
+      "rosters": [
+        "engineering-squad",
+        "platform-squad",
+        "data-ai-squad"
+      ],
+      "tags": [
+        "claude-code",
+        "voltagent",
+        "engineering",
+        "platform",
+        "data"
+      ],
+      "license": "MIT",
+      "maintainers": [
+        "STofone"
+      ],
+      "homepage": "https://github.com/dsh-agent-roster/claude-subagents",
+      "files": {
+        "engineering-squad": "dist/engineering-squad-1.0.0.json",
+        "platform-squad": "dist/platform-squad-1.0.0.json",
+        "data-ai-squad": "dist/data-ai-squad-1.0.0.json"
+      }
     }
   ]
 }
