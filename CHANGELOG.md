@@ -2,11 +2,12 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [1.34.0] - 2026-11-16
 
 ### Added
 
 - **交接文件写明「上一代上下文到哪去找」。** `roster_iterate` 的交接文件（以及起始消息里的同段内容）现在带上一代队长会话 id 与会话日志目录；总结之外要回查细节时，不用再猜旧会话在哪，也明确写了「找不到」的情况（别的机器、已归档、或本机没有该工作区目录）。来源是 `handover.from.captainSessionId`，之前只存在 JSON 里、没渲染给人看。
+- **打 tag 自动建 GitHub Release。** 新增 `.github/workflows/release.yml` + `scripts/changelog-section.mjs`：标签推送后取 CHANGELOG 里那一版的正文建 Release，已存在则跳过，取不到正文就失败。此前 93 个标签只对应 1 条 Release，外面看不到「发布了什么」。
 
 ## [1.33.1] - 2026-11-16
 
@@ -1500,7 +1501,8 @@ point is now one search field above the tabs.
 [1.16.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
-[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.33.1...main
+[Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.34.0...main
+[1.34.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.33.1...v1.34.0
 [1.33.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.33.0...v1.33.1
 [1.33.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.32.1...v1.33.0
 [1.30.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.29.0...v1.30.0

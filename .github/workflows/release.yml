@@ -1,0 +1,52 @@
+name: release
+
+# 打 tag 就是发版：给每个 v* 标签建一条 GitHub Release，正文取 CHANGELOG 里那一版。
+# 之前只有 tag 没有 Release（93 个标签、1 条记录），外面的人看不到「发布了什么」；
+# 这步做成 workflow，不再依赖发版的人记得手动点一下。
+# 正文只认 CHANGELOG 一处来源——取不到就失败，不拿空正文糊过去。
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 要补建 Release 的标签（如 v1.34.0）
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 决定标签
+        id: tag
+        run: |
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "name=$tag" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag"
+
+      - name: 从 CHANGELOG 取这一版的正文
+        run: node scripts/changelog-section.mjs "${{ steps.tag.outputs.name }}" > notes.md
+
+      - name: 建 Release（已存在则跳过）
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ steps.tag.outputs.name }}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag 已存在，跳过"
+            exit 0
+          fi
+          gh release create "$tag" --title "$tag" --notes-file notes.md --verify-tag
