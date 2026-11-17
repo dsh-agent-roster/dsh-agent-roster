@@ -49,4 +49,4 @@ jobs:
             echo "Release $tag 已存在，跳过"
             exit 0
           fi
-          gh release create "$tag" --title "$tag" --notes-file notes.md --verify-tag
+          gh release create "$tag" --title "$tag" --notes-file notes.md --verify-tag --latest
