@@ -36,6 +36,18 @@ After upgrading, restart `dsh web` to load the new version.
 | Panel | “Agent roster” in the left panel: rosters / library / teams / health, with search, tag filters, favourites, space pulls and import | Web UI |
 | Spaces | `space.yaml` describes a library; `clone` pulls it, `update` compares six states (conflicts are never auto-merged) | `roster_space`, CLI |
 
+## The most useful case: a session with heavy context writes its own roster, then iterates
+
+A long-running project session carries decisions, scars, open work and every member's quirks. Copying that transcript into a new session is expensive and drags stale conclusions along; dropping it resets the project's memory.
+
+So let the **session write its own roster**: captain persona, member lineup, model and tool boundaries, gates, handover guide, all as files. Then `roster_iterate` produces the next generation — a clean session that starts with only three things: the previous captain's handover summary, one context packet per member, and an executable step list. Details travel as pointers rather than text: each packet names the old session id and its log path, so anything can be read back in place.
+
+The roster is a living file, not a snapshot: edit a role's prose and the captain speaks with it from the next step (same-name section, re-read every step) — no rebuild, no restart.
+
+Three moves: **write** (the session captures how it works as a roster), **iterate** (`roster_iterate` writes the summary and per-member packets, with delivery instructions in the starter message), **verify** (`roster_verify` checks models, tool boundaries and persona — and whether each packet actually reached its member: delivered / not seen / cannot check).
+
+Boundaries, stated plainly: conversations are not migrated, only pointed at; member personas are frozen at spawn, so changing members means a new generation; the captain's persona is the only part that stays live.
+
 ## What it is / is not
 
 | It is | It is not |
