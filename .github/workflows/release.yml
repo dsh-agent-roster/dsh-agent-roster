@@ -1,6 +1,7 @@
 name: release
 
-# 打 tag 就是发版：给每个 v* 标签建一条 GitHub Release，正文取 CHANGELOG 里那一版。
+# 打 tag 就是发版：给每个 **minor**（x.y.0）标签建一条 GitHub Release，正文取 CHANGELOG 里那一版。
+# patch 版本不建 Release——它们只是修错，正文仍在 CHANGELOG 与 tag 里；需要时用 workflow_dispatch 手工补。
 # 之前只有 tag 没有 Release（93 个标签、1 条记录），外面的人看不到「发布了什么」；
 # 这步做成 workflow，不再依赖发版的人记得手动点一下。
 # 正文只认 CHANGELOG 一处来源——取不到就失败，不拿空正文糊过去。
@@ -36,11 +37,20 @@ jobs:
           tag="${{ github.event.inputs.tag || github.ref_name }}"
           echo "name=$tag" >> "$GITHUB_OUTPUT"
           echo "tag=$tag"
+          # 标签推送只给 minor 建 Release；手工触发（workflow_dispatch）不受限，用于补建。
+          if [ "${{ github.event_name }}" = "push" ] && [ "${tag%.0}" = "$tag" ]; then
+            echo "wanted=false" >> "$GITHUB_OUTPUT"
+            echo "patch 版本不建 Release（正文在 CHANGELOG 与 tag 里）：$tag"
+          else
+            echo "wanted=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: 从 CHANGELOG 取这一版的正文
+        if: steps.tag.outputs.wanted == true
         run: node scripts/changelog-section.mjs "${{ steps.tag.outputs.name }}" > notes.md
 
       - name: 建 Release（已存在则跳过）
+        if: steps.tag.outputs.wanted == true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

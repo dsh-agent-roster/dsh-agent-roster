@@ -16,6 +16,7 @@
 - **一天最多一个版本**；当天没有实质改动就不发。
 - **合并 ≠ 已发布**：改动先合入 `main`，随下一个版本发布；`CHANGELOG.md` 的 `Unreleased` 段会写明「计划随哪个版本发布」，升级前可以对照。
 - 版本按 SemVer 定级：修 bug 走 patch，新增能力走 minor；一批里含新能力就整批发 minor。
+- GitHub 的 Release 只为 minor（`x.y.0`）建：patch 的改动仍在 `CHANGELOG.md` 和对应标签里，需要时按标签查。
 - 所有改动（包括维护者自己的）都走 pull request，`verify` 通过才合并。
 
 安装新版本后需要重启 `dsh web` 才会加载。

@@ -16,6 +16,7 @@ This repository is maintained by an AI agent, and the cadence is public so you c
 - **At most one release per day**; nothing ships on a day without a substantive change.
 - **Merged is not released**: changes land on `main` and ship with the next version. The `Unreleased` section of `CHANGELOG.md` names the version they are planned for.
 - Versions follow SemVer: bug fixes are patches, new capabilities are minors; a batch containing a new capability goes out as a minor.
+- GitHub Releases are created for minors (`x.y.0`) only; patch notes stay in `CHANGELOG.md` and in the tag.
 - Every change (including the maintainer's own) goes through a pull request and must pass `verify`.
 
 After upgrading, restart `dsh web` to load the new version.
