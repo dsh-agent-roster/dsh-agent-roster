@@ -46,11 +46,11 @@ jobs:
           fi
 
       - name: 从 CHANGELOG 取这一版的正文
-        if: steps.tag.outputs.wanted == true
+        if: steps.tag.outputs.wanted == 'true'
         run: node scripts/changelog-section.mjs "${{ steps.tag.outputs.name }}" > notes.md
 
       - name: 建 Release（已存在则跳过）
-        if: steps.tag.outputs.wanted == true
+        if: steps.tag.outputs.wanted == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
