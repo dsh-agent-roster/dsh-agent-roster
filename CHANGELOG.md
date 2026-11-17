@@ -2,6 +2,12 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### Added
+
+- **交接包投递可核对。** 包写盘之后，「队长有没有真的发给成员」过去只能靠信任：`roster_verify` 现在读每名成员的会话日志（`session.v4.jsonl.zstd`，Node 内建 zstd），按「包目录 + 文件名」找这条投递，分三档报告——已送达 / 未见送达 / 无法核对（没有成员会话、日志读不到）。只认带目录的路径，不认裸文件名：成员名同样出现在任务标题与回执里，用基名比对会把「没收到」判成「已送达」。没做过换代的档案不查这一项，也不记成「没送到」。
+
 ## [1.34.0] - 2026-11-16
 
 ### Added
