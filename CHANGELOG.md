@@ -2,11 +2,16 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [1.35.0] - 2026-11-17
 
 ### Added
 
 - **交接包投递可核对。** 包写盘之后，「队长有没有真的发给成员」过去只能靠信任：`roster_verify` 现在读每名成员的会话日志（`session.v4.jsonl.zstd`，Node 内建 zstd），按「包目录 + 文件名」找这条投递，分三档报告——已送达 / 未见送达 / 无法核对（没有成员会话、日志读不到）。只认带目录的路径，不认裸文件名：成员名同样出现在任务标题与回执里，用基名比对会把「没收到」判成「已送达」。没做过换代的档案不查这一项，也不记成「没送到」。
+
+### Changed
+
+- **README 首推「重上下文会话自己写档案并换代」。** 最实用的用法从散落各处提到功能表之后：重上下文会话自己写档案（人设、编制、边界、门、交接）→ `roster_iterate` 换代只带三样（队长摘要、成员包、分步清单）→ 细节靠指针（旧会话 id + 日志目录）→ 改档案下一步生效 → 三步「写 / 换 / 核」。只讲通用流程，不点名任何项目或读数。
+- **GitHub Releases 只为 minor 建。** 标签推送时只有 `x.y.0` 才建 Release（`workflow_dispatch` 仍可手工补建任意 tag）；同时删掉了 35 条历史 patch Release——它们只是修错流水账，**tag 与 CHANGELOG 一条未动**，历史仍可按 tag 查。README 两语言同步说明这一点。
 
 ## [1.34.0] - 2026-11-16
 
@@ -1508,6 +1513,7 @@ point is now one search field above the tabs.
 [1.16.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
 [Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.34.0...main
+[1.35.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.34.0...v1.35.0
 [1.34.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.33.1...v1.34.0
 [1.33.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.33.0...v1.33.1
 [1.33.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.32.1...v1.33.0
