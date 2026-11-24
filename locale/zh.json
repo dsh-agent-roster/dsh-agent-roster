@@ -136,7 +136,11 @@
     "driftDetail": "{field}：档案 {wanted}，运行时 {actual}",
     "showMembers": "展开成员",
     "hideMembers": "收起成员",
-    "taskCount": "{count} 个任务"
+    "taskCount": "{count} 个任务",
+    "verify": "核对",
+    "verifying": "核对中…",
+    "verifyHint": "拿运行时实际记下的值逐字段核对（与 roster_verify 同一条判据）",
+    "verifyFailed": "核对失败：{reason}"
   },
   "editor": {
     "createTitle": "新建档案",

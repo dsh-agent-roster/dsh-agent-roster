@@ -519,3 +519,15 @@ test("多库：档案页可按路径分组或平铺，档案库的本机也按�
   assert.equal(zh.panel.groupByPath, "按路径");
   assert.equal(zh.panel.groupFlat, "平铺");
 });
+
+test("团队卡片：核对按钮走 roster_verify 的同一条路由，结果就地展开", () => {
+  const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+  // 路由常量与请求体：核对必须带上团队 id 与状态目录，否则服务端只能按 cwd 猜。
+  assert.match(source, /const VERIFY_ROUTE = "\/plugins\/dsh-agent-roster\/verify";/);
+  assert.match(source, /body: JSON\.stringify\(\{ team: team\.id, stateDir: stateDirOf\(team\.file\) \}\)/);
+  // 结论要看得见：文本报告进 <pre>，失败给原因而不是静默。
+  assert.match(source, /className: "rstr-verify-report"/);
+  assert.match(source, /t\("team\.verifyFailed", \{ reason: reportError \}\)/);
+  // 判据只有一套：前端不自己算 faithful，只渲染服务端返回的文本。
+  assert.doesNotMatch(source, /faithful = .*model/);
+});
