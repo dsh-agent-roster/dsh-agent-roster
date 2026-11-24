@@ -12,10 +12,6 @@ The roster layer for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-0B7285?style=flat-square" alt="MIT license"></a>
 </p>
 
-<p align="center">
-  <img src="docs/assets/panel-rosters.png" width="100%" alt="Agent Roster panel: local rosters, their model routes and members">
-</p>
-
 ## 30-second demo
 
 A real `roster_verify` run against a 14-member team (the tool's output is localized to Chinese; fields `agent-teams` does not persist are trimmed from the excerpt):
@@ -70,9 +66,7 @@ Compatibility: verified against DSH `0.2.2-rc.1`; the engine must be `>= 0.1.27`
 
 1. **Open the panel → 档案库 (Library)**. Everything published under the project registry is listed by space, searchable by capability and filterable by tag.
 
-   ![Library: rosters grouped by space, with search](docs/assets/panel-catalog.png)
-
-2. **Pull a roster.** It is written into your local library; the 档案 (Rosters) tab then shows its members and model routes.
+   2. **Pull a roster.** It is written into your local library; the 档案 (Rosters) tab then shows its members and model routes.
 
 3. **Create a team**: click 创建团队 on the roster row — a new session (pick workspace, session name, captain model) or an existing one.
 
