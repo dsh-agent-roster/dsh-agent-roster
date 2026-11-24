@@ -6,11 +6,15 @@
 
 面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Agent Teams 的**档案层**：人设、模型路由、工具边界写在 YAML/Markdown 里，编译成一份自包含产物；团队跑起来以后，再逐字段对着 `team.json` 核对运行时**真正存下的值**。它不运行团队，也不替代 [`dsh-agent-teams`](https://github.com/NanmiCoder/dsh-agent-teams)——它补的是引擎结构上不管的那一层。
 
-[![npm](https://img.shields.io/npm/v/@stofone/dsh-agent-roster?style=flat-square&color=5B4CF0)](https://www.npmjs.com/package/@stofone/dsh-agent-roster)
-[![CI](https://github.com/dsh-agent-roster/dsh-agent-roster/actions/workflows/registry.yml/badge.svg)](https://github.com/dsh-agent-roster/dsh-agent-roster/actions/workflows/registry.yml)
-[![license](https://img.shields.io/badge/license-MIT-0B7285?style=flat-square)](./LICENSE)
+<p align="center">
+  <a href="https://www.npmjs.com/package/@stofone/dsh-agent-roster"><img src="https://img.shields.io/npm/v/@stofone/dsh-agent-roster?style=flat-square&amp;color=5B4CF0" alt="npm version"></a>
+  <a href="https://github.com/dsh-agent-roster/dsh-agent-roster/actions/workflows/registry.yml"><img src="https://github.com/dsh-agent-roster/dsh-agent-roster/actions/workflows/registry.yml/badge.svg" alt="CI"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-0B7285?style=flat-square" alt="MIT license"></a>
+</p>
 
-![Agent 档案面板：本机档案、模型路由与成员](docs/assets/panel-rosters.png)
+<p align="center">
+  <img src="docs/assets/panel-rosters.png" width="100%" alt="Agent 档案面板：本机档案、模型路由与成员">
+</p>
 
 ## 30 秒看懂
 
@@ -36,6 +40,20 @@ roster:money-lab@10.2.1  成员 14 · 已部署 14 · 一致 7
 - **拿不到证据就不冒充通过**：没有会话、读不到日志的项记「无法核对」，不记「一致」。
 - **同一个人在两代团队里可以有不同结论**：`report-builder` 在新队 `money-lab-v17` 一致，在旧队 `money-lab` 被运行时覆盖——这正是换代前该看见的东西。
 
+## 和 agent-teams 是什么关系
+
+引擎负责**把团队跑起来**，我们负责**跑起来之前与之后能核对**。两者不重叠：
+
+| | [`dsh-agent-teams`](https://github.com/NanmiCoder/dsh-agent-teams) | 本插件 |
+|---|---|---|
+| 团队从哪来 | 会话里一句自然语言，队长现场决定编制 | 写好的档案：人设、模型路由、工具边界、验收门 |
+| 建完能不能核 | `team.json` 是运行时状态的唯一真源 | 逐字段比对档案与 `team.json`，报一致 / 降级 / 无法核对 |
+| 人设能不能改 | 成员人设在 spawn 时冻结 | 队长人设每步重读，改文件下一步生效 |
+| 换代带什么 | 不提供 | 队长摘要 + 每名成员的上下文包（含旧会话 id 与日志路径） |
+| 该不该用它 | 要一支**能跑**的团队 | 要这支团队**可评审、可核对、可换代** |
+
+可以只用引擎；一旦你想在事前评审编制、事后确认「跑的是不是我要的那套人」，就需要这一层。
+
 ## 安装
 
 ```bash
@@ -45,6 +63,8 @@ dsh plugin --profile web add @stofone/dsh-agent-roster
 需要 Node.js ≥ 22.19 和一个跑着的 `dsh web`。装完重启一次 `dsh web`（插件在启动时加载）；之后左侧栏出现 **Agent 档案**，工具多出十三个 `roster_*`。
 
 建团仍然需要 [`@nanmicoder/dsh-agent-teams`](https://github.com/NanmiCoder/dsh-agent-teams)：本插件把它声明为可选 peer，缺失时会直接告诉你安装命令。
+
+兼容性：本插件在 DSH `0.2.2-rc.1` 上验证；引擎要求 `>= 0.1.27`。当前版本见 [Releases](https://github.com/dsh-agent-roster/dsh-agent-roster/releases/latest)，每个版本改了什么见 [CHANGELOG](./CHANGELOG.md)。
 
 ## 快速开始（不写 YAML）
 
