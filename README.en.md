@@ -1,61 +1,58 @@
 # @stofone/dsh-agent-roster
 
-**English** | [简体中文](README.md)
+[**English**](README.en.md) | [简体中文](README.md)
 
-A **static member roster** layer for multi-agent teams on DeepSeek Harness: who is on the team, what each member owns, which model route they take, and which tools they may touch — written as reviewable, validatable files, and **checked against what the runtime actually stored** after the team is created.
+**Write the team down as a file you can review before you build it — then verify what the runtime actually stored after it exists.**
 
-It does not run teams and does not replace `dsh-agent-teams`; it adds the layer around it — review the roster before creating a team, verify after, write drift back, and **keep the persona evolving with the session**.
+The roster layer for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Agent Teams: personas, model routes and tool boundaries live in YAML/Markdown, compile into one self-contained artifact, and are checked field by field against `team.json` once the team is running. It does not run teams and does not replace [`dsh-agent-teams`](https://github.com/NanmiCoder/dsh-agent-teams) — it adds the layer that engine leaves out.
 
-**Quick start**: [install](#install) → [write a roster](#quick-start). The full manual (format, tools, panel, diagnostics) is in [docs/guide.md](./docs/guide.md) (Chinese).
+<p align="center">
+  <a href="https://www.npmjs.com/package/@stofone/dsh-agent-roster"><img src="https://img.shields.io/npm/v/@stofone/dsh-agent-roster?style=flat-square&amp;color=5B4CF0" alt="npm version"></a>
+  <a href="https://github.com/dsh-agent-roster/dsh-agent-roster/actions/workflows/registry.yml"><img src="https://github.com/dsh-agent-roster/dsh-agent-roster/actions/workflows/registry.yml/badge.svg" alt="CI"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-0B7285?style=flat-square" alt="MIT license"></a>
+</p>
 
-## How releases work
+<p align="center">
+  <img src="docs/assets/panel-rosters.png" width="100%" alt="Agent Roster panel: local rosters, their model routes and members">
+</p>
 
-This repository is maintained by an AI agent, and the cadence is public so you can tell when a fix will reach a version:
+## 30-second demo
 
-- **Two passes a day** (12:00 and 18:00 UTC+8): 12:00 only handles issues and pull requests; **18:00 is the release window**.
-- **At most one release per day**; nothing ships on a day without a substantive change.
-- **Merged is not released**: changes land on `main` and ship with the next version. The `Unreleased` section of `CHANGELOG.md` names the version they are planned for.
-- Versions follow SemVer: bug fixes are patches, new capabilities are minors; a batch containing a new capability goes out as a minor.
-- GitHub Releases are created for minors (`x.y.0`) only; patch notes stay in `CHANGELOG.md` and in the tag.
-- Every change (including the maintainer's own) goes through a pull request and must pass `verify`.
+A real `roster_verify` run against a 14-member team (the tool's output is localized to Chinese; fields `agent-teams` does not persist are trimmed from the excerpt):
 
-After upgrading, restart `dsh web` to load the new version.
+```text
+[roster_verify] ok=false state=available members=14 deployed=14 faithful=7 unverified=0 drift=7 missing=0 unmanaged=1 toolFilter=14/14 policyDrift=0 provenance=0absent/1differ skills=0/0 requires=0missing/11 capabilityBlocked=0 captain=1
 
-## What it does
+roster:money-lab@10.2.1  成员 14 · 已部署 14 · 一致 7
 
-| Capability | In one line | Entry point |
+▸ report-builder  @ money-lab-v17   一致
+   systemPrompt   运行时取值与档案一致  2494 字符
+   model          运行时取值与档案一致  deepseek-v4.1-flash
+   toolPolicy     运行时取值与档案一致  member-safe
+
+▸ report-builder  @ money-lab       降级
+   systemPrompt   运行时实际取值与档案不同  1741 字符  · 成员自带（运行时采用了不同的值）
+```
+
+Three things in that output matter:
+
+- **It reads the values the runtime actually stored**, not the parameters we sent — which is how "the roster says A, the runtime is B" gets caught.
+- **No evidence, no pass**: with no member session or an unreadable log, the verdict is *unverifiable*, never *faithful*.
+- **The same member can differ across generations**: `report-builder` is faithful in the new team `money-lab-v17` and overridden in the old `money-lab` — exactly what you want to see before a handover.
+
+## How this relates to agent-teams
+
+The engine **runs** the team; this plugin makes it **reviewable before and verifiable after**. They do not overlap:
+
+| | [`dsh-agent-teams`](https://github.com/NanmiCoder/dsh-agent-teams) | This plugin |
 |---|---|---|
-| **A persona that keeps evolving** | The captain's system prompt is a same-name section carrying the roster persona, **re-read on every model step**: edit it — yourself or from inside the session — and the next step reflects it, with no restart and no new session. The persona stays a living file rather than text frozen at spawn time | automatic |
-| Roster definition | v2 is three layers: `roles/<name>/AGENT.md` (+ `parts/` and `{{> include}}`) → `rosters/<id>/roster.yaml` → self-contained `dist/` | `roster_compile` |
-| Validation | Every field is direct / config / declaration; a gate needs an executable `verify`; capabilities report present / missing / unknown | `validate`, `roster_verify` |
-| Team creation | Turn a roster into member arguments; new session or a named existing one, with workspace and title | `roster_team` |
-| Succession | Compare roster with runtime → optional write-back → new session, or **replace within the current session** (asks before archiving the old team); carry captain context with `handover.summary` and per-member context with `handover.members` | `roster_iterate` |
-| Verification | Read what `team.json` actually stored (provider / model / reasoningEffort / toolPolicy) and report match, degraded, or unverifiable | `roster_verify` |
-| Write-back | Put runtime values back into the roster; asks first by default | `roster_capture` |
-| Persona roster | `members: []` plus `captain.persona`: one persona is one session's identity, with no team; apply it to an existing session | Panel "Apply" |
-| Knowledge | Roles and rosters can declare `knowledge:`; the prompt carries title + summary + path only, the body is opened on demand | `roster_compile` |
-| Panel | “Agent roster” in the left panel: rosters / library / teams / health, with search, tag filters, favourites, space pulls and import | Web UI |
-| Spaces | `space.yaml` describes a library; `clone` pulls it, `update` compares six states (conflicts are never auto-merged) | `roster_space`, CLI |
+| Where the team comes from | One sentence in a session; the captain decides the roster on the spot | A file you wrote: personas, model routes, tool boundaries, gates |
+| Verifiable after creation | `team.json` is the runtime source of truth | Compares the roster against `team.json`, field by field: faithful / degraded / unverifiable |
+| Can the persona change | Member personas are frozen at spawn | The captain persona is re-read every model step; edit the file, effective next step |
+| What a handover carries | Not provided | Captain summary + one context packet per member (old session id and log path inside) |
+| When to use it | You want a team that **runs** | You want that team **reviewable, verifiable, replaceable** |
 
-## The most useful case: a session with heavy context writes its own roster, then iterates
-
-A long-running project session carries decisions, scars, open work and every member's quirks. Copying that transcript into a new session is expensive and drags stale conclusions along; dropping it resets the project's memory.
-
-So let the **session write its own roster**: captain persona, member lineup, model and tool boundaries, gates, handover guide, all as files. Then `roster_iterate` produces the next generation — a clean session that starts with only three things: the previous captain's handover summary, one context packet per member, and an executable step list. Details travel as pointers rather than text: each packet names the old session id and its log path, so anything can be read back in place.
-
-The roster is a living file, not a snapshot: edit a role's prose and the captain speaks with it from the next step (same-name section, re-read every step) — no rebuild, no restart.
-
-Three moves: **write** (the session captures how it works as a roster), **iterate** (`roster_iterate` writes the summary and per-member packets, with delivery instructions in the starter message), **verify** (`roster_verify` checks models, tool boundaries and persona — and whether each packet actually reached its member: delivered / not seen / cannot check).
-
-Boundaries, stated plainly: conversations are not migrated, only pointed at; member personas are frozen at spawn, so changing members means a new generation; the captain's persona is the only part that stays live.
-
-## What it is / is not
-
-| It is | It is not |
-|---|---|
-| A definition and validation layer: versionable, reviewable, errors carry file and field paths, nothing degrades silently | A team runtime: it does not spawn members, schedule tasks, or replace a scheduler |
-| A bridge to `dsh-agent-teams`: produces member arguments and labels, field by field, whether the runtime carries them | A writer of `.agent-teams/` state: that is read-only, used for verification |
-| A verification tool that only trusts what `team.json` actually stored | A rubber stamp: a missing evidence source is reported as “unverifiable” |
+You can use the engine alone; the moment you want to review the roster up front, or confirm "is the runtime actually the set of people I asked for", you want this layer.
 
 ## Install
 
@@ -63,119 +60,100 @@ Boundaries, stated plainly: conversations are not migrated, only pointed at; mem
 dsh plugin --profile web add @stofone/dsh-agent-roster
 ```
 
-Then restart `dsh web` (the plugin loads at start): the **Agent roster** panel appears in the sidebar and thirteen tools are registered. Requires Node.js ≥ 22.19.
+Requires Node.js ≥ 22.19 and a running `dsh web`. Restart `dsh web` once after installing (plugins load at startup); after that **Agent 档案** appears in the left sidebar and thirteen `roster_*` tools are available.
 
-## Quick start
+Team creation still needs [`@nanmicoder/dsh-agent-teams`](https://github.com/NanmiCoder/dsh-agent-teams): this plugin declares it as an optional peer and prints the install command when it is missing.
 
-The roster library is **global** by default (one per machine), at `$DSH_HOME/agent-roster` (usually `~/.dsh/agent-roster`), created on first save.
+Compatibility: verified against DSH `0.2.2-rc.1`; the engine must be `>= 0.1.27`. See [Releases](https://github.com/dsh-agent-roster/dsh-agent-roster/releases/latest) for the current version and [CHANGELOG](./CHANGELOG.md) for what changed in each one.
 
-A v2 roster on disk looks like this (**required**: `AGENT.md` and `roster.yaml`; the optional entries are shown in place, their contents are not expanded here):
+## Quick start (no YAML required)
 
-```
-~/.dsh/agent-roster/
-├── space.yaml                  # optional: register this library as a space
-├── snippets/                   # optional: shared text ({{> snippets/x.md}})
-├── knowledge/                  # optional: project knowledge; prompts carry title+summary+path
-├── shared-roles/               # shared roles (legacy name roles/ is still read)
-│   └── writer/
-│       ├── AGENT.md            # required: frontmatter + persona body
-│       └── parts/              # optional: body parts, joined in prompt.parts order
-├── rosters/
-│   └── docs/
-│       ├── roster.yaml         # required: members, captain, orchestration and gates
-│       ├── roles/              # optional: roles private to this roster (shadow shared)
-│       └── capabilities.yaml   # optional: what the deployment must provide first
-└── dist/
-    └── docs-1.0.0.json         # compiled artifact (panel, /install and subscriptions read it)
-```
+1. **Open the panel → 档案库 (Library)**. Everything published under the project registry is listed by space, searchable by capability and filterable by tag.
 
-A minimal roster is `roles/writer/AGENT.md` + `rosters/docs/roster.yaml`, plus one `compile` run to produce `dist/`. Full field list: [docs/guide.md](./docs/guide.md).
+   ![Library: rosters grouped by space, with search](docs/assets/panel-catalog.png)
 
-### 1. Write a role
+2. **Pull a roster.** It is written into your local library; the 档案 (Rosters) tab then shows its members and model routes.
 
-`roles/writer/AGENT.md`:
+3. **Create a team**: click 创建团队 on the roster row — a new session (pick workspace, session name, captain model) or an existing one.
 
-```markdown
----
-kind: dsh-agent-roster/role@1
-name: writer
-version: 1.0.0
-role: technical writer
-title: documentation
-description: edits docs only, never code
-tags: [docs]
-route:
-  model: deepseek-flash
-  reasoningEffort: high
-tools:
-  policy: read-only
----
+4. **Verify**: run `roster_verify` in that session. Every field gets a verdict; values the runtime overrode show as *degraded*, with the roster value and the runtime value side by side.
 
-You own the documentation. After editing, run `npm run check:locale` and paste the raw output if it fails.
-```
+Prefer to write your own? The minimal v2 roster is two files (`roles/<name>/AGENT.md` + `rosters/<id>/roster.yaml`), then `compile` once. The full layout is in [docs/guide.md](./docs/guide.md); [examples/](./examples) is a two-roster example library.
 
-### 2. Write a roster
+## What you get
 
-`rosters/docs/roster.yaml`:
+| Capability | What it changes | Entry point |
+|---|---|---|
+| **A persona that keeps evolving** | The captain's system prompt carries the roster persona through a same-name section that is **re-read on every model step**: you edit it, or the session edits it, and the next step obeys — no restart, no rebuild. The persona is a live file, not text frozen at spawn. | automatic |
+| Roster definition | v2 in three layers: `roles/<name>/AGENT.md` (+ `parts/`, `{{> include}}`) → `rosters/<id>/roster.yaml` → a self-contained `dist/` artifact | `roster_compile` |
+| Validation | Every field has a home (direct / config / declaration); a gate must have an executable `verify`; capability requirements report present / missing / unknown only | `validate`, `roster_verify` |
+| Team creation | Member arguments generated from the roster; new session or an existing one, optional workspace and session name | `roster_team` |
+| Iteration | Compare roster against runtime → optionally write back → new session, or **iterate inside the current one** (asks before archiving a team it already leads); captain context via `handover.summary`, members via `handover.members` | `roster_iterate` |
+| Verification | Reads the provider / model / reasoningEffort / toolPolicy **actually stored** in `team.json`, and reports faithful, degraded or unverifiable per field | `roster_verify` |
+| Write-back | Writes runtime values back into the roster; **asks first** by default | `roster_capture` |
+| Persona rosters | `members: []` + `captain.persona`: one persona *is* a session's identity, no team; applies to an existing session immediately | panel "Apply" |
+| Knowledge layer | Roles and rosters can declare `knowledge:`; the prompt carries title + summary + path, and the body is opened on demand | `roster_compile` |
+| Panel | **Agent 档案** in the sidebar: Rosters / Library / Teams / Health, with search, tag filters, favorites, space pull, import | Web UI |
+| Spaces and subscriptions | `space.yaml` describes a library; `clone` pulls it, `update` reports six states and never auto-merges | `roster_space`, CLI |
 
-```yaml
-kind: dsh-agent-roster/roster@2
-id: docs
-version: 1.0.0
-title: Docs crew
-members:
-  - as: writer
-    role: writer@1.0.0
-captain:
-  role: writer@1.0.0
-  notes: The captain persona is injected into the captain session's system prompt and re-read every step.
-```
+## The most useful thing it does: let a context-heavy session write its own roster and hand over
 
-### 3. Validate
+A project session that has run for weeks holds decisions, mistakes already paid for, open threads, and each member's temperament. Pasting that transcript into a new session is expensive and drags stale conclusions along; throwing it away resets the project's memory to zero.
 
-```bash
-npx dsh-agent-roster validate --dir ~/.dsh/agent-roster   # format, references, capabilities, gates
-npx dsh-agent-roster list --dir ~/.dsh/agent-roster       # rosters and members
-npx dsh-agent-roster compile --roster ~/.dsh/agent-roster/rosters/docs
-```
+So let **the session write the roster itself**: captain persona, member composition, model and tool boundaries, acceptance gates, handover guidance — all as files. Then `roster_iterate` produces the next generation: a fresh session that starts from zero and carries exactly three things — the previous captain's handover summary, one context packet per member, and an executable step list. Details are not copied wholesale, only pointed at: each packet names the old session id and the session log path, so the original words can be read back when needed.
 
-### 4. Create and verify
+The roster is a live file, not a snapshot: edit a role's body and the captain speaks as the new persona on the next step (same-name section, re-read every step) — no rebuild, no restart.
 
-Tell the captain session “create a team from the docs roster”, or pick it under **Teams → Create team** in the panel. After it exists, in the same session:
+Three moves: **write** (the session turns "how we work now" into a roster) → **hand over** (`roster_iterate` writes the captain summary and per-member packets, with delivery instructions in the kickoff message) → **verify** (`roster_verify` checks models, tool boundaries, personas, and whether each packet actually reached its member: delivered / not seen / unverifiable).
 
-```
-roster_verify            # roster vs runtime, field by field
-roster_capture           # write runtime values back (asks first)
-roster_iterate           # succession: new session, or in place (asks before archiving)
-```
+The boundaries, stated plainly: conversations are not migrated, only pointed at; member personas are frozen at spawn, so changing members means a new generation; the captain persona is the one part that changes and takes effect immediately.
 
-## Documentation
+## What it is / is not
 
-| Document | Contents |
+| Is | Is not |
 |---|---|
-| [docs/guide.md](./docs/guide.md) | **Full manual** (Chinese): layouts, v1/v2 formats, includes, shared knowledge, field destinations, capabilities, spaces, panel, the thirteen tools, CLI, routes, config, diagnostics |
-| [docs/roster-v2.md](./docs/roster-v2.md) | v2 format specification |
-| [docs/design.md](./docs/design.md) | Design decisions and module placement |
-| [CHANGELOG.md](./CHANGELOG.md) | What each version changed, why, and what it touches |
-| [examples/](./examples), [examples-orchestration/](./examples-orchestration) | Two example libraries: a minimal roster; gates and a task plan |
+| A definition and validation layer: versionable, reviewable, with file and field paths in every error, never a silent downgrade | A team runtime: it does not spawn members, schedule tasks, or replace the scheduler |
+| A bridge to `dsh-agent-teams`: produces usable member arguments and marks, field by field, whether the runtime really took them | It does not write `.agent-teams/` state: read-only, for verification |
+| A verification tool: only the values actually stored in `team.json` count | It does not fake a pass: a missing evidence source is reported as *unverifiable* |
+
+## Docs
+
+| Document | What it covers |
+|---|---|
+| [docs/guide.md](./docs/guide.md) | **The full manual**: three on-disk shapes, v1/v2 formats, includes, shared knowledge, field homes, capability requirements, spaces, panel, thirteen tools, CLI, routes, config, diagnostics |
+| [docs/roster-v2.md](./docs/roster-v2.md) | The v2 format spec (roles / rosters / artifacts / task plans) |
+| [docs/design.md](./docs/design.md) | Design trade-offs and where each module lives |
+| [CHANGELOG.md](./CHANGELOG.md) | What changed in each version, why, and what it affects |
+| [examples/](./examples), [examples-orchestration/](./examples-orchestration) | Two example libraries: a minimal roster; orchestration with gates and task plans |
 
 ## Boundaries
 
-- No running teams, no scheduling, no writes to `.agent-teams/`, and **no automatic restarts**.
-- A session leads at most one team; use `roster_iterate` for succession rather than recreating in place.
-- Editing in the panel edits files; runtime values under `.agent-teams/` are never rewritten by the panel.
+- It does not run teams, schedule work, or write `.agent-teams/`; it also **never restarts** a service on its own.
+- A session leads at most one team; iterate the same roster through `roster_iterate` instead of rebuilding in place.
+- Editing a roster in the panel edits files; runtime values inside `.agent-teams/` are never rewritten by the panel.
 
-## Development and verification
+## Development
 
 ```bash
 node --test              # 498 tests
 npm run smoke            # host + client smoke
 npm run check:host       # four host contracts, read from the installed DSH
-npm run check:locale     # panel strings, en/zh parity
+npm run check:locale     # panel strings aligned across en/zh
 node bin/cli.mjs validate --dir examples
-npm run e2e              # real host: 17 panel checks
+npm run e2e              # boots a real host: 17 panel checks
 ```
+
+## How releases work
+
+This repository is maintained by an AI, and the cadence is public so you can tell when your issue turns into a version:
+
+- **Two passes a day** (12:00 / 18:00 Beijing time): 12:00 handles issues and PRs without touching the version; **18:00 is the release window**.
+- **At most one version per day**; a day with no substantive change ships nothing.
+- **Merged is not released**: changes land on `main` and ship in the next version; the `Unreleased` section of `CHANGELOG.md` states which version it is planned for.
+- SemVer by content: bug fixes are patches, new capability is a minor; a batch containing any new capability ships as a minor.
+- GitHub Releases exist only for minors (`x.y.0`); patch notes live in `CHANGELOG.md` and the tag.
+- Every change — including the maintainer's own — goes through a pull request, and merges only when `verify` is green.
 
 ## License
 
-MIT. Licences of example libraries and imported material are in their own directories; material imported from `@michengai/dsh-agency-agents` follows its Apache-2.0 NOTICE.
+MIT. Licensing of example libraries and role material is documented per directory; material imported from `@michengai/dsh-agency-agents` follows its Apache-2.0 NOTICE.
