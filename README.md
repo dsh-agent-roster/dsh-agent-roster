@@ -1,41 +1,80 @@
 # @stofone/dsh-agent-roster
 
-[English](README.en.md) | **简体中文**
+[English](README.en.md) | [**简体中文**](README.md)
 
-面向多 Agent 团队的**静态成员档案**层（DeepSeek Harness）：把「团队里有谁、各自负责什么、走哪个模型、能碰哪些工具」写成可评审、可校验的文件，并在建团之后**核对运行时真实存下的值**。
+**把团队写成一份建之前能评审、建完能核对的文件。**
 
-它不运行团队，也不替代 `dsh-agent-teams`——它补的是「建团前能 review、建完能核、跑偏能回写、**人设能随会话继续进化**」这一层。
+面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Agent Teams 的**档案层**：人设、模型路由、工具边界写在 YAML/Markdown 里，编译成一份自包含产物；团队跑起来以后，再逐字段对着 `team.json` 核对运行时**真正存下的值**。它不运行团队，也不替代 [`dsh-agent-teams`](https://github.com/NanmiCoder/dsh-agent-teams)——它补的是引擎结构上不管的那一层。
 
-**一分钟上手**：[安装](#安装) → [快速开始](#快速开始)；完整的格式、工具参数、面板与诊断在 [docs/guide.md](./docs/guide.md)。
+[![npm](https://img.shields.io/npm/v/@stofone/dsh-agent-roster?style=flat-square&color=5B4CF0)](https://www.npmjs.com/package/@stofone/dsh-agent-roster)
+[![CI](https://github.com/dsh-agent-roster/dsh-agent-roster/actions/workflows/registry.yml/badge.svg)](https://github.com/dsh-agent-roster/dsh-agent-roster/actions/workflows/registry.yml)
+[![license](https://img.shields.io/badge/license-MIT-0B7285?style=flat-square)](./LICENSE)
 
-## 维护与发版节奏
+![Agent 档案面板：本机档案、模型路由与成员](docs/assets/panel-rosters.png)
 
-本仓库由 AI 维护，节奏是公开的，方便你判断「我的问题什么时候会有版本」：
+## 30 秒看懂
 
-- **每天两次处理**（北京时间 12:00 / 18:00）：12:00 只处理 issue 与 PR，不动版本号；**18:00 才是发版窗口**。
-- **一天最多一个版本**；当天没有实质改动就不发。
-- **合并 ≠ 已发布**：改动先合入 `main`，随下一个版本发布；`CHANGELOG.md` 的 `Unreleased` 段会写明「计划随哪个版本发布」，升级前可以对照。
-- 版本按 SemVer 定级：修 bug 走 patch，新增能力走 minor；一批里含新能力就整批发 minor。
-- GitHub 的 Release 只为 minor（`x.y.0`）建：patch 的改动仍在 `CHANGELOG.md` 和对应标签里，需要时按标签查。
-- 所有改动（包括维护者自己的）都走 pull request，`verify` 通过才合并。
+下面是对一支 14 人团队的真实 `roster_verify` 输出（节选，已去掉 agent-teams 不承载的字段）：
 
-安装新版本后需要重启 `dsh web` 才会加载。
+```text
+[roster_verify] ok=false state=available members=14 deployed=14 faithful=7 unverified=0 drift=7 missing=0 unmanaged=1 toolFilter=14/14 policyDrift=0 provenance=0absent/1differ skills=0/0 requires=0missing/11 capabilityBlocked=0 captain=1
 
-## 主要功能
+roster:money-lab@10.2.1  成员 14 · 已部署 14 · 一致 7
 
-| 能力 | 一句话 | 入口 |
+▸ report-builder  @ money-lab-v17   一致
+   systemPrompt   运行时取值与档案一致  2494 字符
+   model          运行时取值与档案一致  deepseek-v4.1-flash
+   toolPolicy     运行时取值与档案一致  member-safe
+
+▸ report-builder  @ money-lab       降级
+   systemPrompt   运行时实际取值与档案不同  1741 字符  · 成员自带（运行时采用了不同的值）
+```
+
+这段输出里重要的三件事：
+
+- **读的是运行时真正存下的值**，不是我们发出去的参数——所以能抓到「档案说 A、运行时是 B」。
+- **拿不到证据就不冒充通过**：没有会话、读不到日志的项记「无法核对」，不记「一致」。
+- **同一个人在两代团队里可以有不同结论**：`report-builder` 在新队 `money-lab-v17` 一致，在旧队 `money-lab` 被运行时覆盖——这正是换代前该看见的东西。
+
+## 安装
+
+```bash
+dsh plugin --profile web add @stofone/dsh-agent-roster
+```
+
+需要 Node.js ≥ 22.19 和一个跑着的 `dsh web`。装完重启一次 `dsh web`（插件在启动时加载）；之后左侧栏出现 **Agent 档案**，工具多出十三个 `roster_*`。
+
+建团仍然需要 [`@nanmicoder/dsh-agent-teams`](https://github.com/NanmiCoder/dsh-agent-teams)：本插件把它声明为可选 peer，缺失时会直接告诉你安装命令。
+
+## 快速开始（不写 YAML）
+
+1. **打开面板 → 档案库**。项目 registry 里发布过的档案按空间列出，可按能力搜索、按标签筛选。
+
+   ![档案库：按空间分组的档案，可搜索](docs/assets/panel-catalog.png)
+
+2. **拉取一份档案**（Pull）。它被写进本机档案库，随后在「档案」页签里能看到成员与模型路由。
+
+3. **创建团队**：在档案行上点「创建团队」——新会话（选工作区、会话名、队长模型）或落到已有会话。
+
+4. **核对**：在那个会话里跑 `roster_verify`。逐字段给结论；被运行时覆盖的项显示为「降级」，档案值与运行时值并排给出。
+
+想自己写？最小 v2 档案就是两个文件（`roles/<name>/AGENT.md` + `rosters/<id>/roster.yaml`），再 `compile` 一次。完整结构见 [docs/guide.md](./docs/guide.md#三种落盘形态)，[examples/](./examples) 是一座两份档案的示例库。
+
+## 你会得到什么
+
+| 能力 | 改变了什么 | 入口 |
 |---|---|---|
-| **会话人设可进化** | 队长的 system prompt 由同名 section 承载档案人设，**每个模型步重读**：你改、或会话自己改，下一步就生效——不用重启，也不用重建会话。人设因此是一条能随运行继续生长的活文件，而不是 spawn 时冻死的一段文字 | 自动 |
-| 档案定义 | v2 三层：`roles/<name>/AGENT.md`（+ `parts/` 与 `{{> 引用}}`）→ `rosters/<id>/roster.yaml` → 自包含产物 `dist/` | `roster_compile` |
-| 校验 | 字段归宿三分（direct / config / declaration）、门必须有可执行的 `verify`、能力要求只报 present / missing / unknown | `validate`、`roster_verify` |
+| **会话人设可进化** | 队长的 system prompt 由同名 section 承载档案人设，**每个模型步重读**：你改、或会话自己改，下一步就生效——不用重启、不用重建。人设因此是一条能随运行继续生长的活文件，而不是 spawn 时冻死的一段文字。 | 自动 |
+| 档案定义 | v2 三层：`roles/<name>/AGENT.md`（+ `parts/`、`{{> 引用}}`）→ `rosters/<id>/roster.yaml` → 自包含产物 `dist/` | `roster_compile` |
+| 校验 | 字段归宿三分（direct / config / declaration）；门必须有可执行的 `verify`；能力要求只报 present / missing / unknown | `validate`、`roster_verify` |
 | 建团 | 从档案生成建员参数；新开会话或落到指定会话，可选工作区与会话名 | `roster_team` |
 | 换代 | 先比对档案与运行时 → 可选回写 → 新开会话或**在当前会话里换代**（已带队时先问是否归档）；队长用 `handover.summary`、成员用 `handover.members` 带过去 | `roster_iterate` |
 | 核对 | 读 `team.json` 里**实际存下的** provider / model / reasoningEffort / toolPolicy，逐项报一致、降级、无法核对 | `roster_verify` |
-| 回写 | 把运行时值写回档案；默认**先问再做**，确认后才动文件 | `roster_capture` |
+| 回写 | 把运行时值写回档案；默认**先问再做** | `roster_capture` |
 | 人设档案 | `members: []` + `captain.persona`：一个人设就是一个会话的身份，不建团队；应用到已有会话即刻生效 | 面板「应用」 |
 | 知识层 | 角色与档案可声明 `knowledge:`，提示词只放「标题 + 概要 + 路径」，正文按需打开 | `roster_compile` |
 | 面板 | 左侧栏「Agent 档案」：档案 / 档案库 / 团队 / 体检四页签，搜索、标签筛选、收藏、拉取空间、导入 | Web UI |
-| 空间与订阅 | `space.yaml` 描述一座档案库；可用 `clone` 拉取、`update` 比对六态（不自动合并冲突） | `roster_space`、CLI |
+| 空间与订阅 | `space.yaml` 描述一座档案库；`clone` 拉取，`update` 报六态、冲突不自动合并 | `roster_space`、CLI |
 
 ## 最实用的用法：让上下文已经很重的会话，自己写档案并换代
 
@@ -56,98 +95,6 @@
 | 定义与校验层：格式可版本化、可评审，写错时带文件路径与字段路径报错，不静默降级 | 团队运行时：不建成员、不调度任务、不替代调度器 |
 | 对 `dsh-agent-teams` 的桥接：产出可直接使用的建员参数，并逐字段标注运行时是否真的接收 | 不写 `.agent-teams/` 状态：只读，用于核对 |
 | 核对手段：只认 `team.json` 里实际存下的值 | 不假装通过：证据源缺席时记「无法核对」 |
-
-## 安装
-
-```bash
-dsh plugin --profile web add @stofone/dsh-agent-roster
-```
-
-装完重启 `dsh web`（插件在启动时加载）：左侧栏出现 **Agent 档案**，工具多出十三个。前置只要 Node.js ≥ 22.19。
-
-## 快速开始
-
-档案库默认是**全局**的（一台机器一份），位于 `$DSH_HOME/agent-roster`（默认 `~/.dsh/agent-roster`），首次保存时自动创建。
-
-一份 v2 档案在磁盘上的完整结构（**必需**的两个文件是 `AGENT.md` 与 `roster.yaml`；其余可选，位置在这里列出，内容不展开）：
-
-```
-~/.dsh/agent-roster/
-├── space.yaml                  # 可选：把这座库登记成一个空间
-├── snippets/                   # 可选：正文共享片段（{{> snippets/x.md}}）
-├── knowledge/                  # 可选：项目知识，提示词只放标题+概要+路径
-├── shared-roles/               # 共享角色（旧名 roles/ 仍读）
-│   └── writer/
-│       ├── AGENT.md            # 必需：frontmatter + 人设正文
-│       └── parts/              # 可选：正文分段，按 prompt.parts 的顺序拼接
-├── rosters/
-│   └── docs/
-│       ├── roster.yaml         # 必需：成员、队长、编排与门
-│       ├── roles/              # 可选：只属于这份档案的角色（同名压过共享）
-│       └── capabilities.yaml   # 可选：部署侧必须先提供什么
-└── dist/
-    └── docs-1.0.0.json         # 编译产物（面板、/install 与订阅读它）
-```
-
-最小档案就是 `roles/writer/AGENT.md` + `rosters/docs/roster.yaml`，再跑一次 `compile` 得到 `dist/`。完整字段见 [docs/guide.md](./docs/guide.md)。
-
-### 1. 写一个角色
-
-`roles/writer/AGENT.md`：
-
-```markdown
----
-kind: dsh-agent-roster/role@1
-name: writer
-version: 1.0.0
-role: 技术写作
-title: 文档维护
-description: 只改文档，不动代码
-tags: [docs]
-route:
-  model: deepseek-flash
-  reasoningEffort: high
-tools:
-  policy: read-only
----
-
-你负责文档。改完必须跑 `npm run check:locale`，报错就把原始输出贴出来。
-```
-
-### 2. 写一份档案
-
-`rosters/docs/roster.yaml`：
-
-```yaml
-kind: dsh-agent-roster/roster@2
-id: docs
-version: 1.0.0
-title: 文档小队
-members:
-  - as: writer
-    role: writer@1.0.0
-captain:
-  role: writer@1.0.0
-  notes: 队长人设由插件注入队长会话的 system prompt，每步重读。
-```
-
-### 3. 校验
-
-```bash
-npx dsh-agent-roster validate --dir ~/.dsh/agent-roster   # 格式、引用、能力、门
-npx dsh-agent-roster list --dir ~/.dsh/agent-roster       # 列档案与成员
-npx dsh-agent-roster compile --roster ~/.dsh/agent-roster/rosters/docs
-```
-
-### 4. 建团并核对
-
-对队长会话说「用 docs 档案建一支团队」，或在面板「团队 → 创建团队」里选它；建完在同一个会话里跑：
-
-```
-roster_verify            # 档案 vs 运行时，逐字段
-roster_capture           # 想把运行时值写回档案时（默认先问）
-roster_iterate           # 换代：新开会话，或当前会话换代（先问是否归档旧队）
-```
 
 ## 文档
 
@@ -175,6 +122,17 @@ npm run check:locale     # 面板文案 en/zh 对齐
 node bin/cli.mjs validate --dir examples
 npm run e2e              # 真起宿主：面板 17 项
 ```
+
+## 维护与发版节奏
+
+本仓库由 AI 维护，节奏是公开的，方便你判断「我的问题什么时候会有版本」：
+
+- **每天两次处理**（北京时间 12:00 / 18:00）：12:00 只处理 issue 与 PR，不动版本号；**18:00 才是发版窗口**。
+- **一天最多一个版本**；当天没有实质改动就不发。
+- **合并 ≠ 已发布**：改动先合入 `main`，随下一个版本发布；`CHANGELOG.md` 的 `Unreleased` 段会写明「计划随哪个版本发布」。
+- 版本按 SemVer 定级：修 bug 走 patch，新增能力走 minor；一批里含新能力就整批发 minor。
+- GitHub 的 Release 只为 minor（`x.y.0`）建：patch 的改动仍在 `CHANGELOG.md` 和对应标签里。
+- 所有改动（包括维护者自己的）都走 pull request，`verify` 通过才合并。
 
 ## 许可
 
