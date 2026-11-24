@@ -631,3 +631,35 @@ test("自动登记：library-registry 能加、能撤销，登记的库出现在
     rmSync(workspace, { recursive: true, force: true });
   }
 });
+
+test("verify：POST 跑同一条 roster_verify 判据，空状态目录如实报全部未部署", async () => {
+  const host = makeHost();
+  apply(host.ctx, CONFIG);
+  const emptyState = mkdtempSync(nodePath.join(tmpdir(), "dsh-agent-roster-verify-"));
+  try {
+    const result = await call(
+      host,
+      "/plugins/dsh-agent-roster/verify",
+      makeReq({
+        method: "POST",
+        url: "/plugins/dsh-agent-roster/verify",
+        body: { ref: "core-review", stateDir: emptyState },
+      }),
+    );
+    assert.equal(result.status, 200);
+    assert.equal(typeof result.body.text, "string");
+    assert.match(result.body.text, /roster_verify/);
+    assert.match(result.body.text, /roster:core-review@1\.0\.0/);
+    assert.match(result.body.text, /未在团队中部署/);
+    assert.equal(result.body.ok, false);
+  } finally {
+    rmSync(emptyState, { recursive: true, force: true });
+  }
+});
+
+test("verify：GET 被拒（只允许 POST）", async () => {
+  const host = makeHost();
+  apply(host.ctx, CONFIG);
+  const result = await call(host, "/plugins/dsh-agent-roster/verify", makeReq());
+  assert.equal(result.status, 405);
+});

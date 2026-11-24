@@ -39,6 +39,7 @@ window.__ModuleLoader__.load({
     const SEARCH_ROUTE = "/plugins/dsh-agent-roster/search";
     const CATALOG_ROUTE = "/plugins/dsh-agent-roster/catalog";
     const SPACE_UPDATE_ROUTE = "/plugins/dsh-agent-roster/space-update";
+    const VERIFY_ROUTE = "/plugins/dsh-agent-roster/verify";
     const LIBRARY_REGISTRY_ROUTE = "/plugins/dsh-agent-roster/library-registry";
   const FAVORITES_ROUTE = "/plugins/dsh-agent-roster/favorites";
 
@@ -1162,6 +1163,36 @@ window.__ModuleLoader__.load({
      */
     function TeamCard({ team }) {
       const [open, setOpen] = useState(false);
+      // 「核对」按的是运行时实际记下的值，不是我们发出去的参数：复用 roster_verify 的同一条判据。
+      const [verifying, setVerifying] = useState(false);
+      const [report, setReport] = useState(null);
+      const [reportError, setReportError] = useState(null);
+      const stateDirOf = (file) => {
+        if (typeof file !== "string" || file === "") return undefined;
+        const parts = file.split("/");
+        return parts.length > 2 ? parts.slice(0, -2).join("/") : undefined;
+      };
+      const runVerify = async () => {
+        setVerifying(true);
+        setReportError(null);
+        try {
+          const response = await request(VERIFY_ROUTE, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ team: team.id, stateDir: stateDirOf(team.file) }),
+          });
+          const payload = await response.json().catch(() => null);
+          if (!response.ok || payload === null) {
+            setReportError(payload?.error?.code ?? String(response.status));
+          } else {
+            setReport(typeof payload.text === "string" ? payload.text : "");
+          }
+        } catch (error) {
+          setReportError(String(error?.message ?? error));
+        } finally {
+          setVerifying(false);
+        }
+      };
       const phase = team.phase === "staged" ? t("team.phaseStaged") : t("team.phaseRunning");
       const tone = team.escalated ? " rstr-row-error" : team.halted || team.phase === "staged" ? " rstr-row-warn" : "";
 
@@ -1194,6 +1225,17 @@ window.__ModuleLoader__.load({
           h(
             "div",
             { className: "rstr-row-actions" },
+            h(
+              "button",
+              {
+                type: "button",
+                className: "rstr-btn rstr-btn-sm",
+                onClick: runVerify,
+                disabled: verifying,
+                title: t("team.verifyHint"),
+              },
+              verifying ? t("team.verifying") : t("team.verify"),
+            ),
             h(
               "button",
               {
@@ -1253,6 +1295,12 @@ window.__ModuleLoader__.load({
                 ),
               ),
               h("p", { className: "rstr-hint" }, `${t("team.file")}: ${team.file}`),
+              reportError !== null
+                ? h("p", { className: "rstr-hint" }, t("team.verifyFailed", { reason: reportError }))
+                : null,
+              report !== null
+                ? h("pre", { className: "rstr-verify-report" }, report)
+                : null,
             )
           : null,
       );
@@ -3469,6 +3517,19 @@ window.__ModuleLoader__.load({
 .rstr-bad { color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 80%, var(--dsw-alias-label-primary)); }
 .rstr-label { font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-secondary); }
 .rstr-hint { font-size: 12px; color: var(--dsw-alias-label-secondary); margin: 0; }
+.rstr-verify-report {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
 .rstr-hint-warn { color: color-mix(in srgb, var(--dsw-alias-state-warn-label) 75%, var(--dsw-alias-label-primary)); }
 .rstr-section-title { font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-secondary); }
 .rstr-mt { margin-top: 6px; }

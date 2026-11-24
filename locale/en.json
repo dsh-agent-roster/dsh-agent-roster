@@ -136,7 +136,11 @@
     "driftDetail": "{field}: roster {wanted}, runtime {actual}",
     "showMembers": "Show members",
     "hideMembers": "Hide members",
-    "taskCount": "{count} tasks"
+    "taskCount": "{count} tasks",
+    "verify": "Verify",
+    "verifying": "Verifying…",
+    "verifyHint": "Compare against what the runtime actually stored, field by field (same check as roster_verify)",
+    "verifyFailed": "Verification failed: {reason}"
   },
   "editor": {
     "createTitle": "New roster",

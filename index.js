@@ -150,7 +150,13 @@ export function apply(ctx, config) {
   // volatile 字段在运行时是引用对象，必须走视图按当前值读，见 lib/config-view.js。
   const settings = configView(config);
 
-  registerRosterTools(ctx, settings, { version: pkg.version });
+  // 面板上的「核对」按钮走的是同一个 execute：判据只有一套，界面不能另写一份。
+  let verifyRunner = null;
+  registerRosterTools(ctx, settings, { version: pkg.version }, {
+    onVerify: (run) => {
+      verifyRunner = run;
+    },
+  });
   ctx.logger?.info?.(`dsh-agent-roster ${pkg.version}: registered 13 tools`);
 
   // 队长人设的会话级嵌入：与成员侧同构，补上 agent-teams 结构上不管的那一半。
@@ -193,6 +199,44 @@ export function apply(ctx, config) {
     // 同一份 collection 一分钟内被展开两次，第二次不该再打一轮请求。
     // 缓存的是**已校验的结果**，不是响应体，所以不存在"把非法内容缓存下来"的问题。
     const collectionCache = createTtlCache({ ttlMs: 60_000 });
+
+    // 团队卡片上的「核对」：复用 roster_verify 的 execute，返回与工具同源的文本报告。
+    register(
+      "/plugins/dsh-agent-roster/verify",
+      async (req, res) => {
+        if (guard(req, res)) return;
+        if (!requireMethod(req, res, "POST")) return;
+        const body = await readJsonBody(req);
+        if (!body.ok) {
+          sendError(res, body.status, body.code);
+          return;
+        }
+        if (typeof verifyRunner !== "function") {
+          sendJson(res, 503, { ok: false, error: { code: "verify-unavailable" } });
+          return;
+        }
+        const input = body.value !== null && typeof body.value === "object" ? body.value : {};
+        const args = {};
+        for (const key of ["ref", "team", "path", "stateDir"]) {
+          if (typeof input[key] === "string" && input[key] !== "") args[key] = input[key];
+        }
+        if (Array.isArray(input.members) && input.members.length > 0) {
+          args.members = input.members.filter((name) => typeof name === "string" && name !== "");
+        }
+        const cwd = typeof input.workspace === "string" && input.workspace !== "" ? input.workspace : process.cwd();
+        try {
+          const result = await verifyRunner(args, { agent: { session: { header: { cwd } } } });
+          sendJson(res, 200, {
+            ok: result?.ok === true,
+            text: typeof result?.text === "string" ? result.text : "",
+            summary: result?.summary ?? null,
+          });
+        } catch (error) {
+          sendJson(res, 500, { ok: false, error: { code: "verify-failed", message: String(error?.message ?? error) } });
+        }
+      },
+      "verify route",
+    );
 
     register(
       "/plugins/dsh-agent-roster/collection",
