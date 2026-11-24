@@ -12,10 +12,6 @@
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-0B7285?style=flat-square" alt="MIT license"></a>
 </p>
 
-<p align="center">
-  <img src="docs/assets/panel-rosters.png" width="100%" alt="Agent 档案面板：本机档案、模型路由与成员">
-</p>
-
 ## 30 秒看懂
 
 下面是对一支 14 人团队的真实 `roster_verify` 输出（节选，已去掉 agent-teams 不承载的字段）：
@@ -70,9 +66,7 @@ dsh plugin --profile web add @stofone/dsh-agent-roster
 
 1. **打开面板 → 档案库**。项目 registry 里发布过的档案按空间列出，可按能力搜索、按标签筛选。
 
-   ![档案库：按空间分组的档案，可搜索](docs/assets/panel-catalog.png)
-
-2. **拉取一份档案**（Pull）。它被写进本机档案库，随后在「档案」页签里能看到成员与模型路由。
+   2. **拉取一份档案**（Pull）。它被写进本机档案库，随后在「档案」页签里能看到成员与模型路由。
 
 3. **创建团队**：在档案行上点「创建团队」——新会话（选工作区、会话名、队长模型）或落到已有会话。
 
