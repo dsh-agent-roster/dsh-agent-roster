@@ -129,7 +129,7 @@ dsh plugin --profile web add @stofone/dsh-agent-roster
 ## 开发与验证
 
 ```bash
-node --test              # 498 个测试
+node --test              # 501 个测试
 npm run smoke            # 宿主 + 客户端两段冒烟
 npm run check:host       # 四条宿主契约（对着装好的 DSH 读）
 npm run check:locale     # 面板文案 en/zh 对齐

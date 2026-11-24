@@ -129,7 +129,7 @@ The boundaries, stated plainly: conversations are not migrated, only pointed at;
 ## Development
 
 ```bash
-node --test              # 498 tests
+node --test              # 501 tests
 npm run smoke            # host + client smoke
 npm run check:host       # four host contracts, read from the installed DSH
 npm run check:locale     # panel strings aligned across en/zh
