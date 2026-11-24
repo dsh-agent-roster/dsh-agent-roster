@@ -2,6 +2,16 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [1.36.0] - 2026-11-24
+
+### Added
+
+- **团队卡片上直接「核对」。** 过去逐字段结论、队长段、技能与文档证据只在 `roster_verify` 工具里，界面上只能看到每人一个「一致 / 漂移」徽章——于是「我的团队是不是还按档案在跑」这件事，普通用户得先叫一个 agent 去跑一次工具。现在团队卡片上有「核对」按钮：`POST /plugins/dsh-agent-roster/verify` 返回与工具同源的文本报告，就地展开。
+  - **判据只有一套**：路由复用工具自己的 `execute`（注册时交给 `index.js` 捕获），面板不另算忠实度；工具改了判据，按钮跟着改。
+  - 请求带团队 id 与**该团队自己的 `stateDir`**，服务端不靠 `cwd` 猜；失败把 code / 原因显示出来，不静默吞掉。
+  - 只读：不写团队状态、不改档案。
+  - 实例执行（真实 `/workspace/money/.agent-teams`，`money-lab-v17`）：`ok=true members=7 deployed=7 faithful=7`，报告含 toolFilter 摘要与逐字段「运行时取值与档案一致」。
+
 ## [1.35.0] - 2026-11-17
 
 ### Added
@@ -1513,6 +1523,7 @@ point is now one search field above the tabs.
 [1.16.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.14.0...v1.15.0
 [Unreleased]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.34.0...main
+[1.36.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.35.0...v1.36.0
 [1.35.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.34.0...v1.35.0
 [1.34.0]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.33.1...v1.34.0
 [1.33.1]: https://github.com/dsh-agent-roster/dsh-agent-roster/compare/v1.33.0...v1.33.1
